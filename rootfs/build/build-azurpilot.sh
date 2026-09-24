@@ -12,7 +12,8 @@ BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/r
 PATCH="$REPO_ROOT/rootfs/patches/azurpilot-android.patch"
 
 if [[ $(id -u) -ne 0 ]]; then
-    exec sudo -E bash "$0" "$@"
+    # setup-node/setup-uv 在 runner 的工具目录注入 PATH；sudo 默认 secure_path 会丢掉它们。
+    exec sudo -E env "PATH=$PATH" bash "$0" "$@"
 fi
 [[ $(uname -m) == aarch64 ]] || { echo '需要原生 ARM64 runner' >&2; exit 1; }
 [[ -s $PATCH ]] || { echo "缺少 AzurPilot 适配补丁: $PATCH" >&2; exit 1; }
@@ -82,8 +83,8 @@ guest /bin/sh -c 'cd /opt/azurpilot && uv sync --frozen --no-dev --python 3.14.6
 guest /bin/sh -c 'cd /opt/azurpilot && .venv/bin/python -m module.config.config_updater'
 
 FRONTEND="$ROOTFS_DIR/opt/azurpilot/frontend"
-npm ci --prefix "$FRONTEND" --no-audit --no-fund
-npm run build --prefix "$FRONTEND"
+NPM_CONFIG_CACHE="$WORK_DIR/npm-cache" npm ci --prefix "$FRONTEND" --no-audit --no-fund
+NPM_CONFIG_CACHE="$WORK_DIR/npm-cache" npm run build --prefix "$FRONTEND"
 AZURPILOT_SOURCE="$ROOTFS_DIR/opt/azurpilot" python3 - <<'PY'
 import importlib.util, os, pathlib
 root = pathlib.Path(os.environ['AZURPILOT_SOURCE'])
