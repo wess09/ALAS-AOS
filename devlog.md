@@ -5,7 +5,7 @@
 ### 2026-09-24 · 未发版：AzurPilot Android 独立版适配进行中
 
 - 真机 Root 模式已能启动设备桥与虚拟屏。修复 Shizuku 路径的静默失败：挂机页和工具任务在启动前统一调用权限入口，未授权时触发授权流程，并在虚拟屏环境就绪后才向 AzurPilot 发起任务。
-- 修复 AzurPilot 移动端 WebUI 抽屉层级：窄屏侧边栏改为实体背景并建立独立遮罩/层级，避免运行总览正文穿透；改动已直接进入 AzurPilot `dev`。
+- 用户确认同机 Chrome 手机版正常，问题只在 App 内 System WebView。宿主 UA 增加 `AzurPilotAndroidWebView` 标记；AP 窄屏侧边栏针对该标记禁用毛玻璃、使用实体背景并建立独立 paint containment，避免 WebView 将正文错误合成到抽屉上。改动已直接进入 AzurPilot `dev`。
 - 手机“自动更新失败”确认为内置 Git 更新器在无 `.git` 的 Android 运行时执行 `git fetch`。按用户后续决定改为 APK 级自动更新：AzurPilot `dev` 每次更新派发 AOS 构建（每小时轮询兜底），CI 预构建前端/rootfs/OCR 后发布固定签名 APK 和校验清单；App 启动时提示下载、校验并覆盖安装。设备端不再执行 Git/npm/uv 更新。
 - 按用户指令取消 AOS 内维护 AzurPilot patch 的方案：23 个 Android 后端、控制 API、配置生成、进程管理与测试文件已直接移植到 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev`，提交并推送 `b8f91d885 feat(android): 集成 AzurPilot Android 宿主适配`；该工作区原有公告功能未提交改动未被纳入。AOS 构建改为直接检出此 commit，删除源码补丁及 `adapter_sha256`，兼容清单改用 `android_api_version`。
 - 真机首启已越过部署和热更新并启动 WebUI；用户日志暴露 Android/proot 禁止读取全局 `/proc/stat`，导致 `psutil.Process.create_time()` 在 worker 所有权认领阶段抛 `AccessDenied`。适配层现统一使用 `/proc/<pid>/stat` 的 starttime tick 作为 Android 进程身份后备，并覆盖登记、身份校验、子树枚举与强制清场，避免启动修好后在启停任务时再次失败；新增 2 项针对性回归，连同设备/API/OCR 相关 87 项测试通过。

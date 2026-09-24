@@ -149,6 +149,9 @@ fun AlasScreen(
                     // pywebio 是 SPA，JS 与 localStorage 都要开
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // 让 AP 仅对内嵌 System WebView 启用合成兼容样式；手机 Chrome 保持原效果。
+                    settings.userAgentString = settings.userAgentString +
+                        " AzurPilotAndroidWebView/${BuildConfig.VERSION_NAME}"
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(
                             view: WebView,
