@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#include <mutex>
+#include <sstream>
 
 #if defined(__ARM_NEON)
 
@@ -21,6 +23,13 @@ static std::atomic<int> g_reader_counts[FRAME_BUFFER_COUNT] = {0, 0, 0};
 static std::atomic<FrameBuffer *> g_read_buffer{nullptr};
 static std::atomic<int64_t> g_frame_count{0};
 static std::atomic<bool> g_frame_buffers_initialized{false};
+static std::mutex g_frame_diagnostics_mutex;
+static std::string g_frame_diagnostics = "not initialized";
+
+std::string GetFrameReadDiagnostics() {
+    std::lock_guard<std::mutex> lock(g_frame_diagnostics_mutex);
+    return g_frame_diagnostics;
+}
 
 static void ProcessFrameDataV2(
         const uint8_t *__restrict src,
@@ -189,6 +198,10 @@ static void UnlockFrame(const FrameBuffer *frame) {
 }
 
 void InitFrameBuffers(int width, int height) {
+    {
+        std::lock_guard<std::mutex> lock(g_frame_diagnostics_mutex);
+        g_frame_diagnostics = "waiting for image callback";
+    }
     if (g_frame_buffers_initialized.load(std::memory_order_acquire)) {
         ReleaseFrameBuffers();
     }
@@ -258,6 +271,18 @@ bool WriteImageToFrame(AImage *image) {
     const media_status_t row_status = AImage_getPlaneRowStride(image, 0, &row_stride);
     const media_status_t pixel_status = AImage_getPlanePixelStride(image, 0, &pixel_stride);
     const media_status_t data_status = AImage_getPlaneData(image, 0, &data, &data_length);
+    int32_t format = 0;
+    AImage_getFormat(image, &format);
+    {
+        std::ostringstream state;
+        state << "format=" << format << " size=" << width << "x" << height
+              << " row=" << row_stride << " pixel=" << pixel_stride
+              << " length=" << data_length << " data=" << (data != nullptr)
+              << " statuses(size,row,pixel,data)=" << width_status << "," << height_status
+              << "," << row_status << "," << pixel_status << "," << data_status;
+        std::lock_guard<std::mutex> lock(g_frame_diagnostics_mutex);
+        g_frame_diagnostics = state.str();
+    }
 
     if (width_status != AMEDIA_OK || height_status != AMEDIA_OK ||
         row_status != AMEDIA_OK || pixel_status != AMEDIA_OK ||
@@ -274,6 +299,8 @@ bool WriteImageToFrame(AImage *image) {
 
     FrameBuffer *target = AcquireWriteBuffer();
     if (!target) {
+        std::lock_guard<std::mutex> lock(g_frame_diagnostics_mutex);
+        g_frame_diagnostics += " result=no writable frame buffer";
         return false;
     }
     if (width != target->width || height != target->height ||
@@ -286,6 +313,8 @@ bool WriteImageToFrame(AImage *image) {
                  target->width, target->height);
         }
         MarkBufferFree(target);
+        std::lock_guard<std::mutex> lock(g_frame_diagnostics_mutex);
+        g_frame_diagnostics += " result=frame geometry rejected";
         return false;
     }
 

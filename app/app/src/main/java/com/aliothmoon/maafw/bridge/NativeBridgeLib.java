@@ -47,4 +47,6 @@ public class NativeBridgeLib {
     @FastNative
     public static native long getFrameCount();
 
+    public static native String getCaptureDiagnostics();
+
 }

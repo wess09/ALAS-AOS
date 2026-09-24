@@ -389,8 +389,8 @@
 - **现象**：真机首启部署、热更新和 WebUI 入口均已运行，随后在 `claim_owner(os.getpid())` 中失败；堆栈最终是 `PermissionError: [Errno 13] Permission denied: '/proc/stat'`，UI 长时间停在启动阶段。
 - **根本原因**：Linux 版 `psutil.Process.create_time()` 先从 `/proc/<pid>/stat` 读取进程 starttime，再从全局 `/proc/stat` 读取 `btime` 换算 Unix 时间。Android 应用沙箱下前者对同 UID 进程可读，后者在 proot 绑定后被拒绝。worker 登记、PID 复用保护和子树清场多处直接依赖 `create_time()`，因此只绕过首个调用会把故障推迟到任务启停。
 - **解决方案**：统一封装进程身份读取。正常平台继续用 psutil 创建时间；遇到 `AccessDenied` 时解析 `/proc/<pid>/stat` 第 22 字段，以负的启动 tick 保存，既稳定又不会与 Unix 时间戳混淆。所有身份比较和子进程登记复用该接口；负身份在 POSIX 清场时通过已验证 PID 直接发 `SIGKILL`，避免 psutil 发信号前再次读取 `/proc/stat`。加入含括号进程名的 stat 解析测试及权限拒绝回退测试。
-# [2026-09-24] 虚拟屏预览有画面但 AP 截图全黑：GPU 预览与 CPU 帧缓冲是两条链
+# [2026-09-24] Android 空虚拟屏无首帧导致 Restart 在启动游戏前死锁
 
-- **现象**：App 挂机页能显示虚拟屏游戏画面，画面红蓝通道互换；AzurPilot 的 `azurpilot_android` 截图却持续报告均值 `(0, 0, 0)`。同时恢复流程报 `No adb exe could be found`。
-- **根本原因**：预览直接把 `AImage` 的硬件缓冲作为 external texture 交给 GPU；桥截图则另行 `AHardwareBuffer_lock()` 做 CPU 复制。CPU 锁定失败没有任何日志，帧计数保持 0，但初始化代码预先发布了一张 `frame_count=-1` 的纯黑种子帧，桥因此把采集失败伪装成成功黑图。恢复流程的 `app_is_running_bounded()` 另有独立缺口：它固定调用 ADB，没有复用 Android 后端分流。
-- **解决方案**：首轮先删除黑色种子帧，真机随即明确返回 `no frame available`，证明联合 `CPU_READ + GPU_SAMPLED` 用途在该 Mali/Android 16 组合上仍分配到了 CPU 不可读缓冲。最终将 ImageReader 改为纯 `CPU_READ_OFTEN`，原生截图从 RGBA `AImage` plane 读取 row/pixel stride 后转换到桥 BGR；App 预览也从同一 plane 经 `ANativeWindow_lock()` 拷贝，不再走 external texture。未取得真实首帧时仍明确报错，并记录 plane 状态和首帧参数。AP `dev` 的 `393a57f4e` 将桥 BGR 转为 AP 全局 RGB，并使有界前台检查调用 Android 桥且传递超时。
+- **现象与实证**：Redmi K60 Ultra 的 MaaFwVirtualDisplay 已正常创建为 display 16（1280×720、Surface 已绑定），但游戏尚未真正渲染时，SurfaceFlinger 对该虚拟显示直接 `screencap -d` 得到纯黑图，AOS bridge 同时返回 `no frame available`。将 `com.bilibili.azurlane/com.manjuu.azurlane.MainActivity` 启动到 display 16 并等待真实内容提交后，SurfaceFlinger 截图立刻恢复为多色有效画面，bridge 同时成功返回 1280×720×3 的非黑帧。因此 ImageReader/plane/BGR 传输链在有真实内容时可正常工作，先前对 Mali/CPU usage 的推断不成立。
+- **根本原因**：AzurPilot `run()` 对所有任务都会先执行 `device.screenshot()`，而 `Restart` 的真正启动逻辑 `restart() -> LoginHandler.app_restart()` 在它之后。普通模拟器的主显示即使游戏未运行也总有系统画面可截；Android 独立版的 OWN_CONTENT_ONLY 虚拟屏在游戏首帧前可能没有可读内容，于是 Restart 先截图失败、被再次调度 Restart，永远执行不到启动游戏。
+- **解决方案**：AP `1841cb194` 让 `Restart` 跳过任务前置截图，先进入 `app_restart()`；其它任务仍保留原有前置截图。新增回归测试保证 Restart 在无首帧场景不会调用 screenshot。AOS 保留 reader/callback/acquire/write/plane 诊断并把状态附加到 ping/no-frame 错误，后续若再出现首帧问题可直接从日志判断失败阶段，不再返回初始化伪黑帧。

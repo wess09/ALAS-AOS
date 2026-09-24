@@ -5,6 +5,7 @@
 
 #include <android/hardware_buffer.h>
 #include <media/NdkImage.h>
+#include <string>
 
 typedef enum {
     FRAME_STATE_FREE = 0,
@@ -25,6 +26,7 @@ typedef struct {
 void InitFrameBuffers(int width, int height);
 void ReleaseFrameBuffers();
 bool WriteImageToFrame(AImage *image);
+std::string GetFrameReadDiagnostics();
 jobject CreateFrameBufferBitmap(JNIEnv *env);
 int64_t GetFrameCount();
 

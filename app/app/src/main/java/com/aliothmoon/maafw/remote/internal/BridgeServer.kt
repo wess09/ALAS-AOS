@@ -165,6 +165,7 @@ object BridgeServer {
                         .put("ok", true)
                         .put("pong", true)
                         .put("displayId", VirtualDisplayManager.getDisplayId())
+                        .put("capture", if (NativeBridgeLib.LOADED) NativeBridgeLib.getCaptureDiagnostics() else "native not loaded")
                         .put("uptime", (SystemClock.elapsedRealtime() - startedAtMs) / 1000.0)
                 )
 
@@ -189,7 +190,8 @@ object BridgeServer {
             }
             val bytes = NativeBridgeLib.getFrameBufferBytes()
             if (bytes == null) {
-                reply(err("no frame available"))
+                reply(err("no frame available: display=${VirtualDisplayManager.getDisplayId()} " +
+                    NativeBridgeLib.getCaptureDiagnostics()))
                 return@withLock
             }
             val cfg = VirtualDisplayManager.getConfig()
