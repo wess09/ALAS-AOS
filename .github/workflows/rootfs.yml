@@ -7,10 +7,14 @@ on:
         description: AzurPilot master 的 commit SHA；留空使用已验证基线
         required: false
         type: string
-  push:
-    paths:
-      - 'rootfs/**'
-      - '.github/workflows/rootfs.yml'
+      reuse_rootfs_run_id:
+        description: 已通过的 rootfs Actions run ID；填写后只重建 APK
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
 
 concurrency:
   group: rootfs-${{ github.ref }}
@@ -18,6 +22,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ inputs.reuse_rootfs_run_id == '' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     steps:
@@ -56,6 +61,7 @@ jobs:
 
   apk:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -64,6 +70,8 @@ jobs:
         with:
           name: rootfs
           path: .tmp/azurpilot-artifact
+          run-id: ${{ inputs.reuse_rootfs_run_id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -77,7 +85,7 @@ jobs:
           cp .tmp/azurpilot-artifact/BUILD_MANIFEST app/app/src/main/assets/rootfs/
           cd app
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --console=plain
+          ./gradlew :app:assembleDebug --console=plain --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: azurpilot-android-debug

@@ -3,17 +3,19 @@ pluginManagement {
     includeBuild("build-logic")
     repositories {
         mavenLocal()
-        // 大陆网络环境 dl.google.com 偶发握手中断，Aliyun 镜像优先、官方源兜底
-        maven {
-            name = "AliyunGoogle"
-            url = uri("https://maven.aliyun.com/repository/google")
+        // CI 优先官方插件仓库；大陆网络仍可回退 Aliyun 镜像。
+        gradlePluginPortal()
+        google {
             content {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
             }
         }
-        google {
+        mavenCentral()
+        maven {
+            name = "AliyunGoogle"
+            url = uri("https://maven.aliyun.com/repository/google")
             content {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
@@ -24,8 +26,6 @@ pluginManagement {
             name = "AliyunCentral"
             url = uri("https://maven.aliyun.com/repository/central")
         }
-        mavenCentral()
-        gradlePluginPortal()
     }
 }
 plugins {
