@@ -36,7 +36,7 @@ def get_json(url):
 
 def remote_head():
     result = subprocess.run(
-        ['git', 'ls-remote', SOURCE_REPO, 'refs/heads/master'],
+        ['git', 'ls-remote', SOURCE_REPO, 'refs/heads/dev'],
         check=True, capture_output=True, text=True, timeout=15,
     )
     return result.stdout.split()[0]
@@ -44,7 +44,7 @@ def remote_head():
 
 def compatible(current, candidate):
     return all(current.get(key) == candidate.get(key) for key in
-               ('uv_lock_sha256', 'adapter_sha256', 'python_version'))
+               ('uv_lock_sha256', 'android_api_version', 'python_version'))
 
 
 def copy_user_data(source, destination):
@@ -80,13 +80,13 @@ def main():
         print(f'UNCHANGED offline: {exc}')
         return 0
     if latest.get('azurpilot_commit') != head:
-        print('UNCHANGED runtime bundle has not caught up with master')
+        print('UNCHANGED runtime bundle has not caught up with dev')
         return 0
     if head == current.get('azurpilot_commit'):
         print(f'UNCHANGED {head}')
         return 0
     if not compatible(current, latest):
-        print('DEFERRED AzurPilot requires a compatible APK for new dependencies or adapter')
+        print('DEFERRED AzurPilot requires a compatible APK for new dependencies or Android API')
         return 0
     url = latest.get('bundle_url', '')
     expected = latest.get('bundle_sha256', '')

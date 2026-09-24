@@ -1,6 +1,7 @@
 package com.aliothmoon.maafw.proot
 
 import android.app.Application
+import android.os.Build
 import com.aliothmoon.maafw.MaaDispatchers
 import com.aliothmoon.maafw.constant.AppPaths
 import com.aliothmoon.maafw.service.RunForegroundService
@@ -148,6 +149,11 @@ class ProotHost(
     }
 
     private fun sanityCheck(): Boolean {
+        val primaryAbi = Build.SUPPORTED_ABIS.firstOrNull().orEmpty()
+        if (primaryAbi != "arm64-v8a") {
+            fail("需要原生 ARM64 设备；当前为 $primaryAbi，模拟器转译环境不支持 proot")
+            return false
+        }
         val python = File(alasDir, ".venv/bin/python")
         if (!python.exists() && !Files.isSymbolicLink(python.toPath())) {
             fail("rootfs 未部署（AzurPilot Python 缺失）")

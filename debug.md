@@ -366,3 +366,8 @@
 
 - **现象**：① 按几十秒前截屏的坐标 `input tap` 工具区按钮，什么都没发生（wrapper 无日志无进程）——期间日志板高度变化把工具区下移 ~100px，tap 落在标签与按钮间的空白；② 全屏态点右上角 X，偏 14px 落到游戏画面外的黑边，被 `previewTouchInput` 边界检查丢弃（设计行为：黑边/越界坐标不注入），全屏没退出。
 - **解决方案**：adb 遥控点击必须**当帧截屏、当帧取坐标**（动态布局高度随时在变）；全屏 X 这类小目标从原图 region crop 量准中心再点（IconButton 实际触摸目标远小于直觉）。通用判据：凡是「点了没反应」，先假设坐标漂移，拿最新帧重算。
+# [2026-09-24] Android proot 可读 `/proc/<pid>/stat` 却拒绝 `/proc/stat`：psutil 创建时间让 WebUI 启动中止
+
+- **现象**：真机首启部署、热更新和 WebUI 入口均已运行，随后在 `claim_owner(os.getpid())` 中失败；堆栈最终是 `PermissionError: [Errno 13] Permission denied: '/proc/stat'`，UI 长时间停在启动阶段。
+- **根本原因**：Linux 版 `psutil.Process.create_time()` 先从 `/proc/<pid>/stat` 读取进程 starttime，再从全局 `/proc/stat` 读取 `btime` 换算 Unix 时间。Android 应用沙箱下前者对同 UID 进程可读，后者在 proot 绑定后被拒绝。worker 登记、PID 复用保护和子树清场多处直接依赖 `create_time()`，因此只绕过首个调用会把故障推迟到任务启停。
+- **解决方案**：统一封装进程身份读取。正常平台继续用 psutil 创建时间；遇到 `AccessDenied` 时解析 `/proc/<pid>/stat` 第 22 字段，以负的启动 tick 保存，既稳定又不会与 Unix 时间戳混淆。所有身份比较和子进程登记复用该接口；负身份在 POSIX 清场时通过已验证 PID 直接发 `SIGKILL`，避免 psutil 发信号前再次读取 `/proc/stat`。加入含括号进程名的 stat 解析测试及权限拒绝回退测试。

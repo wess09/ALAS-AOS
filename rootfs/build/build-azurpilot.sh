@@ -7,16 +7,14 @@ WORK_DIR="${WORK_DIR:-$REPO_ROOT/.tmp/azurpilot-build}"
 ROOTFS_DIR="$WORK_DIR/rootfs"
 DIST_DIR="${DIST_DIR:-$REPO_ROOT/dist}"
 SOURCE_REPO="${AZURPILOT_REPO:-https://github.com/wess09/AzurPilot.git}"
-SOURCE_REF="${AZURPILOT_REF:-88c4a41cea8aeaeafa7536db510d383ebba7213b}"
+SOURCE_REF="${AZURPILOT_REF:-b8f91d885e6d725aa800265178fdc2df631a6154}"
 BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz}"
-PATCH="$REPO_ROOT/rootfs/patches/azurpilot-android.patch"
 
 if [[ $(id -u) -ne 0 ]]; then
     # setup-node/setup-uv 在 runner 的工具目录注入 PATH；sudo 默认 secure_path 会丢掉它们。
     exec sudo -E env "PATH=$PATH" bash "$0" "$@"
 fi
 [[ $(uname -m) == aarch64 ]] || { echo '需要原生 ARM64 runner' >&2; exit 1; }
-[[ -s $PATCH ]] || { echo "缺少 AzurPilot 适配补丁: $PATCH" >&2; exit 1; }
 command -v uv >/dev/null && command -v npm >/dev/null || {
     echo '构建环境需要 uv 和 Node.js/npm' >&2; exit 1;
 }
@@ -70,8 +68,6 @@ git -C "$ROOTFS_DIR/opt/azurpilot" remote add origin "$SOURCE_REPO"
 git -C "$ROOTFS_DIR/opt/azurpilot" fetch --depth 1 origin "$SOURCE_REF"
 git -C "$ROOTFS_DIR/opt/azurpilot" checkout -q --detach FETCH_HEAD
 SOURCE_COMMIT="$(git -C "$ROOTFS_DIR/opt/azurpilot" rev-parse HEAD)"
-git -C "$ROOTFS_DIR/opt/azurpilot" apply --check "$PATCH"
-git -C "$ROOTFS_DIR/opt/azurpilot" apply "$PATCH"
 install -m 0644 "$REPO_ROOT/rootfs/seeds/deploy-azurpilot.yaml" \
     "$ROOTFS_DIR/opt/azurpilot/config/deploy.yaml"
 install -m 0755 "$REPO_ROOT/rootfs/seeds/seed_azurpilot.py" \
@@ -109,11 +105,11 @@ import datetime, hashlib, json, os, pathlib, subprocess
 root = pathlib.Path(os.environ['ROOTFS_DIR']) / 'opt/azurpilot'
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 manifest = {
-    'rootfs_version': os.environ['SOURCE_COMMIT'][:12] + '-' + sha(pathlib.Path(os.environ['REPO_ROOT']) / 'rootfs/patches/azurpilot-android.patch')[:8],
+    'rootfs_version': os.environ['SOURCE_COMMIT'][:12],
     'runtime': 'azurpilot-android',
     'azurpilot_repo': os.environ['SOURCE_REPO'],
     'azurpilot_commit': os.environ['SOURCE_COMMIT'],
-    'adapter_sha256': sha(pathlib.Path(os.environ['REPO_ROOT']) / 'rootfs/patches/azurpilot-android.patch'),
+    'android_api_version': 1,
     'uv_lock_sha256': sha(root / 'uv.lock'),
     'frontend_sha256': sha(root / 'frontend/dist/index.html'),
     'python_version': '3.14.6',
@@ -137,7 +133,7 @@ dist = pathlib.Path(os.environ['DIST_DIR'])
 commit = os.environ['SOURCE_COMMIT']
 manifest = json.loads((dist / 'BUILD_MANIFEST').read_text())
 index = {key: manifest[key] for key in
-         ('azurpilot_commit', 'uv_lock_sha256', 'adapter_sha256', 'python_version')}
+         ('azurpilot_commit', 'uv_lock_sha256', 'android_api_version', 'python_version')}
 index['bundle_sha256'] = hashlib.sha256((dist / 'runtime.tar.xz').read_bytes()).hexdigest()
 index['bundle_url'] = ('https://github.com/Shinarin/ALAS-AOS/releases/download/'
                        f'azurpilot-runtime/runtime-{commit}.tar.xz')

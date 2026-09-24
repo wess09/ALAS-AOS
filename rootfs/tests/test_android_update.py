@@ -29,7 +29,7 @@ class AndroidUpdateTest(unittest.TestCase):
         (self.root / 'config').mkdir()
         (self.root / 'config/alas.json').write_text('{"user":true}')
         self.current = {'azurpilot_commit': 'a' * 40, 'uv_lock_sha256': 'lock',
-                        'adapter_sha256': 'adapter', 'python_version': '3.14.6'}
+                        'android_api_version': 1, 'python_version': '3.14.6'}
         (self.root / 'BUILD_MANIFEST').write_text(json.dumps(self.current))
         for name, value in [('ROOT', self.root), ('STAGE', self.base / 'azurpilot.next'),
                             ('PREVIOUS', self.base / 'azurpilot.previous'),
