@@ -5,7 +5,7 @@
 .uv-cache/
 .venv/
 __pycache__/
-config/
+/config/
 debug/
 dist/
 node_modules/
