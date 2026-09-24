@@ -4,6 +4,18 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜MaaFW PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜MaaFW 截图 BGR↔ALAS RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
+## [2026-09-24] Android 运行时删掉 `.git` 后不能复用 WebUI Git 更新器
+
+- **现象**：手机更新页显示 `UPDATE FAILED`，日志为 `git fetch origin master` 后报 `fatal: not a git repository`。
+- **根本原因**：Android 构建有意移除 `.git`，并要求源码、预构建前端和兼容清单作为同一运行时包原子切换；桌面端 Git 更新器仍被前端暴露，调用路径与 Android 的整包更新机制冲突。
+- **解决方案**：AzurPilot 在 `AZURPILOT_ANDROID=1` 时停止后台 Git 检查，更新页读取 `BUILD_MANIFEST` 展示当前提交并说明由 Android App 管理；AOS 仅在 App 进程启动前下载、校验、切换和回滚整包。运行时 release 资产发布前，更新检查保留当前版本。
+
+## [2026-09-24] Shizuku 未授权时直接 bind 只会静默失败，启动按钮必须走权限入口
+
+- **现象**：Root 模式能正常建立虚拟屏，Shizuku 模式点击“启动环境”无画面；日志反复出现 `BIND_DENIED backend=SHIZUKU not granted`，设备桥端口随后持续拒绝连接。
+- **根本原因**：`HostState.ensureEnvironmentStarted()` 直接调用底层 `servicePort.bind()`，该调用不会发起授权请求；UI 又继续向尚未存在的 AzurPilot 控制服务发送启动命令，造成多个表象叠加。
+- **解决方案**：启动环境、调度器和工具任务统一先经过 `PermissionGateway.bindService()`，等待特权服务连接并成功创建虚拟屏后才发送任务启动请求；拒绝或超时立即停止该次启动链。
+
 ## [2026-09-18] git:// 9418 裸 TCP 在运营商网络下不可靠：ping 通≠端口快，大陆正解是 CDN pack（443）
 
 - **现象**：手机热更新连续 5 次 `FAILED fetch`，每次白烧 240s 超时（开机链 4 分钟）；但 ping git.lyoko.io 正常（24~48ms），ls-remote（小包）也能成。

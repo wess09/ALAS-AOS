@@ -7,6 +7,8 @@ import com.aliothmoon.maafw.MaaDispatchers
 import com.aliothmoon.maafw.constant.DefaultDisplayConfig
 import com.aliothmoon.maafw.privileged.PrivilegedServicePort
 import com.aliothmoon.maafw.privileged.PrivilegedServiceState
+import com.aliothmoon.maafw.privileged.PermissionGateway
+import com.aliothmoon.maafw.privileged.ServiceBindResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class HostState(
     private val context: Context,
     private val servicePort: PrivilegedServicePort,
+    private val permissionGateway: PermissionGateway,
     private val scope: CoroutineScope,
 ) {
 
@@ -89,9 +92,16 @@ class HostState(
         envMutex.withLock {
             if (_snapshot.value.vdDisplayId != DefaultDisplayConfig.DISPLAY_NONE) return@withLock
             val service = servicePort.serviceOrNull() ?: run {
-                // 已断就拉一次：自动路径进入前已判 Connected，这里基本是空转；
-                // 未授权时 bind 会落成 Error，等完照旧拿不到服务面
-                servicePort.bind()
+                // 用户可能关闭过首启引导。启动环境必须走统一权限入口，未授权时
+                // 直接弹出 Shizuku 授权，不能只 bind 后静默落成 Error。
+                when (val result = permissionGateway.bindService()) {
+                    ServiceBindResult.AlreadyConnected,
+                    ServiceBindResult.Started -> Unit
+                    else -> {
+                        Timber.w("ensureEnvironmentStarted: privileged bind rejected: %s", result)
+                        return@withLock
+                    }
+                }
                 runCatching {
                     withTimeout(CONNECT_WAIT_MS) {
                         servicePort.serviceState.first { it != PrivilegedServiceState.Connecting }

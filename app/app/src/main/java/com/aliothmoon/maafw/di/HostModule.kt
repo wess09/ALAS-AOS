@@ -6,5 +6,5 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val hostModule = module {
-    single { HostState(androidContext(), get(), get(named<AppCoroutineScope>())) }
+    single { HostState(androidContext(), get(), get(), get(named<AppCoroutineScope>())) }
 }

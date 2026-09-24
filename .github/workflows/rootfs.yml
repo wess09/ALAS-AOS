@@ -45,7 +45,7 @@ jobs:
 
       - name: Build rootfs
         env:
-          AZURPILOT_REF: ${{ inputs.azurpilot_ref || 'b8f91d885e6d725aa800265178fdc2df631a6154' }}
+          AZURPILOT_REF: ${{ inputs.azurpilot_ref || '51d6a60f89e46fe5933e4e31dd0c75f8bab69f23' }}
         run: bash rootfs/build/build-azurpilot.sh
 
       - name: Upload artifact

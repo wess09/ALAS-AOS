@@ -7,7 +7,7 @@ WORK_DIR="${WORK_DIR:-$REPO_ROOT/.tmp/azurpilot-build}"
 ROOTFS_DIR="$WORK_DIR/rootfs"
 DIST_DIR="${DIST_DIR:-$REPO_ROOT/dist}"
 SOURCE_REPO="${AZURPILOT_REPO:-https://github.com/wess09/AzurPilot.git}"
-SOURCE_REF="${AZURPILOT_REF:-b8f91d885e6d725aa800265178fdc2df631a6154}"
+SOURCE_REF="${AZURPILOT_REF:-51d6a60f89e46fe5933e4e31dd0c75f8bab69f23}"
 BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz}"
 
 if [[ $(id -u) -ne 0 ]]; then
@@ -135,7 +135,7 @@ manifest = json.loads((dist / 'BUILD_MANIFEST').read_text())
 index = {key: manifest[key] for key in
          ('azurpilot_commit', 'uv_lock_sha256', 'android_api_version', 'python_version')}
 index['bundle_sha256'] = hashlib.sha256((dist / 'runtime.tar.xz').read_bytes()).hexdigest()
-index['bundle_url'] = ('https://github.com/Shinarin/ALAS-AOS/releases/download/'
+index['bundle_url'] = ('https://github.com/wess09/ALAS-AOS/releases/download/'
                        f'azurpilot-runtime/runtime-{commit}.tar.xz')
 (dist / 'latest.json').write_text(json.dumps(index, indent=2) + '\n')
 PY

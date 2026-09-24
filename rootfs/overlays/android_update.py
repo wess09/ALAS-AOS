@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(os.environ.get('AZURPILOT_ROOT', '/opt/azurpilot'))
 INDEX_URL = os.environ.get(
     'AZURPILOT_ANDROID_INDEX_URL',
-    'https://github.com/Shinarin/ALAS-AOS/releases/download/azurpilot-runtime/latest.json',
+    'https://github.com/wess09/ALAS-AOS/releases/download/azurpilot-runtime/latest.json',
 )
 SOURCE_REPO = 'https://github.com/wess09/AzurPilot.git'
 STAGE = ROOT.with_name('azurpilot.next')

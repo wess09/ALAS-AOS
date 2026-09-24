@@ -2,6 +2,7 @@ package com.aliothmoon.maafw.proot
 
 import android.content.Context
 import com.aliothmoon.maafw.MaaDispatchers
+import com.aliothmoon.maafw.service.HostState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +62,7 @@ data class AlasRunState(
 class AlasRunController(
     context: Context,
     private val scope: CoroutineScope,
+    private val hostState: HostState,
 ) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -96,7 +98,7 @@ class AlasRunController(
 
     fun startAlas() {
         val config = URLEncoder.encode(_state.value.selectedConfig, "UTF-8")
-        postThenRefresh("$BASE/start?config=$config")
+        startAfterEnvironmentReady("$BASE/start?config=$config")
     }
 
     fun stopAlas() = postThenRefresh("$BASE/stop")
@@ -108,10 +110,22 @@ class AlasRunController(
     fun startTool(name: String) {
         val tool = URLEncoder.encode(name, "UTF-8")
         val config = URLEncoder.encode(_state.value.selectedConfig, "UTF-8")
-        postThenRefresh("$BASE/tool/start?name=$tool&config=$config")
+        startAfterEnvironmentReady("$BASE/tool/start?name=$tool&config=$config")
     }
 
     fun stopTool() = postThenRefresh("$BASE/tool/stop")
+
+    private fun startAfterEnvironmentReady(url: String) {
+        scope.launch {
+            _state.update { it.copy(busy = true) }
+            if (!hostState.ensureEnvironmentStarted()) {
+                Timber.w("refusing AzurPilot start: Android environment is unavailable")
+                _state.update { it.copy(busy = false) }
+                return@launch
+            }
+            postThenRefresh(url)
+        }
+    }
 
     private fun postThenRefresh(url: String) {
         scope.launch(MaaDispatchers.IO) {
