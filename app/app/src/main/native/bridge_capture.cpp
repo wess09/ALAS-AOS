@@ -48,7 +48,7 @@ jobject SetupNativeCapturer(JNIEnv *env, int width, int height) {
 
     media_status_t status = AImageReader_newWithUsage(
             width, height, AIMAGE_FORMAT_RGBA_8888,
-            AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE, 5,
+            AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, 5,
             &g_capturer->reader);
     if (status != AMEDIA_OK) {
         LOGE("AImageReader_newWithUsage failed: %d", status);

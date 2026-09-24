@@ -10,7 +10,7 @@
 - 用户已确认 Root 模式能够运行。Shizuku 日志中的 `BIND_DENIED` 已在宿主源码修复：启动环境和任务前会走授权入口并等待虚拟屏就绪。同机 Chrome 正常而 System WebView 异常；UA/CSS 尝试又导致侧栏被裁掉，现已从 AP 完整回滚，Android 改用浏览器 Custom Tab 打开 WebUI。
 - AP 内置 Git 更新器不适用于已移除 `.git` 的 Android 运行时，Android 环境已改为显示 App 整包更新说明并停止 Git 检查。用户随后确定采用 APK 级更新：AOS 每 15 分钟轮询 AP `dev`，CI 预构建完整 APK 并更新固定 release，App 下载校验后交给系统覆盖安装；AP 仓库不再承担跨仓库触发。
 - CI run `36002470839` 已用 AP `266f4222b` 完整通过 ARM64 rootfs 与 debug APK 构建；更新器收口后的 APK run `36004677222` 也已通过。当前 Custom Tab 改动可复用该 rootfs 做 APK 编译门禁，因为新宿主不再发送激活旧 WebView CSS 的 UA。
-- 最新真机日志确认 AP 截图全黑与前台检查误走 ADB。AP `dev` 已提交并推送 `393a57f4e`：有界前台检查改走 Android 桥，桥 BGR 转为 AP RGB，4 项 Android 适配测试通过。AOS 原生采集已改为从 `AImage` plane 获取 CPU 帧，删除会掩盖采集失败的黑色种子帧，并修正预览通道；等待 CI 编译和真机复验。
+- 最新真机日志确认 AP 截图全黑与前台检查误走 ADB。AP `dev` 已提交并推送 `393a57f4e`：有界前台检查改走 Android 桥，桥 BGR 转为 AP RGB，4 项 Android 适配测试通过。AOS 首轮修复删掉黑色种子帧后，真机明确返回 `no frame available`；现已将 ImageReader 改为纯 CPU 可读，AP 截图和 App 预览统一从 `AImage` plane 取像素，等待 APK CI 与真机复验。
 
 ## 阻断与下一步
 

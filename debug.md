@@ -393,4 +393,4 @@
 
 - **现象**：App 挂机页能显示虚拟屏游戏画面，画面红蓝通道互换；AzurPilot 的 `azurpilot_android` 截图却持续报告均值 `(0, 0, 0)`。同时恢复流程报 `No adb exe could be found`。
 - **根本原因**：预览直接把 `AImage` 的硬件缓冲作为 external texture 交给 GPU；桥截图则另行 `AHardwareBuffer_lock()` 做 CPU 复制。CPU 锁定失败没有任何日志，帧计数保持 0，但初始化代码预先发布了一张 `frame_count=-1` 的纯黑种子帧，桥因此把采集失败伪装成成功黑图。恢复流程的 `app_is_running_bounded()` 另有独立缺口：它固定调用 ADB，没有复用 Android 后端分流。
-- **解决方案**：原生截图直接从 RGBA `AImage` plane 读取 row/pixel stride 后转换到桥 BGR 缓冲；未取得真实首帧时返回 `no frame available`，并对 plane 状态和首帧参数写原生日志。GPU 预览 shader 交换红蓝通道。AP `dev` 的 `393a57f4e` 将桥 BGR 转为 AP 全局 RGB，并使有界前台检查调用 Android 桥且传递超时。
+- **解决方案**：首轮先删除黑色种子帧，真机随即明确返回 `no frame available`，证明联合 `CPU_READ + GPU_SAMPLED` 用途在该 Mali/Android 16 组合上仍分配到了 CPU 不可读缓冲。最终将 ImageReader 改为纯 `CPU_READ_OFTEN`，原生截图从 RGBA `AImage` plane 读取 row/pixel stride 后转换到桥 BGR；App 预览也从同一 plane 经 `ANativeWindow_lock()` 拷贝，不再走 external texture。未取得真实首帧时仍明确报错，并记录 plane 状态和首帧参数。AP `dev` 的 `393a57f4e` 将桥 BGR 转为 AP 全局 RGB，并使有界前台检查调用 Android 桥且传递超时。

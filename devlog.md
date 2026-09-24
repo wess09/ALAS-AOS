@@ -4,7 +4,7 @@
 
 ### 2026-09-24 · 未发版：AzurPilot Android 独立版适配进行中
 
-- 真机日志确认两个独立故障：恢复流程的 `app_is_running_bounded()` 绕过 Android 后端并误调 ADB；App 预览已有游戏画面时，AP 仍持续取得初始化黑帧。AP `dev` 提交 `393a57f4e` 已让有界前台检查走 Android 桥并统一 BGR→RGB；AOS 原生采集改从 `AImage` plane 直接复制真实帧，首帧前不再返回伪造黑图，并修正 GPU 预览红蓝通道。
+- 真机日志确认两个独立故障：恢复流程的 `app_is_running_bounded()` 绕过 Android 后端并误调 ADB；App 预览已有游戏画面时，AP 仍持续取得初始化黑帧。AP `dev` 提交 `393a57f4e` 已让有界前台检查走 Android 桥并统一 BGR→RGB。首轮 AOS 修复去掉伪黑帧后，真机明确返回 `no frame available`，进一步证明联合 `CPU_READ + GPU_SAMPLED` 缓冲在该机上只有 GPU 可见；现改为纯 CPU 可读 ImageReader，AP 截图和 App 预览都从同一 RGBA plane 取像素，预览以 NativeWindow CPU 拷贝显示。
 - 用户确认不再使用 System WebView 承载 AP：AzurPilot 页改为浏览器 Custom Tab，环境 RUNNING 后自动打开 `127.0.0.1:25548`，浏览器不支持 Custom Tabs 时退回普通 ACTION_VIEW；关闭标签页回到 App。AP 中先前加入的 UA/CSS WebView 兼容提交已完整回滚，Chrome 与 AP 源码不再承担宿主兼容。
 - 自动更新触发按用户确认收敛到 AOS 单侧：删除 AP 的跨仓库派发 workflow，AOS 默认分支每 15 分钟检查 AP `dev`。App 更新器补齐 HTTP 状态/响应大小检查，把系统安装器启动纳入异常处理，失败时删除残包并在更新弹窗显示原因，避免界面永久卡在“正在下载”。
 - 锁定 AP `266f4222b` 的完整 ARM64 rootfs + debug APK CI（run `36002470839`）全绿，证明 System WebView 修复已进入可安装整包；AP 后续业务提交由轮询链自动取得。
