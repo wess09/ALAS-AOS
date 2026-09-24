@@ -4,11 +4,12 @@
 
 ### 2026-09-24 · 未发版：AzurPilot Android 独立版适配进行中
 
+- 用户确认不再使用 System WebView 承载 AP：AzurPilot 页改为浏览器 Custom Tab，环境 RUNNING 后自动打开 `127.0.0.1:25548`，浏览器不支持 Custom Tabs 时退回普通 ACTION_VIEW；关闭标签页回到 App。AP 中先前加入的 UA/CSS WebView 兼容提交已完整回滚，Chrome 与 AP 源码不再承担宿主兼容。
 - 自动更新触发按用户确认收敛到 AOS 单侧：删除 AP 的跨仓库派发 workflow，AOS 默认分支每 15 分钟检查 AP `dev`。App 更新器补齐 HTTP 状态/响应大小检查，把系统安装器启动纳入异常处理，失败时删除残包并在更新弹窗显示原因，避免界面永久卡在“正在下载”。
 - 锁定 AP `266f4222b` 的完整 ARM64 rootfs + debug APK CI（run `36002470839`）全绿，证明 System WebView 修复已进入可安装整包；AP 后续业务提交由轮询链自动取得。
 - 首次包含 System WebView 修复的完整 CI（run `36001338936`）在 React 类型检查阶段失败，原因是 AP 新增 `dashboard.dogIcon` 后英文、日文和繁中翻译未同步；AP `dev` 随后以 `266f4222b` 补齐字段，本地 `npm run build --prefix frontend` 已通过，AOS 默认源码基线同步更新到该提交。
 - 真机 Root 模式已能启动设备桥与虚拟屏。修复 Shizuku 路径的静默失败：挂机页和工具任务在启动前统一调用权限入口，未授权时触发授权流程，并在虚拟屏环境就绪后才向 AzurPilot 发起任务。
-- 用户确认同机 Chrome 手机版正常，问题只在 App 内 System WebView。宿主 UA 增加 `AzurPilotAndroidWebView` 标记；AP 窄屏侧边栏针对该标记禁用毛玻璃、使用实体背景并建立独立 paint containment，避免 WebView 将正文错误合成到抽屉上。改动已直接进入 AzurPilot `dev`。
+- 用户确认同机 Chrome 手机版正常，问题只在 App 内 System WebView。曾尝试的 UA 定向 CSS 虽消除了正文穿透，却因 `contain: layout paint` 与抽屉 transform 冲突导致侧栏完全不显示；该方案已撤回，最终改用浏览器 Custom Tab。
 - 手机“自动更新失败”确认为内置 Git 更新器在无 `.git` 的 Android 运行时执行 `git fetch`。按用户后续决定改为 APK 级自动更新：AOS 每 15 分钟轮询 AzurPilot `dev`，CI 预构建前端/rootfs/OCR 后发布固定签名 APK 和校验清单；App 启动时提示下载、校验并覆盖安装。设备端不再执行 Git/npm/uv 更新，AP 仓库也不承担跨仓库触发。
 - 按用户指令取消 AOS 内维护 AzurPilot patch 的方案：23 个 Android 后端、控制 API、配置生成、进程管理与测试文件已直接移植到 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev`，提交并推送 `b8f91d885 feat(android): 集成 AzurPilot Android 宿主适配`；该工作区原有公告功能未提交改动未被纳入。AOS 构建改为直接检出此 commit，删除源码补丁及 `adapter_sha256`，兼容清单改用 `android_api_version`。
 - 真机首启已越过部署和热更新并启动 WebUI；用户日志暴露 Android/proot 禁止读取全局 `/proc/stat`，导致 `psutil.Process.create_time()` 在 worker 所有权认领阶段抛 `AccessDenied`。适配层现统一使用 `/proc/<pid>/stat` 的 starttime tick 作为 Android 进程身份后备，并覆盖登记、身份校验、子树枚举与强制清场，避免启动修好后在启停任务时再次失败；新增 2 项针对性回归，连同设备/API/OCR 相关 87 项测试通过。

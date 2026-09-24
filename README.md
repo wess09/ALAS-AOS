@@ -1,6 +1,6 @@
 # AzurPilot Android
 
-本仓库正在将原 ALAS-AOS 改造为独立的 AzurPilot Android App。新包名为 `io.github.shinarin.azurpilotandroid`，使用独立私有数据目录，可与旧版 ALAS-AOS 并存；旧配置不会自动迁移。**当前尚未完成 ARM64 构建和真机后台挂机验收，请勿将源码状态当作可安装成品。**
+本仓库正在将原 ALAS-AOS 改造为独立的 AzurPilot Android App。新包名为 `io.github.shinarin.azurpilotandroid`，使用独立私有数据目录，可与旧版 ALAS-AOS 并存；旧配置不会自动迁移。ARM64 rootfs 与 debug APK 已通过 CI，完整真机后台挂机仍待验收。
 
 ## 目标功能
 
@@ -13,14 +13,14 @@
 ## 架构
 
 ```text
-Android App（挂机页 / 悬浮窗 / WebView）
+Android App（挂机页 / 悬浮窗 / 浏览器 Custom Tab）
     │ 回环控制 API :25548
 AzurPilot WebUI + RuntimeService + ProcessManager（单进程任务管理）
     │ 本机桥 :22301
 Shizuku 特权进程（虚拟屏 / 截图 / 点击 / 滑动 / 应用控制）
 ```
 
-AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `4f8b671a0dcf705d5c5fa322b9cacc0c69261865`。Android 设备后端、控制 API、System WebView 移动抽屉兼容和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
+AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `cafdd115ac008b839353a457490263c476774558`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
 
 ## 构建与验证
 
@@ -28,6 +28,6 @@ AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `4f8b671a0dcf705d5
 
 App 启动时读取更新通道的 `latest.json`。远端 `versionCode` 更新时弹出安装提示，下载后校验文件大小与 SHA-256，再调用 Android 系统安装器覆盖安装。首次切换到自动更新通道需要安装使用该通道固定签名的 APK；之后可连续覆盖更新。
 
-**尚待完成的验收**：ARM64 runner 首次构建、APK 安装、新旧双包并存、Shizuku 授权、虚拟屏手势窗口归属检查、截图触控、WebUI/挂机页/悬浮窗共用任务状态、实际挂机、工具任务及划掉 App 后清场。任何失败的原生依赖或设备能力均属于交付阻断项。
+**尚待完成的验收**：新 APK 安装、新旧双包并存、Shizuku 授权、虚拟屏手势窗口归属检查、截图触控、浏览器 WebUI/挂机页/悬浮窗共用任务状态、实际挂机、工具任务及划掉 App 后清场。任何失败的原生依赖或设备能力均属于交付阻断项。
 
 开发结构、构建约束与状态见 [development.md](development.md) 和最新 [handoff](handoff/)；历史设计保存在 `docs/roadmap-v3.md` 与 `m0-archive/`。

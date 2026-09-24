@@ -657,4 +657,7 @@
     <string name="app_update_error">更新失败：%1$s</string>
     <string name="app_update_install">下载并安装</string>
     <string name="app_update_later">稍后</string>
+    <string name="azurpilot_browser_title">AzurPilot WebUI</string>
+    <string name="azurpilot_browser_ready">WebUI 已在浏览器标签页中打开。关闭标签页即可返回 App。</string>
+    <string name="azurpilot_browser_open">打开 WebUI</string>
 </resources>

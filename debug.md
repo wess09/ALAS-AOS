@@ -4,11 +4,11 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜MaaFW PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜MaaFW 截图 BGR↔ALAS RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
-## [2026-09-24] 同机 Chrome 正常但 System WebView 抽屉文字穿透：按宿主 UA 关闭移动端毛玻璃合成
+## [2026-09-24] 同机 Chrome 正常但 System WebView 抽屉异常：改用浏览器 Custom Tab
 
 - **现象**：AP WebUI 在手机 Chrome 中正常；App 内 WebView 打开左侧抽屉后，运行总览正文文字被错误绘制到侧边栏上。
-- **根本原因**：页面结构和移动断点可由 Chrome 对照排除；异常集中在 System WebView 对 `backdrop-filter`、抽屉 transform 和层叠上下文的合成路径。
-- **解决方案**：宿主 WebView 的 UA 追加 `AzurPilotAndroidWebView/<version>`；AP 前端据此给根节点加 class，在窄屏抽屉上禁用 backdrop filter、改用不透明 surface，并以 `isolation` 和 `contain: layout paint` 限定绘制范围。Chrome 不带该标记，继续使用原视觉效果。
+- **根本原因**：页面结构和移动断点可由 Chrome 对照排除；异常集中在 System WebView 对 fixed 抽屉、transform 和层叠上下文的合成路径。随后给抽屉加入 `contain: layout paint` 会与其 transform/visibility 动画冲突，把整个侧栏裁掉，证明继续在 AP 页面上补 WebView CSS 风险更大。
+- **解决方案**：回滚 AP 的 WebView 专用 UA/CSS，Android 宿主不再嵌入 System WebView。AzurPilot 页在运行环境就绪后用 Chrome Custom Tab 打开回环 WebUI，不支持 Custom Tabs 时退回普通浏览器 Intent；返回键仍能回到 App。
 
 ## [2026-09-24] Android 运行时删掉 `.git` 后不能复用 WebUI Git 更新器
 

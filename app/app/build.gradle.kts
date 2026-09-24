@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.window)
+    implementation(libs.androidx.browser)
 
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)

@@ -662,4 +662,7 @@
     <string name="app_update_error">Update failed: %1$s</string>
     <string name="app_update_install">Download and install</string>
     <string name="app_update_later">Later</string>
+    <string name="azurpilot_browser_title">AzurPilot WebUI</string>
+    <string name="azurpilot_browser_ready">The WebUI is open in a browser tab. Close the tab to return to the app.</string>
+    <string name="azurpilot_browser_open">Open WebUI</string>
 </resources>
