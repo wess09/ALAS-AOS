@@ -12,7 +12,7 @@
 
 ## 阻断与下一步
 
-1. AOS 构建默认检出 AzurPilot `dev` 提交 `19ac61ace`，需重新执行完整 ARM64 rootfs 构建；旧 rootfs 不含 WebView 兼容和更新器修复，不能复用。
+1. AOS 构建默认检出 AzurPilot `dev` 提交 `266f4222b`；该提交已补齐资源卡新增字段的多语言翻译，本地 React 生产构建通过。需重新执行完整 ARM64 rootfs 构建；旧 rootfs 不含 WebView 兼容和更新器修复，不能复用。
 2. 用新 rootfs 构建 APK，交给用户覆盖安装后复测 WebUI 启动、实例列表、调度任务和停止清场。
 3. 完成虚拟屏、截图、触控、挂机和工具任务真机验收。虚拟屏实验前后检查 `GestureNav|GestureSilde|NavigationBar` 均在 display 0；结束杀虚拟屏属主并确认仅剩 display 0。实际游戏任务和屏幕状态实验遵守用户现场授权边界。
 4. 多架构支持仍需分别构建 Python、原生依赖、OCR 和 rootfs，并按 ABI 打包选择；当前成品链是计划基线规定的 ARM64，x86_64 模拟器转译不能作为真机替代。

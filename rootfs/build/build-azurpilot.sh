@@ -7,7 +7,7 @@ WORK_DIR="${WORK_DIR:-$REPO_ROOT/.tmp/azurpilot-build}"
 ROOTFS_DIR="$WORK_DIR/rootfs"
 DIST_DIR="${DIST_DIR:-$REPO_ROOT/dist}"
 SOURCE_REPO="${AZURPILOT_REPO:-https://github.com/wess09/AzurPilot.git}"
-SOURCE_REF="${AZURPILOT_REF:-19ac61ace0b6111fcd859deef81cd96c4f643eec}"
+SOURCE_REF="${AZURPILOT_REF:-266f4222beff539b5cf35583d271dc46e8837b08}"
 BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz}"
 
 if [[ $(id -u) -ne 0 ]]; then

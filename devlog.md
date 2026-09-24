@@ -4,6 +4,7 @@
 
 ### 2026-09-24 · 未发版：AzurPilot Android 独立版适配进行中
 
+- 首次包含 System WebView 修复的完整 CI（run `36001338936`）在 React 类型检查阶段失败，原因是 AP 新增 `dashboard.dogIcon` 后英文、日文和繁中翻译未同步；AP `dev` 随后以 `266f4222b` 补齐字段，本地 `npm run build --prefix frontend` 已通过，AOS 默认源码基线同步更新到该提交。
 - 真机 Root 模式已能启动设备桥与虚拟屏。修复 Shizuku 路径的静默失败：挂机页和工具任务在启动前统一调用权限入口，未授权时触发授权流程，并在虚拟屏环境就绪后才向 AzurPilot 发起任务。
 - 用户确认同机 Chrome 手机版正常，问题只在 App 内 System WebView。宿主 UA 增加 `AzurPilotAndroidWebView` 标记；AP 窄屏侧边栏针对该标记禁用毛玻璃、使用实体背景并建立独立 paint containment，避免 WebView 将正文错误合成到抽屉上。改动已直接进入 AzurPilot `dev`。
 - 手机“自动更新失败”确认为内置 Git 更新器在无 `.git` 的 Android 运行时执行 `git fetch`。按用户后续决定改为 APK 级自动更新：AzurPilot `dev` 每次更新派发 AOS 构建（每小时轮询兜底），CI 预构建前端/rootfs/OCR 后发布固定签名 APK 和校验清单；App 启动时提示下载、校验并覆盖安装。设备端不再执行 Git/npm/uv 更新。
