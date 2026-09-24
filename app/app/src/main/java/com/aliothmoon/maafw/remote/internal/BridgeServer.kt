@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
 /**
  * ALAS 桥服务：m0 Python 代理（m0-archive/spike/m0/agent/main.py）的特权进程内 Kotlin 重写。
  *
- * 监听 127.0.0.1:22300，协议为行分隔 JSON 请求/响应 + screencap 响应行后紧跟裸字节帧，
+ * 监听 127.0.0.1:22301，协议为行分隔 JSON 请求/响应 + screencap 响应行后紧跟裸字节帧，
  * 端点 ping/screencap/click/swipe/shell。协议形状与 ALAS 侧冻结客户端
  * rootfs/patches/module/device/method/alasaos.py 逐字节兼容：每回复（含错误帧）echo 请求 id。
  */
@@ -33,7 +33,7 @@ object BridgeServer {
 
     private const val TAG = "BridgeServer"
     private const val LISTEN_HOST = "127.0.0.1"
-    private const val LISTEN_PORT = 22300
+    private const val LISTEN_PORT = 22301
 
     /** 请求行上限，防呆（m0 MAX_LINE 同款） */
     private const val MAX_LINE = 64 * 1024
@@ -164,6 +164,7 @@ object BridgeServer {
                     JSONObject()
                         .put("ok", true)
                         .put("pong", true)
+                        .put("displayId", VirtualDisplayManager.getDisplayId())
                         .put("uptime", (SystemClock.elapsedRealtime() - startedAtMs) / 1000.0)
                 )
 

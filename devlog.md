@@ -2,6 +2,13 @@
 
 > 倒序排列，最新在上；按发版版本号分段。
 
+### 2026-09-24 · 未发版：AzurPilot Android 独立版适配进行中
+
+- 以本机 AzurPilot `origin/master` 的 `88c4a41cea8aeaeafa7536db510d383ebba7213b` 创建隔离工作区 `.tmp/AzurPilot-master`；未混入原 `dev` 检出。新增虚拟屏设备后端、配置源与生成物、同进程且带回环/token 校验的 Android 控制 API；`ProcessManager` 统一管理挂机与工具任务。
+- Android 宿主改为独立包名、端口 `25548/22301`、单 WebUI 进程、首启配置种子、进程清场与更新失败回滚；去掉旧 ALAS `wrapper/runner` 和覆盖补丁。更换名称、图标、数据与日志路径。
+- 新 ARM64 构建脚本安装 Python 3.14.6、锁定依赖、OCR 模型和预编译 React 静态资源；写入构建清单并生成同源运行时更新包。更新仅在适配层、锁文件和 Python 版本兼容时切换；旧版本可回滚。
+- 本地 AzurPilot 相关 Python 单测 85 项通过，更新的成功、断网、资源校验失败、依赖变更、切换失败回滚等 6 项离线单测通过，OCR 三组模型 CPU 推理通过；Shell 语法和补丁反向应用检查通过。ARM64 rootfs、APK 和真机完整后台挂机尚未通过验收；没有 push、release 或本地提交。
+
 ### 2026-09-21 · 发版 🚀：v0.1.4「日志中心重做」（用户授权 push + release）
 
 - **提交**：`70fc569 feat(logs): 设置页日志区重构——日志中心 + 双导出 + 自动清理 + v0.1.4 发版准备`（51 文件，+1599/-833）；tag `v0.1.4` 打在发版 commit 上（versionName 由 git describe 导出）。

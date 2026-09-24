@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ALAS-AOS</string>
+    <string name="app_name">AzurPilot Android</string>
 
     <!-- 通用 -->
     <string name="common_close">关闭</string>
@@ -126,15 +126,15 @@
     <string name="welcome_title">欢迎</string>
 
     <!-- 通知 -->
-    <string name="notification_channel_run">ALAS 运行环境守护</string>
+    <string name="notification_channel_run">AzurPilot 运行环境守护</string>
     <string name="notification_channel_run_desc">守护虚拟屏与桥服务，避免应用被系统回收</string>
     <string name="notification_channel_focus">项目消息</string>
     <string name="notification_channel_focus_desc">PI 项目在运行中要求推送给你的提示</string>
     <string name="notification_focus_title">项目消息</string>
-    <string name="notification_host_title">ALAS 运行环境守护中</string>
+    <string name="notification_host_title">AzurPilot 运行环境守护中</string>
     <string name="notification_host_content_ok">虚拟屏 #%1$d · 桥服务正常</string>
     <string name="notification_host_content_degraded">虚拟屏 #%1$d · 桥服务不可达</string>
-    <string name="notification_host_content_proot">内置 ALAS 环境运行中（未建虚拟屏）</string>
+    <string name="notification_host_content_proot">内置 AzurPilot 环境运行中（未建虚拟屏）</string>
 
     <!-- 悬浮控制层 -->
     <string name="accessibility_service_description">前台模式下同时按音量 + 与音量 − 唤起控制面板。只拦按键，不读取屏幕内容</string>
@@ -149,7 +149,7 @@
     <string name="overlay_host_privileged">特权进程：%1$s</string>
     <string name="overlay_host_bridge">桥服务：%1$s</string>
     <string name="overlay_host_display">虚拟屏：%1$s</string>
-    <string name="overlay_alas_status">ALAS 调度器：%1$s</string>
+    <string name="overlay_alas_status">AzurPilot 调度器：%1$s</string>
     <string name="overlay_alas_running">运行中 · pid %1$d</string>
     <string name="overlay_alas_stopped">已停止</string>
     <string name="overlay_alas_unreachable">环境未就绪</string>
@@ -159,7 +159,7 @@
     <string name="overlay_alas_start">开始挂机</string>
     <string name="overlay_alas_stop">停止挂机</string>
     <string name="overlay_alas_log_empty">暂无日志</string>
-    <string name="overlay_alas_hint">高频操作在此面板；完整配置请回应用内的 ALAS 控制台</string>
+    <string name="overlay_alas_hint">高频操作在此面板；完整配置请回应用内的 AzurPilot 控制台</string>
     <string name="host_state_connected">已连接</string>
     <string name="host_state_disconnected">未连接</string>
     <string name="host_state_ok">正常</string>
@@ -265,7 +265,7 @@
     <string name="schedule_result_failed_service">服务启动失败</string>
 
     <!-- 导航与对话框 -->
-    <string name="nav_alas">ALAS</string>
+    <string name="nav_alas">AzurPilot</string>
     <string name="nav_home">首页</string>
     <string name="nav_tasks">任务</string>
     <string name="nav_schedule">定时</string>
@@ -273,14 +273,14 @@
     <string name="dialog_cannot_start">无法开始</string>
     <string name="dialog_ok">知道了</string>
 
-    <!-- ALAS tab：WebUI 容器 -->
-    <string name="alas_webui_not_running">ALAS 服务由 App 内置环境提供，首次启动需完成初始化；若长时间未恢复，请检查运行环境后重试</string>
+    <!-- AzurPilot tab：WebUI 容器 -->
+    <string name="alas_webui_not_running">AzurPilot 服务由 App 内置环境提供，首次启动需完成初始化；若长时间未恢复，请检查运行环境后重试</string>
     <string name="alas_webui_retry">重试连接</string>
     <string name="alas_webui_loading">正在载入控制台…</string>
     <string name="proot_phase_preparing">正在准备运行环境…</string>
-    <string name="proot_phase_updating">正在热更新 ALAS…</string>
-    <string name="proot_phase_starting">正在启动 ALAS 服务…</string>
-    <string name="proot_phase_failed">ALAS 环境启动失败：%1$s</string>
+    <string name="proot_phase_updating">正在热更新 AzurPilot…</string>
+    <string name="proot_phase_starting">正在启动 AzurPilot 服务…</string>
+    <string name="proot_phase_failed">AzurPilot 环境启动失败：%1$s</string>
 
     <!-- 挂机 tab：虚拟屏画面 + 运行配置 + 控制面板 -->
     <string name="nav_hangar">挂机</string>
@@ -420,9 +420,9 @@
     <string name="app_log_clear_title">清除启动器日志</string>
     <string name="app_log_clear_message">仅删除 app.log 系列滚动文件；session.log 与崩溃记录会保留。此操作无法撤销。</string>
 
-    <!-- ALAS 日志（rootfs/opt/alas/log）：错误现场 + 按天日志 -->
-    <string name="alas_log_title">ALAS日志</string>
-    <string name="alas_log_empty">还没有 ALAS 日志</string>
+    <!-- AzurPilot 日志（rootfs/opt/azurpilot/log）：错误现场 + 按天日志 -->
+    <string name="alas_log_title">AzurPilot日志</string>
+    <string name="alas_log_empty">还没有 AzurPilot 日志</string>
     <string name="alas_log_section_errors">错误记录</string>
     <string name="alas_log_section_daily">按天日志</string>
     <string name="alas_log_error_meta">%1$d 个文件</string>
@@ -433,23 +433,23 @@
     <string name="log_tail_missing">文件不存在或已被清理</string>
 
     <!-- 导出 -->
-    <string name="log_export_alas_title">导出ALAS日志</string>
+    <string name="log_export_alas_title">导出AzurPilot日志</string>
     <string name="log_export_launcher_title">导出启动器日志</string>
     <string name="log_export_share">分享</string>
     <string name="log_export_save">保存到设备</string>
     <string name="log_export_running">正在打包…</string>
     <string name="log_export_failed">导出失败：没有可导出的日志</string>
     <string name="log_export_saved">已保存为 %1$s</string>
-    <string name="log_export_subject">ALAS-AOS 日志</string>
+    <string name="log_export_subject">AzurPilot Android 日志</string>
 
     <!-- 设置页「日志」分组入口 -->
     <string name="settings_section_log">日志</string>
     <string name="settings_log_launcher_desc">查看启动器运行日志与崩溃记录</string>
-    <string name="settings_log_alas_desc">查看 ALAS 按天日志与错误现场</string>
-    <string name="settings_log_export_alas_desc">打包近 7 天的 ALAS 日志（官方 issue 格式）</string>
+    <string name="settings_log_alas_desc">查看 AzurPilot 按天日志与错误现场</string>
+    <string name="settings_log_export_alas_desc">打包近 7 天的 AzurPilot 日志与错误现场</string>
     <string name="settings_log_export_launcher_desc">打包启动器全部日志与设备属性</string>
     <string name="settings_auto_clean_logs">自动清理日志</string>
-    <string name="settings_auto_clean_logs_desc">冷启动时自动删除 7 天前的 ALAS 日志，并截断过期的会话日志</string>
+    <string name="settings_auto_clean_logs_desc">冷启动时自动删除 7 天前的 AzurPilot 日志，并截断过期的会话日志</string>
     <string name="dialog_disable_auto_clean_title">关闭自动清理</string>
     <string name="dialog_disable_auto_clean_message">关闭后过期日志将不再自动清理，长期使用可能占大量手机空间。</string>
 
@@ -543,7 +543,7 @@
     <string name="notification_include_log_details">推送内容附带运行日志</string>
     <string name="notification_section_test">测试推送</string>
     <string name="notification_test_title">测试通知</string>
-    <string name="notification_test_message">这是一条来自 ALAS-AOS 的测试通知</string>
+    <string name="notification_test_message">这是一条来自 AzurPilot Android 的测试通知</string>
 
     <!-- 推送渠道名 -->
     <string name="notification_provider_server_chan">Server 酱</string>

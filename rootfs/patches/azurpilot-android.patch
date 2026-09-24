@@ -1,0 +1,976 @@
+diff --git a/deploy/frontend.py b/deploy/frontend.py
+index 0c05995ae..fe66c34fd 100644
+--- a/deploy/frontend.py
++++ b/deploy/frontend.py
+@@ -45,6 +45,8 @@ def ensure_frontend(root=None):
+     fingerprint = source_fingerprint(directory)
+     if (directory / 'dist/index.html').is_file() and marker.is_file() and marker.read_text().strip() == fingerprint:
+         return
++    if os.environ.get('AZURPILOT_ANDROID') == '1':
++        raise RuntimeError('Android 运行包缺少与源码匹配的预构建前端，请安装兼容的 APK')
+     command = npm_command()
+     logger.info('正在构建 React 前端资源')
+     flags = {'creationflags': subprocess.CREATE_NO_WINDOW} if hasattr(subprocess, 'CREATE_NO_WINDOW') else {}
+diff --git a/module/api/android.py b/module/api/android.py
+new file mode 100644
+index 000000000..e2b5fb824
+--- /dev/null
++++ b/module/api/android.py
+@@ -0,0 +1,133 @@
++"""Android 宿主本机控制接口；调度器仍由 WebUI 的 ProcessManager 独占。"""
++
++import asyncio
++import json
++import os
++import secrets
++import socket
++import threading
++from urllib.request import urlopen
++
++from starlette.responses import JSONResponse, PlainTextResponse
++from starlette.routing import Route
++
++from module.api.protocol import ApiError
++from module.runtime.process_manager import ProcessManager
++
++TOOLS = {'daemon': 'Daemon', 'event_story': 'EventStory'}
++_operation_lock = threading.RLock()
++
++
++def _local(request):
++    token = os.environ.get('AZURPILOT_ANDROID_TOKEN', '')
++    supplied = request.headers.get('x-azurpilot-android-token', '')
++    return (request.client and request.client.host in ('127.0.0.1', '::1')
++            and bool(token) and secrets.compare_digest(supplied, token))
++
++
++def _legacy_app_running():
++    try:
++        with socket.create_connection(('127.0.0.1', 22300), timeout=0.2):
++            return True
++    except OSError:
++        pass
++    try:
++        with urlopen('http://127.0.0.1:22400/status', timeout=0.3) as response:
++            state = json.load(response)
++        return bool(state.get('runner_alive') or state.get('tool_alive'))
++    except (OSError, ValueError):
++        return False
++
++
++def routes(configs, runtime):
++    """仅在 AZURPILOT_ANDROID=1 且请求源为 loopback 时注册和响应。"""
++    if os.environ.get('AZURPILOT_ANDROID') != '1':
++        return []
++
++    def instance(request):
++        name = request.query_params.get('config')
++        if not name:
++            name = next((key for key, proc in list(ProcessManager._processes.items()) if proc.alive), 'alas')
++        configs.path(name)
++        return name
++
++    def manager(name):
++        return ProcessManager._processes.get(name)
++
++    def active_tool():
++        for name, proc in list(ProcessManager._processes.items()):
++            if proc.alive and proc.started_func in TOOLS.values():
++                return name, proc.started_func
++        return None, None
++
++    def status(request):
++        name = instance(request)
++        proc = manager(name)
++        tool_config, task = active_tool()
++        running = proc is not None and proc.alive
++        log_count = len(runtime.logs(name)['entries'])
++        return {
++            'runner_alive': bool(running and task is None),
++            'pid': proc._process.pid if running and proc._process else None,
++            'config': name if running else None,
++            'gui_alive': True,
++            'tool_alive': tool_config is not None,
++            'tool_name': next((key for key, value in TOOLS.items() if value == task), None),
++            'log_lines': log_count,
++        }
++
++    def execute(request):
++        with _operation_lock:
++            name = instance(request)
++            path = request.url.path
++            if path.endswith('/start') and not path.endswith('/tool/start') and _legacy_app_running():
++                raise ApiError('DEVICE_BUSY', 'ALAS-AOS 正在控制游戏，请先停止旧版任务')
++            if path.endswith('/tool/start'):
++                task = TOOLS.get(request.query_params.get('name'))
++                if task is None:
++                    raise ApiError('INVALID_PARAMS', '未知工具任务')
++                if _legacy_app_running():
++                    raise ApiError('DEVICE_BUSY', 'ALAS-AOS 正在控制游戏，请先停止旧版任务')
++            else:
++                task = None
++            running = [key for key, proc in list(ProcessManager._processes.items()) if proc.alive]
++            if path.endswith('/tool/stop'):
++                tool_name, _ = active_tool()
++                if tool_name:
++                    runtime.stop(tool_name)
++            elif path.endswith('/stop'):
++                if name in running:
++                    runtime.stop(name)
++            else:
++                if len(running) == 1 and running[0] == name and manager(name).started_func == (task or 'alas'):
++                    return status(request)
++                for key in running:
++                    ProcessManager.get_manager(key).stop()
++                runtime.start(name, task)
++            return status(request)
++
++    async def dispatch(request):
++        if not _local(request):
++            return JSONResponse({'error': 'loopback only'}, status_code=403)
++        path = request.url.path
++        try:
++            if path.endswith('/configs'):
++                return JSONResponse({'configs': configs.names()})
++            if path.endswith('/status'):
++                return JSONResponse(await asyncio.to_thread(status, request))
++            if path.endswith('/logs'):
++                name = instance(request)
++                count = min(max(int(request.query_params.get('tail', '80')), 0), 2000)
++                data = await asyncio.to_thread(runtime.logs, name)
++                return PlainTextResponse('\n'.join(entry['text'] for entry in data['entries'][-count:]))
++            if request.method == 'POST':
++                return JSONResponse(await asyncio.to_thread(execute, request))
++        except (ApiError, ValueError) as exc:
++            return JSONResponse({'error': str(exc)}, status_code=400)
++        return JSONResponse({'error': 'not found'}, status_code=404)
++
++    return [Route('/android/status', dispatch), Route('/android/configs', dispatch),
++            Route('/android/logs', dispatch), Route('/android/start', dispatch, methods=['POST']),
++            Route('/android/stop', dispatch, methods=['POST']),
++            Route('/android/tool/start', dispatch, methods=['POST']),
++            Route('/android/tool/stop', dispatch, methods=['POST'])]
+diff --git a/module/api/app.py b/module/api/app.py
+index 2adc2db46..a548d62c4 100644
+--- a/module/api/app.py
++++ b/module/api/app.py
+@@ -89,9 +89,11 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
+             return PlainTextResponse('评分报告尚未生成，请先运行「指挥喵评分」任务。', status_code=404)
+         return FileResponse(path, media_type='text/html', headers={'Cache-Control': 'no-cache'})
+ 
++    from module.api.android import routes as android_routes
+     routes = [Route('/healthz', health),
+               Route('/reports/meowfficer_score', meowfficer_score_report),
+               WebSocketRoute('/api/v1/ws', gateway.endpoint)]
++    routes.extend(android_routes(configs, runtime))
+     if (dist / 'assets').is_dir():
+         routes.append(Mount('/assets', StaticFiles(directory=dist / 'assets')))
+     # 科研掉落的物品图标直接用仓库里的模板图，不走前端构建，
+diff --git a/module/config/argument/args.json b/module/config/argument/args.json
+index bb7e1dc5d..ba08b2ef7 100644
+--- a/module/config/argument/args.json
++++ b/module/config/argument/args.json
+@@ -345,7 +345,8 @@
+           "DroidCast",
+           "DroidCast_raw",
+           "nemu_ipc",
+-          "ldopengl"
++          "ldopengl",
++          "azurpilot_android"
+         ]
+       },
+       "ControlMethod": {
+@@ -357,7 +358,8 @@
+           "minitouch",
+           "Hermit",
+           "MaaTouch",
+-          "nemu_ipc"
++          "nemu_ipc",
++          "azurpilot_android"
+         ],
+         "help": "nemu_ipc 需与截图方式配套使用（截图选 nemu_ipc 时启动会自动联动）。注意：nemu_ipc 触控走模拟器内部 RPC，低性能电脑上滑动易丢步、拖拽易变形，调用偶发挂死会丢失点击；滑动或拖拽异常时请改回 minitouch / MaaTouch。"
+       },
+diff --git a/module/config/argument/argument.yaml b/module/config/argument/argument.yaml
+index f4f1784f6..c7a330973 100644
+--- a/module/config/argument/argument.yaml
++++ b/module/config/argument/argument.yaml
+@@ -119,10 +119,11 @@ Emulator:
+         DroidCast_raw,
+         nemu_ipc,
+         ldopengl,
++        azurpilot_android,
+       ]
+   ControlMethod:
+     value: MaaTouch
+-    option: [ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc]
++    option: [ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc, azurpilot_android]
+     help: nemu_ipc 需与截图方式配套使用（截图选 nemu_ipc 时启动会自动联动）。注意：nemu_ipc 触控走模拟器内部 RPC，低性能电脑上滑动易丢步、拖拽易变形，调用偶发挂死会丢失点击；滑动或拖拽异常时请改回 minitouch / MaaTouch。
+   GameSettings:
+     type: checkbox
+diff --git a/module/config/config_generated.py b/module/config/config_generated.py
+index 12a540abf..09bd2f8a7 100644
+--- a/module/config/config_generated.py
++++ b/module/config/config_generated.py
+@@ -94,8 +94,8 @@ class GeneratedConfig:
+     Emulator_Serial = 'auto'
+     Emulator_PackageName = 'auto'  # auto, com.bilibili.azurlane, com.YoStarEN.AzurLane, com.YoStarJP.AzurLane, com.hkmanjuu.azurlane.gp, com.bilibili.blhx.huawei, com.bilibili.blhx.honor, com.bilibili.blhx.mi, com.tencent.tmgp.bilibili.blhx, com.bilibili.blhx.baidu, com.bilibili.blhx.qihoo, com.bilibili.blhx.nearme.gamecenter, com.bilibili.blhx.vivo, com.bilibili.blhx.mz, com.bilibili.blhx.dl, com.bilibili.blhx.lenovo, com.bilibili.blhx.uc, com.bilibili.blhx.mzw, com.yiwu.blhx.yx15, com.bilibili.blhx.m4399, com.bilibili.blhx.bilibiliMove, com.hkmanjuu.azurlane.gp.mc
+     Emulator_ServerName = 'disabled'  # disabled, cn_android-0, cn_android-1, cn_android-2, cn_android-3, cn_android-4, cn_android-5, cn_android-6, cn_android-7, cn_android-8, cn_android-9, cn_android-10, cn_android-11, cn_android-12, cn_android-13, cn_android-14, cn_android-15, cn_android-16, cn_android-17, cn_android-18, cn_android-19, cn_android-20, cn_android-21, cn_android-22, cn_android-23, cn_android-24, cn_android-25, cn_android-26, cn_android-27, cn_android-28, cn_android-29, cn_ios-0, cn_ios-1, cn_ios-2, cn_ios-3, cn_ios-4, cn_ios-5, cn_ios-6, cn_ios-7, cn_ios-8, cn_ios-9, cn_ios-10, cn_channel-0, cn_channel-1, cn_channel-2, cn_channel-3, cn_channel-4, cn_channel-5, en-0, en-1, en-2, en-3, en-4, en-5, en-6, jp-0, jp-1, jp-2, jp-3, jp-4, jp-5, jp-6, jp-7, jp-8, jp-9, jp-10, jp-11, jp-12, jp-13, jp-14, jp-15, jp-16, jp-17, tw-0, tw-1, tw-2, tw-3, tw-4
+-    Emulator_ScreenshotMethod = 'auto'  # auto, ADB, ADB_nc, uiautomator2, aScreenCap, aScreenCap_nc, DroidCast, DroidCast_raw, nemu_ipc, ldopengl
+-    Emulator_ControlMethod = 'MaaTouch'  # ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc
++    Emulator_ScreenshotMethod = 'auto'  # auto, ADB, ADB_nc, uiautomator2, aScreenCap, aScreenCap_nc, DroidCast, DroidCast_raw, nemu_ipc, ldopengl, azurpilot_android
++    Emulator_ControlMethod = 'MaaTouch'  # ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc, azurpilot_android
+     Emulator_GameSettings = False  # True, False
+     Emulator_ScreenshotDedithering = False
+     Emulator_AdbRestart = False
+diff --git a/module/config/i18n/en-US.json b/module/config/i18n/en-US.json
+index bf38b23b4..ebeff272a 100644
+--- a/module/config/i18n/en-US.json
++++ b/module/config/i18n/en-US.json
+@@ -626,7 +626,8 @@
+       "DroidCast": "DroidCast",
+       "DroidCast_raw": "DroidCast_raw",
+       "nemu_ipc": "nemu_ipc",
+-      "ldopengl": "ldopengl"
++      "ldopengl": "ldopengl",
++      "azurpilot_android": "AzurPilot Android virtual display"
+     },
+     "ControlMethod": {
+       "name": "Select control method",
+@@ -636,7 +637,8 @@
+       "minitouch": "minitouch",
+       "Hermit": "Hermit",
+       "MaaTouch": "MaaTouch",
+-      "nemu_ipc": "nemu_ipc"
++      "nemu_ipc": "nemu_ipc",
++      "azurpilot_android": "AzurPilot Android virtual display"
+     },
+     "GameSettings": {
+       "name": "Automatically apply recommended game settings",
+@@ -7027,4 +7029,4 @@
+       "ButtonCreate": "Create & Finish"
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/module/config/i18n/ja-JP.json b/module/config/i18n/ja-JP.json
+index df44e966b..9baca377f 100644
+--- a/module/config/i18n/ja-JP.json
++++ b/module/config/i18n/ja-JP.json
+@@ -626,7 +626,8 @@
+       "DroidCast": "DroidCast",
+       "DroidCast_raw": "DroidCast_raw",
+       "nemu_ipc": "nemu_ipc",
+-      "ldopengl": "ldopengl"
++      "ldopengl": "ldopengl",
++      "azurpilot_android": "AzurPilot Android 仮想ディスプレイ"
+     },
+     "ControlMethod": {
+       "name": "コントロール方式を選択",
+@@ -636,7 +637,8 @@
+       "minitouch": "minitouch",
+       "Hermit": "Hermit",
+       "MaaTouch": "MaaTouch",
+-      "nemu_ipc": "nemu_ipc"
++      "nemu_ipc": "nemu_ipc",
++      "azurpilot_android": "AzurPilot Android 仮想ディスプレイ"
+     },
+     "GameSettings": {
+       "name": "推奨ゲーム設定を自動適用",
+@@ -7027,4 +7029,4 @@
+       "ButtonCreate": "作成して完了"
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/module/config/i18n/zh-CN.json b/module/config/i18n/zh-CN.json
+index c10cccaaf..f90372fed 100644
+--- a/module/config/i18n/zh-CN.json
++++ b/module/config/i18n/zh-CN.json
+@@ -626,7 +626,8 @@
+       "DroidCast": "DroidCast",
+       "DroidCast_raw": "DroidCast_raw",
+       "nemu_ipc": "nemu_ipc",
+-      "ldopengl": "ldopengl"
++      "ldopengl": "ldopengl",
++      "azurpilot_android": "AzurPilot Android 虚拟屏"
+     },
+     "ControlMethod": {
+       "name": "选择控制方案",
+@@ -636,7 +637,8 @@
+       "minitouch": "minitouch",
+       "Hermit": "Hermit",
+       "MaaTouch": "MaaTouch",
+-      "nemu_ipc": "nemu_ipc"
++      "nemu_ipc": "nemu_ipc",
++      "azurpilot_android": "AzurPilot Android 虚拟屏"
+     },
+     "GameSettings": {
+       "name": "自动应用推荐游戏设置",
+@@ -7027,4 +7029,4 @@
+       "ButtonCreate": "创建并完成"
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/module/config/i18n/zh-MIAO.json b/module/config/i18n/zh-MIAO.json
+index 54cdd9824..1c609a46c 100644
+--- a/module/config/i18n/zh-MIAO.json
++++ b/module/config/i18n/zh-MIAO.json
+@@ -626,7 +626,8 @@
+       "DroidCast": "DroidCast喵",
+       "DroidCast_raw": "DroidCast_raw喵",
+       "nemu_ipc": "nemu_ipc喵",
+-      "ldopengl": "ldopengl喵"
++      "ldopengl": "ldopengl喵",
++      "azurpilot_android": "AzurPilot Android 虚拟屏"
+     },
+     "ControlMethod": {
+       "name": "模拟器控制手势",
+@@ -636,7 +637,8 @@
+       "minitouch": "minitouch喵",
+       "Hermit": "Hermit喵",
+       "MaaTouch": "MaaTouch喵",
+-      "nemu_ipc": "nemu_ipc"
++      "nemu_ipc": "nemu_ipc",
++      "azurpilot_android": "AzurPilot Android 虚拟屏"
+     },
+     "GameSettings": {
+       "name": "自动应用推荐游戏设置",
+@@ -7027,4 +7029,4 @@
+       "ButtonCreate": "创建并完成喵！"
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/module/config/i18n/zh-TW.json b/module/config/i18n/zh-TW.json
+index 3c0024fcd..6c03e7819 100644
+--- a/module/config/i18n/zh-TW.json
++++ b/module/config/i18n/zh-TW.json
+@@ -626,7 +626,8 @@
+       "DroidCast": "DroidCast",
+       "DroidCast_raw": "DroidCast_raw",
+       "nemu_ipc": "nemu_ipc",
+-      "ldopengl": "ldopengl"
++      "ldopengl": "ldopengl",
++      "azurpilot_android": "AzurPilot Android 虛擬螢幕"
+     },
+     "ControlMethod": {
+       "name": "選擇控制方案",
+@@ -636,7 +637,8 @@
+       "minitouch": "minitouch",
+       "Hermit": "Hermit",
+       "MaaTouch": "MaaTouch",
+-      "nemu_ipc": "nemu_ipc"
++      "nemu_ipc": "nemu_ipc",
++      "azurpilot_android": "AzurPilot Android 虛擬螢幕"
+     },
+     "GameSettings": {
+       "name": "自動套用建議的遊戲設定",
+@@ -7027,4 +7029,4 @@
+       "ButtonCreate": "建立並完成"
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/module/device/app_control.py b/module/device/app_control.py
+index 62d01660f..38d02bc9d 100644
+--- a/module/device/app_control.py
++++ b/module/device/app_control.py
+@@ -5,11 +5,13 @@
+ 根据控制方法和模拟器类型自动选择 ADB 或 uiautomator2 后端。
+ """
+ import re
++import shlex
+ 
+ from lxml import etree
+ 
+ from module.base.timer import Timer
+ from module.device.method.adb import Adb
++from module.device.method.azurpilot_android import AzurPilotAndroid
+ from module.device.method.uiautomator_2 import Uiautomator2
+ from module.device.method.utils import HierarchyButton
+ from module.device.method.wsa import WSA
+@@ -17,7 +19,7 @@ from module.exception import ScriptError
+ from module.logger import logger
+ 
+ 
+-class AppControl(Adb, WSA, Uiautomator2):
++class AppControl(AzurPilotAndroid, Adb, WSA, Uiautomator2):
+     """应用生命周期和 UI 层级管理器。
+ 
+     通过多重继承组合 ADB、WSA 和 uiautomator2 后端，根据控制方法
+@@ -43,7 +45,9 @@ class AppControl(Adb, WSA, Uiautomator2):
+             str: 当前前台应用的包名字符串。
+         """
+         method = self.config.Emulator_ControlMethod
+-        if self.is_wsa:
++        if method == 'azurpilot_android':
++            package = self.app_current_azurpilot_android()
++        elif self.is_wsa:
+             package = self.app_current_wsa()
+         elif method in AppControl._app_u2_family:
+             package = self.app_current_uiautomator2()
+@@ -118,7 +122,9 @@ class AppControl(Adb, WSA, Uiautomator2):
+         """
+         method = self.config.Emulator_ControlMethod
+         logger.info(f'应用启动: {self.package}')
+-        if self.config.Emulator_Serial == 'wsa-0':
++        if method == 'azurpilot_android':
++            self.app_start_azurpilot_android()
++        elif self.config.Emulator_Serial == 'wsa-0':
+             self.app_start_wsa(display=0)
+         elif method in AppControl._app_u2_family:
+             self.app_start_uiautomator2()
+@@ -132,7 +138,9 @@ class AppControl(Adb, WSA, Uiautomator2):
+         """
+         method = self.config.Emulator_ControlMethod
+         logger.info(f'应用停止: {self.package}')
+-        if method in AppControl._app_u2_family:
++        if method == 'azurpilot_android':
++            self.app_stop_azurpilot_android()
++        elif method in AppControl._app_u2_family:
+             self.app_stop_uiautomator2()
+         else:
+             self.app_stop_adb()
+@@ -143,6 +151,10 @@ class AppControl(Adb, WSA, Uiautomator2):
+         通过 ADB 删除 /sdcard/Android/data/{package}/cache/ 下的文件。
+         """
+         cache_path = f'/sdcard/Android/data/{self.package}/cache/*'
++        if self.config.Emulator_ControlMethod == 'azurpilot_android':
++            cache_dir = f'/sdcard/Android/data/{self.package}/cache'
++            self.azurpilot_android_shell_output(f'rm -rf {shlex.quote(cache_dir)}/*')
++            return
+         logger.info(f'应用清除缓存: {cache_path}')
+         result = self.adb_shell(['rm', '-rf', cache_path], timeout=30)
+         if result:
+@@ -180,7 +192,9 @@ class AppControl(Adb, WSA, Uiautomator2):
+         self._hierarchy_interval.reset()
+ 
+         method = self.config.Emulator_ControlMethod
+-        if method in AppControl._app_u2_family:
++        if method == 'azurpilot_android':
++            self.hierarchy = self.dump_hierarchy_azurpilot_android()
++        elif method in AppControl._app_u2_family:
+             self.hierarchy = self.dump_hierarchy_uiautomator2()
+         else:
+             self.hierarchy = self.dump_hierarchy_adb()
+diff --git a/module/device/connection.py b/module/device/connection.py
+index 773916532..f557c4174 100644
+--- a/module/device/connection.py
++++ b/module/device/connection.py
+@@ -134,6 +134,14 @@ class Connection(ConnectionAttr):
+             config (AzurLaneConfig, str): ./config 目录下的用户配置名称。
+         """
+         super().__init__(config)
++        if self.serial == 'azurpilot_android':
++            self.package = self.config.Emulator_PackageName
++            if self.package == 'auto':
++                self.package = 'com.bilibili.azurlane'
++            set_server(self.package)
++            logger.attr('应用包名', self.package)
++            logger.attr('服务器', self.config.SERVER)
++            return
+         if not self.is_over_http:
+             self.detect_device()
+ 
+diff --git a/module/device/connection_attr.py b/module/device/connection_attr.py
+index 38d400740..88738923d 100644
+--- a/module/device/connection_attr.py
++++ b/module/device/connection_attr.py
+@@ -123,6 +123,11 @@ class ConnectionAttr:
+ 
+         logger.attr('是否云手机', IS_ON_PHONE_CLOUD)
+ 
++        if self.config.Emulator_Serial == 'azurpilot_android':
++            self.serial = 'azurpilot_android'
++            self.config.DEVICE_OVER_HTTP = False
++            return
++
+         # Init adb client
+         logger.attr('ADB路径', self.adb_binary)
+         # Monkey patch to custom adb
+diff --git a/module/device/control.py b/module/device/control.py
+index cb09dba33..2f7b17abe 100644
+--- a/module/device/control.py
++++ b/module/device/control.py
+@@ -36,6 +36,7 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
+                 值为对应的点击方法。
+         """
+         return {
++            'azurpilot_android': self.click_azurpilot_android,
+             'ADB': self.click_adb,
+             'uiautomator2': self.click_uiautomator2,
+             'minitouch': self.click_minitouch,
+@@ -97,6 +98,9 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
+             '[设备-控制] 长按 %s @ %s, %s' % (point2str(x, y), button, duration)
+         )
+         method = self.config.Emulator_ControlMethod
++        if method == 'azurpilot_android':
++            self.long_click_azurpilot_android(x, y, duration)
++            return
+         if method == 'minitouch':
+             self.long_click_minitouch(x, y, duration)
+         elif method == 'uiautomator2':
+@@ -127,6 +131,9 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
+         p1, p2 = ensure_int(p1, p2)
+         duration = ensure_time(duration)
+         method = self.config.Emulator_ControlMethod
++        if method == 'azurpilot_android':
++            self.swipe_azurpilot_android(p1, p2, duration)
++            return
+         if method == 'uiautomator2':
+             logger.info('[设备-控制] 滑动 %s -> %s, %s' % (point2str(*p1), point2str(*p2), duration))
+         elif method in ['minitouch', 'MaaTouch', 'scrcpy', 'nemu_ipc']:
+@@ -207,7 +214,9 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
+             '[设备-控制] 拖拽 %s -> %s' % (point2str(*p1), point2str(*p2))
+         )
+         method = self.config.Emulator_ControlMethod
+-        if method == 'minitouch':
++        if method == 'azurpilot_android':
++            self.swipe_azurpilot_android(p1, p2, swipe_duration)
++        elif method == 'minitouch':
+             self.drag_minitouch(p1, p2, point_random=point_random, hold_duration=hold_duration)
+         elif method == 'uiautomator2':
+             self.drag_uiautomator2(
+@@ -241,5 +250,7 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
+         p1, p2 = ensure_int(p1, p2)
+         hold_time = ensure_time(hold_time)
+         method = self.config.Emulator_ControlMethod
+-        if method == 'minitouch':
+-            self.island_swipe_hold_minitouch(p1, p2, hold_time)
+\ No newline at end of file
++        if method == 'azurpilot_android':
++            self.swipe_azurpilot_android(p1, p2, hold_time)
++        elif method == 'minitouch':
++            self.island_swipe_hold_minitouch(p1, p2, hold_time)
+diff --git a/module/device/device.py b/module/device/device.py
+index 6040c5488..0a9cb173b 100644
+--- a/module/device/device.py
++++ b/module/device/device.py
+@@ -271,6 +271,11 @@ class Device(Screenshot, Control, AppControl, Input):
+         """
+         检查截图方式和控制方式的组合是否合法。
+         """
++        if self.serial == 'azurpilot_android':
++            if self.config.Emulator_ScreenshotMethod != 'azurpilot_android' \
++                    or self.config.Emulator_ControlMethod != 'azurpilot_android':
++                raise RequestHumanTakeover('Android 虚拟屏必须同时选择 azurpilot_android 截图和控制方式')
++            return
+         # Hermit 仅允许在 VMOS 上使用
+         if self.config.Emulator_ControlMethod == 'Hermit' and not self.is_vmos:
+             logger.warning('[设备-方法] 控制方式Hermit仅允许在VMOS上使用')
+@@ -346,6 +351,8 @@ class Device(Screenshot, Control, AppControl, Input):
+         try:
+             super().screenshot()
+         except RequestHumanTakeover:
++            if self.serial == 'azurpilot_android':
++                raise
+             if not self.ascreencap_available:
+                 logger.error('[设备-截图] 当前设备aScreenCap不可用，回退到auto')
+                 self.run_simple_screenshot_benchmark()
+@@ -379,7 +386,8 @@ class Device(Screenshot, Control, AppControl, Input):
+         """
+         o = super().get_orientation()
+ 
+-        self.on_orientation_change_maatouch()
++        if self.serial != 'azurpilot_android':
++            self.on_orientation_change_maatouch()
+ 
+         return o
+ 
+diff --git a/module/device/method/azurpilot_android.py b/module/device/method/azurpilot_android.py
+new file mode 100644
+index 000000000..19bf55363
+--- /dev/null
++++ b/module/device/method/azurpilot_android.py
+@@ -0,0 +1,214 @@
++"""AzurPilot Android 虚拟屏设备后端，经本机特权桥执行设备 I/O。
++
++代理（spike/m0/agent/main.py）在手机上监听 127.0.0.1:22301，协议为行分隔 JSON + 二进制帧：
++    ping/screencap/click/swipe/shell，详见代理源文件 docstring。
++
++启用方式：Emulator_Serial 以 "azurpilot_android" 开头（默认 serial 即 "azurpilot_android"），
++截图/控制方法选择 "azurpilot_android"。本模块不 import 任何 adb/u2 依赖。
++
++注意：
++- MaaFW 截图与 AzurPilot 均使用 BGR，直接保留前三通道。
++- 游戏必须跑在 MaaFwApp 的虚拟屏上：app_start_azurpilot_android 用 `am start --display <VID>`，
++  VID 由代理侧 shell 探测（dumpsys display 找 VIRTUAL displayId），每轮进程缓存一次。
++- get_orientation 对桥接固定返回 0（虚拟屏始终横屏 1280x720）。
++- dump_hierarchy 不可用：uiautomator 只反映物理屏，不能用于虚拟屏。
++"""
++import json
++import re
++import shlex
++import socket
++import threading
++import time
++
++import numpy as np
++
++from module.base.decorator import cached_property
++from module.exception import RequestHumanTakeover, ScriptError
++from module.logger import logger
++
++AZURPILOT_ANDROID_DEFAULT_ADDR = '127.0.0.1:22301'
++
++
++class AzurPilotAndroidBridgeError(Exception):
++    pass
++
++
++class AzurPilotAndroid:
++    _azurpilot_android_sock = None
++    _azurpilot_android_req_id = 0
++    _azurpilot_android_lock = threading.RLock()
++
++    # ---------------------------------------------------------------- 协议层
++
++    @cached_property
++    def azurpilot_android_addr(self) -> str:
++        import os
++        return os.environ.get('AZURPILOT_ANDROID_PROXY_ADDR', AZURPILOT_ANDROID_DEFAULT_ADDR)
++
++    def _azurpilot_android_connect(self) -> socket.socket:
++        host, _, port = self.azurpilot_android_addr.partition(':')
++        sock = socket.create_connection((host, int(port)), timeout=10)
++        sock.settimeout(60)
++        return sock
++
++    def _azurpilot_android_call(self, payload: dict, frame: bytes = None) -> dict:
++        """发送一条请求（可随附一帧二进制），返回响应 dict。连接错误重连重试一次。"""
++        with self._azurpilot_android_lock:
++            return self._azurpilot_android_call_locked(payload, frame)
++
++    def _azurpilot_android_call_locked(self, payload: dict, frame: bytes = None) -> dict:
++        AzurPilotAndroid._azurpilot_android_req_id += 1
++        payload = dict(payload)
++        payload['id'] = AzurPilotAndroid._azurpilot_android_req_id
++
++        last_error = None
++        for _ in range(2):
++            try:
++                sock = AzurPilotAndroid._azurpilot_android_sock
++                if sock is None:
++                    sock = AzurPilotAndroid._azurpilot_android_sock = self._azurpilot_android_connect()
++                sock.sendall(json.dumps(payload, separators=(',', ':')).encode('utf-8') + b'\n')
++                if frame is not None:
++                    sock.sendall(frame)
++                # 逐字节读响应行：screencap 响应行后紧跟像素帧，大块读会吞帧
++                buf = b''
++                while not buf.endswith(b'\n'):
++                    data = sock.recv(1)
++                    if not data:
++                        raise AzurPilotAndroidBridgeError('proxy closed connection')
++                    buf += data
++                    if len(buf) > 256 * 1024:
++                        raise AzurPilotAndroidBridgeError('response line too long')
++                return json.loads(buf.decode('utf-8'))
++            except (OSError, AzurPilotAndroidBridgeError, json.JSONDecodeError) as e:
++                last_error = e
++                logger.warning(f'AzurPilotAndroid proxy error: {e}, reconnect')
++                try:
++                    if AzurPilotAndroid._azurpilot_android_sock is not None:
++                        AzurPilotAndroid._azurpilot_android_sock.close()
++                except OSError:
++                    pass
++                AzurPilotAndroid._azurpilot_android_sock = None
++        logger.critical(f'AzurPilotAndroid proxy unreachable: {last_error}')
++        raise RequestHumanTakeover
++
++    def _azurpilot_android_call_ok(self, payload: dict, frame: bytes = None) -> dict:
++        resp = self._azurpilot_android_call(payload, frame)
++        if not resp.get('ok'):
++            raise ScriptError(f'AzurPilotAndroid proxy error: {resp.get("error", "unknown")}')
++        return resp
++
++    def _azurpilot_android_read_exact(self, n: int) -> bytes:
++        sock = AzurPilotAndroid._azurpilot_android_sock
++        chunks = []
++        while n > 0:
++            data = sock.recv(min(1048576, n))
++            if not data:
++                raise AzurPilotAndroidBridgeError('connection closed mid-frame')
++            chunks.append(data)
++            n -= len(data)
++        return b''.join(chunks)
++
++    # ---------------------------------------------------------------- 截图 / 触控
++
++    def screenshot_azurpilot_android(self) -> np.ndarray:
++        with self._azurpilot_android_lock:
++            resp = self._azurpilot_android_call_ok({'method': 'screencap'})
++            try:
++                raw = self._azurpilot_android_read_exact(int(resp['length']))
++            except (OSError, AzurPilotAndroidBridgeError):
++                sock = AzurPilotAndroid._azurpilot_android_sock
++                AzurPilotAndroid._azurpilot_android_sock = None
++                if sock is not None:
++                    sock.close()
++                raise
++        image = np.frombuffer(raw, dtype=np.uint8).reshape(
++            int(resp['height']), int(resp['width']), int(resp['channels']))
++        # 桥原始帧为 BGR(A)，AzurPilot 按 BGR 读取。
++        if image.shape[2] >= 3:
++            image = image[..., :3]
++        return np.ascontiguousarray(image)
++
++    def click_azurpilot_android(self, x, y):
++        self._azurpilot_android_call_ok({'method': 'click', 'x': int(x), 'y': int(y)})
++
++    def long_click_azurpilot_android(self, x, y, duration):
++        # 等效长按：原地滑动，duration 单位为秒（ALAS 约定），代理侧为毫秒
++        self._azurpilot_android_call_ok({
++            'method': 'swipe',
++            'x1': int(x), 'y1': int(y), 'x2': int(x), 'y2': int(y),
++            'duration': int(duration * 1000),
++        })
++
++    def swipe_azurpilot_android(self, p1, p2, duration=0.1):
++        self._azurpilot_android_call_ok({
++            'method': 'swipe',
++            'x1': int(p1[0]), 'y1': int(p1[1]),
++            'x2': int(p2[0]), 'y2': int(p2[1]),
++            'duration': int(duration * 1000),
++        })
++
++    # ---------------------------------------------------------------- shell 通道
++
++    def azurpilot_android_shell(self, cmd: str, timeout: float = 30) -> dict:
++        """经代理以 shell uid 执行系统命令，返回 {ok, code, stdout, stderr}。"""
++        return self._azurpilot_android_call({'method': 'shell', 'cmd': cmd, 'timeout': timeout})
++
++    def azurpilot_android_shell_output(self, cmd: str, timeout: float = 30) -> str:
++        resp = self.azurpilot_android_shell(cmd, timeout)
++        if not resp.get('ok'):
++            raise ScriptError(f'AzurPilotAndroid shell failed: {cmd!r}: {resp.get("stderr", "")[:200]}')
++        return resp.get('stdout', '')
++
++    @property
++    def azurpilot_android_display_id(self) -> int:
++        response = self._azurpilot_android_call_ok({'method': 'ping'})
++        display_id = response.get('displayId')
++        if not isinstance(display_id, int) or display_id < 1:
++            raise ScriptError(f'AzurPilot Android 虚拟屏尚未就绪: {display_id!r}')
++        logger.attr('AzurPilotAndroid', f'virtual display id={display_id}')
++        return display_id
++
++    # ---------------------------------------------------------------- App 控制
++
++    def app_start_azurpilot_android(self, package=None, activity=None, wait=True):
++        from module.config.server import DICT_PACKAGE_TO_ACTIVITY
++        package = package or self.package
++        if activity is None:
++            activity = DICT_PACKAGE_TO_ACTIVITY.get(package)
++            if activity is None:
++                raise ScriptError(f'No known activity for package: {package}')
++        self.azurpilot_android_shell_output(
++            f'am start --display {self.azurpilot_android_display_id} -n {shlex.quote(package + "/" + activity)}')
++        if wait:
++            time.sleep(1)
++
++    def app_stop_azurpilot_android(self, package=None):
++        self.azurpilot_android_shell_output(f'am force-stop {shlex.quote(package or self.package)}')
++
++    def app_current_azurpilot_android(self) -> str:
++        """虚拟屏的前台应用包名。dumpsys window displays 按 displayId 分块，
++        取目标块内的 mCurrentFocus；找不到即视为未在本虚拟屏运行。"""
++        out = self.azurpilot_android_shell_output('dumpsys window displays')
++        vid = self.azurpilot_android_display_id
++        current = ''
++        for block in re.split(r'\n\s*(?=Display )', out):
++            if f'displayId={vid}' in block:
++                m = re.search(r'mCurrentFocus=\S+\s*\{[^}]*?\s([\w.]+)/[\w.]+', block)
++                if m:
++                    current = m.group(1)
++                break
++        logger.attr('App current (azurpilot_android)', current)
++        return current
++
++    def get_orientation(self):
++        """桥接模式下虚拟屏始终横屏 1280x720，直接返回 0。
++        注意：本方法在 AzurPilotAndroid 混入类上，MRO 先于 Connection 的 adb 实现。"""
++        if self.serial == 'azurpilot_android':
++            self.orientation = 0
++            return 0
++        return super().get_orientation()
++
++    def dump_hierarchy_azurpilot_android(self):
++        """系统 uiautomator 只看主屏，不能把其结果误认为虚拟屏。"""
++        raise ScriptError('Android 虚拟屏不支持 uiautomator 层级树，请使用截图识别')
+diff --git a/module/device/screenshot.py b/module/device/screenshot.py
+index ac1e78726..570d97b4e 100644
+--- a/module/device/screenshot.py
++++ b/module/device/screenshot.py
+@@ -18,6 +18,7 @@ from module.base.timer import Timer
+ from module.base.utils import get_color, image_size, limit_in, save_image, set_template_match_non_native_720p
+ from module.config.time_source import now as current_time
+ from module.device.method.adb import Adb
++from module.device.method.azurpilot_android import AzurPilotAndroid
+ from module.device.method.ascreencap import AScreenCap
+ from module.device.method.droidcast import DroidCast
+ from module.device.method.ldopengl import LDOpenGL
+@@ -27,7 +28,7 @@ from module.device.method.wsa import WSA
+ from module.exception import RequestHumanTakeover, ScriptError
+ from module.logger import logger
+ 
+-class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
++class Screenshot(AzurPilotAndroid, Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
+     """设备截图管理器。
+ 
+     通过多重继承组合所有截图后端，根据用户配置的 Emulator_ScreenshotMethod
+@@ -59,6 +60,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
+                 值为对应的截图方法。
+         """
+         return {
++            'azurpilot_android': self.screenshot_azurpilot_android,
+             'ADB': self.screenshot_adb,
+             'ADB_nc': self.screenshot_adb_nc,
+             'uiautomator2': self.screenshot_uiautomator2,
+diff --git a/module/runtime/process_manager.py b/module/runtime/process_manager.py
+index 970f4cdca..7595c21b3 100644
+--- a/module/runtime/process_manager.py
++++ b/module/runtime/process_manager.py
+@@ -59,6 +59,7 @@ class ProcessManager:
+         self._renderable_queue: queue.Queue[ConsoleRenderable | TaskEvent | ExitEvent] = State.manager.Queue()
+         self._preview_queue = None
+         self.current_task = None
++        self.started_func = None
+         self.run_id = None
+         self.exit_result: WorkerResult | None = None
+         self._worker_observed = False
+@@ -143,6 +144,7 @@ class ProcessManager:
+                         return
+                     if func is None:
+                         func = get_config_mod(self.config_name)
++                    self.started_func = func
+                     with self._runtime_lock:
+                         self.current_task = None
+                         self.run_id = uuid.uuid4().hex
+diff --git a/tests/test_android_adapter.py b/tests/test_android_adapter.py
+new file mode 100644
+index 000000000..b70868f16
+--- /dev/null
++++ b/tests/test_android_adapter.py
+@@ -0,0 +1,116 @@
++"""Android 桥协议和本机控制路由的离线回归。"""
++
++import json
++import os
++import unittest
++from types import SimpleNamespace
++from unittest.mock import patch
++
++import numpy as np
++from starlette.applications import Starlette
++from starlette.testclient import TestClient
++
++from module.api.android import routes
++from module.api.protocol import ApiError
++from module.device.method.azurpilot_android import AzurPilotAndroid
++from module.runtime.process_manager import ProcessManager
++
++
++class FakeSocket:
++    def __init__(self, response):
++        self.response = bytearray(response)
++        self.sent = bytearray()
++
++    def sendall(self, data):
++        self.sent.extend(data)
++
++    def recv(self, length):
++        chunk = self.response[:length]
++        del self.response[:length]
++        return bytes(chunk)
++
++    def close(self):
++        pass
++
++
++class BridgeTests(unittest.TestCase):
++    def tearDown(self):
++        AzurPilotAndroid._azurpilot_android_sock = None
++
++    def test_screenshot_keeps_bgr_and_consumes_frame(self):
++        pixels = bytes([1, 2, 3, 255, 4, 5, 6, 255])
++        reply = json.dumps({'ok': True, 'length': len(pixels), 'width': 2, 'height': 1,
++                            'channels': 4}).encode() + b'\n' + pixels
++        socket = FakeSocket(reply)
++        with patch.object(AzurPilotAndroid, '_azurpilot_android_connect', return_value=socket):
++            image = AzurPilotAndroid().screenshot_azurpilot_android()
++        np.testing.assert_array_equal(image, np.array([[[1, 2, 3], [4, 5, 6]]], dtype=np.uint8))
++        self.assertEqual(json.loads(socket.sent)['method'], 'screencap')
++
++
++class FakeConfigs:
++    def path(self, name):
++        if name != 'alas':
++            raise ApiError('INVALID_PARAMS', '未知实例')
++        return name
++
++    def names(self):
++        return ['alas']
++
++
++class FakeRuntime:
++    def __init__(self):
++        self.processes = {}
++
++    def start(self, name, task=None):
++        proc = SimpleNamespace(alive=True, started_func=task or 'alas',
++                               current_task=None, _process=SimpleNamespace(pid=123))
++        proc.stop = lambda: setattr(proc, 'alive', False)
++        self.processes[name] = proc
++
++    def stop(self, name):
++        self.processes[name].alive = False
++
++    def logs(self, name):
++        return {'entries': [{'text': 'AzurPilot task started'}]}
++
++
++class AndroidApiTests(unittest.TestCase):
++    def setUp(self):
++        self.runtime = FakeRuntime()
++        self.environment = patch.dict(os.environ, {'AZURPILOT_ANDROID': '1',
++                                                   'AZURPILOT_ANDROID_TOKEN': 'secret'})
++        self.environment.start()
++        self.addCleanup(self.environment.stop)
++        self.processes = patch.object(ProcessManager, '_processes', self.runtime.processes)
++        self.processes.start()
++        self.addCleanup(self.processes.stop)
++        self.manager = patch.object(ProcessManager, 'get_manager', side_effect=lambda name: self.runtime.processes[name])
++        self.manager.start()
++        self.addCleanup(self.manager.stop)
++        app = Starlette(routes=routes(FakeConfigs(), self.runtime))
++        self.client = TestClient(app, client=('127.0.0.1', 20000),
++                                 headers={'X-AzurPilot-Android-Token': 'secret'})
++        self.addCleanup(self.client.close)
++
++    def test_start_switch_tool_logs_and_stop(self):
++        self.assertEqual(self.client.get('/android/configs').json(), {'configs': ['alas']})
++        self.assertTrue(self.client.post('/android/start').json()['runner_alive'])
++        self.assertTrue(self.client.post('/android/start').json()['runner_alive'])
++        tool = self.client.post('/android/tool/start?name=daemon').json()
++        self.assertTrue(tool['tool_alive'])
++        self.assertFalse(tool['runner_alive'])
++        self.assertIn('AzurPilot task', self.client.get('/android/logs').text)
++        self.assertFalse(self.client.post('/android/tool/stop').json()['tool_alive'])
++
++    def test_rejects_other_clients_and_old_app_conflict(self):
++        self.assertEqual(self.client.get('/android/status', headers={
++            'X-AzurPilot-Android-Token': 'wrong'}).status_code, 403)
++        with patch('module.api.android._legacy_app_running', return_value=True):
++            response = self.client.post('/android/start')
++        self.assertEqual(response.status_code, 400)
++        self.assertIn('ALAS-AOS', response.json()['error'])
++
++
++if __name__ == '__main__':
++    unittest.main()

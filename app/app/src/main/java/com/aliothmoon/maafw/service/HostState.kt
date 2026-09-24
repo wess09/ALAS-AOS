@@ -197,7 +197,7 @@ class HostState(
 
     private companion object {
         const val BRIDGE_HOST = "127.0.0.1"
-        const val BRIDGE_PORT = 22300
+        const val BRIDGE_PORT = 22301
         const val BRIDGE_PROBE_INTERVAL_MS = 4_000L
         const val BRIDGE_CONNECT_TIMEOUT_MS = 1_500
         const val BRIDGE_READ_TIMEOUT_MS = 2_000

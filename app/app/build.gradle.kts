@@ -43,6 +43,22 @@ android {
     }
 }
 
+val verifyBundledAzurPilotRuntime = tasks.register("verifyBundledAzurPilotRuntime") {
+    val archive = layout.projectDirectory.file("src/main/assets/rootfs/rootfs.tar.xz")
+    val manifest = layout.projectDirectory.file("src/main/assets/rootfs/BUILD_MANIFEST")
+    doLast {
+        check(archive.asFile.isFile && archive.asFile.length() > 0) {
+            "缺少 AzurPilot ARM64 rootfs.tar.xz；先运行 rootfs workflow 并复制构建产物"
+        }
+        check(manifest.asFile.isFile && manifest.asFile.readText().contains("\"runtime\": \"azurpilot-android\"")) {
+            "缺少与 AzurPilot rootfs 配套的 BUILD_MANIFEST"
+        }
+    }
+}
+
+tasks.matching { it.name.startsWith("package") || it.name.startsWith("assemble") }
+    .configureEach { dependsOn(verifyBundledAzurPilotRuntime) }
+
 dependencies {
     compileOnly(project(":hidden-api"))
 

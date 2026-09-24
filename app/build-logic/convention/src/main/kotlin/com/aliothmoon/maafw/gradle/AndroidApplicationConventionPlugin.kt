@@ -14,7 +14,7 @@ import org.gradle.kotlin.dsl.register
 private val SHIPPED_ABIS = listOf("arm64-v8a")
 
 /** The package every build sits under; a profile only appends to it, it never replaces it */
-private const val BASE_APPLICATION_ID = "io.github.shinarin.alasaos"
+private const val BASE_APPLICATION_ID = "io.github.shinarin.azurpilotandroid"
 
 /**
  * A profile's app.id becomes package segments, so it takes package rules rather than free text

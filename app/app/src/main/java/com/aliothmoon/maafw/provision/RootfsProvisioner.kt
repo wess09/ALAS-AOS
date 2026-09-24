@@ -102,7 +102,9 @@ class RootfsProvisioner(
 
             // 解完 sanity：解释器在且可执行，版本以镜像内清单为准
             val python = File(rootDir, PYTHON_REL)
-            check(python.isFile && python.canExecute()) { "$PYTHON_REL missing or not executable" }
+            check(python.isFile || java.nio.file.Files.isSymbolicLink(python.toPath())) {
+                "$PYTHON_REL missing"
+            }
             val installed = readExtractedVersion() ?: bundled
             markerFile.writeText(installed)
             Timber.i("rootfs $installed provisioned")
@@ -118,7 +120,9 @@ class RootfsProvisioner(
 
     private fun isInstalled(bundled: String): Boolean =
         installedVersion() == bundled &&
-                File(rootDir, PYTHON_REL).let { it.isFile && it.canExecute() }
+                File(rootDir, PYTHON_REL).let {
+                    it.isFile || java.nio.file.Files.isSymbolicLink(it.toPath())
+                }
 
     /** 内置包版本；资产缺任一件都视为未内置 */
     private fun bundledVersion(): String? = runCatching {
@@ -163,9 +167,25 @@ class RootfsProvisioner(
             src.copyTo(File(tmpDir, name), overwrite = true)
         }
 
-        // 先清旧目录再换名：renameTo 不能覆盖非空目录
-        rootDir.deleteRecursively()
-        check(tmpDir.renameTo(rootDir)) { "rename $tmpDir -> $rootDir failed" }
+        // APK 升级重铺 rootfs 时保留用户实例与日志。
+        val oldPilot = File(rootDir, "opt/azurpilot")
+        val newPilot = File(tmpDir, "opt/azurpilot")
+        oldPilot.resolve("config").listFiles()
+            ?.filter { it.isFile && it.extension == "json" &&
+                !it.name.startsWith("template") && !it.name.startsWith("deploy") }
+            ?.forEach { file -> file.copyTo(newPilot.resolve("config/${file.name}"), overwrite = true) }
+        oldPilot.resolve("log").takeIf { it.isDirectory }
+            ?.copyRecursively(newPilot.resolve("log"), overwrite = true)
+
+        val previous = File(app.filesDir, "rootfs.previous")
+        previous.deleteRecursively()
+        val hadRoot = rootDir.exists()
+        if (hadRoot) check(rootDir.renameTo(previous)) { "cannot preserve previous rootfs" }
+        if (!tmpDir.renameTo(rootDir)) {
+            if (hadRoot) previous.renameTo(rootDir)
+            throw IOException("rename $tmpDir -> $rootDir failed")
+        }
+        previous.deleteRecursively()
     }
 
     private fun extractEntry(
@@ -176,12 +196,22 @@ class RootfsProvisioner(
     ) {
         val name = entry.name.removePrefix("./").trimEnd('/')
         if (name.isEmpty()) return
-        val target = File(tmpDir, name)
-        // zip-slip：条目必须落在解压根内
-        if (target.canonicalPath != tmpDir.canonicalPath &&
-            !target.canonicalPath.startsWith(tmpDir.canonicalPath + File.separator)
-        ) {
+        val root = tmpDir.absoluteFile.toPath().normalize()
+        val path = root.resolve(name).normalize()
+        // 绝对 guest symlink 在 Android 宿主视角可能悬空；使用词法路径检查，并拒绝穿过已解出的链接。
+        if (!path.startsWith(root) || path == root) {
             throw IOException("illegal entry path: $name")
+        }
+        val target = path.toFile()
+        var parent = path.parent
+        while (parent != null && parent != root) {
+            if (java.nio.file.Files.isSymbolicLink(parent)) {
+                throw IOException("entry traverses symlink: $name")
+            }
+            parent = parent.parent
+        }
+        if (!entry.isSymbolicLink && java.nio.file.Files.isSymbolicLink(path)) {
+            throw IOException("entry replaces symlink: $name")
         }
 
         when {
@@ -243,8 +273,8 @@ class RootfsProvisioner(
     private companion object {
         const val ASSET_ARCHIVE = "rootfs/rootfs.tar.xz"
         const val ASSET_MANIFEST = "rootfs/BUILD_MANIFEST"
-        const val MANIFEST_REL = "opt/alas/BUILD_MANIFEST"
-        const val PYTHON_REL = "usr/bin/python3"
+        const val MANIFEST_REL = "opt/azurpilot/BUILD_MANIFEST"
+        const val PYTHON_REL = "opt/azurpilot/.venv/bin/python"
         const val MARKER_NAME = ".provisioned"
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024

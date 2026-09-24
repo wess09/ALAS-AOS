@@ -20,7 +20,7 @@ import java.util.zip.ZipOutputStream
 /** 两类导出各自打包、各自管理旧 zip；底部 sheet 按这个类型决定标题与产物 */
 enum class LogExportKind(val filePrefix: String) {
     /** ALAS 日志（官方 issue 格式：zip 条目镜像 `log/xxx` 相对路径，只收近 7 天） */
-    ALAS("alas_logs_"),
+    ALAS("azurpilot_logs_"),
 
     /** 启动器日志（log/ + debug/ 全量收集，常驻附 getprop 的 properties.txt） */
     LAUNCHER("launcher_logs_"),

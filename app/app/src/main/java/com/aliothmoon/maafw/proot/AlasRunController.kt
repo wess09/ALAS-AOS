@@ -64,6 +64,7 @@ class AlasRunController(
 ) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val controlToken = AndroidControlAuth.get(context)
 
     private val _state = MutableStateFlow(
         AlasRunState(
@@ -118,6 +119,7 @@ class AlasRunController(
             runCatching {
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
+                conn.setRequestProperty("X-AzurPilot-Android-Token", controlToken)
                 conn.connectTimeout = HTTP_TIMEOUT_MS
                 // /stop 要等进程组死掉（SIGTERM→3s→SIGKILL），读超时给足
                 conn.readTimeout = POST_READ_TIMEOUT_MS
@@ -176,6 +178,7 @@ class AlasRunController(
 
     private fun get(url: String, timeoutMs: Int): String? = runCatching {
         val conn = URL(url).openConnection() as HttpURLConnection
+        conn.setRequestProperty("X-AzurPilot-Android-Token", controlToken)
         conn.connectTimeout = timeoutMs
         conn.readTimeout = timeoutMs
         if (conn.responseCode != 200) return null
@@ -183,12 +186,12 @@ class AlasRunController(
     }.onFailure { Timber.d(it, "alas GET %s failed", url) }.getOrNull()
 
     private companion object {
-        const val BASE = "http://127.0.0.1:${ProotHost.WRAPPER_PORT}"
+        const val BASE = "http://127.0.0.1:${ProotHost.WEBUI_PORT}/android"
         const val POLL_MS = 4_000L
         const val HTTP_TIMEOUT_MS = 1_500
         const val POST_READ_TIMEOUT_MS = 12_000
         const val LOG_TAIL = 80
-        const val PREFS_NAME = "alasaos_alas"
+        const val PREFS_NAME = "azurpilot_android"
         const val KEY_SELECTED_CONFIG = "selected_config"
     }
 }

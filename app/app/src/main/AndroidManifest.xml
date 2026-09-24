@@ -86,7 +86,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Guards the ALAS runtime environment (privileged service, bridge and virtual display); keeps the app process alive so the watchdog does not tear the environment down" />
+                android:value="Guards the AzurPilot runtime environment, privileged bridge and virtual display; keeps the app process alive for background automation" />
         </service>
 
         <!-- 只过滤按键，不读窗口内容；用途见 AccessibilityHelperService -->

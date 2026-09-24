@@ -60,7 +60,7 @@ class ProotHost(
     private var updateAttempted = false
 
     private val rootfsDir: File get() = File(app.filesDir, "rootfs")
-    private val alasDir: File get() = File(rootfsDir, "opt/alas")
+    private val alasDir: File get() = File(rootfsDir, "opt/azurpilot")
     private val prootTmpDir: File get() = File(app.filesDir, "proot-tmp")
     private val sessionLog: File get() = File(AppPaths.LOG_DIR, "proot/session.log")
     private val nativeLibDir: String get() = app.applicationInfo.nativeLibraryDir
@@ -96,61 +96,32 @@ class ProotHost(
 
     private suspend fun startLocked() = startMutex.withLock {
         if (session?.isAlive == true) return@withLock
+        if (!alasDir.exists()) {
+            File(rootfsDir, "opt/azurpilot.previous").takeIf { it.isDirectory }
+                ?.renameTo(alasDir)
+        }
+        rollbackPendingUpdate()
         if (!sanityCheck()) return@withLock
 
         setState(ProotPhase.PREPARING, "清理残留")
         cleanupStale()
         writeResolvConf()
 
-        setState(ProotPhase.PREPARING, "同步运行文件")
-        val overlay = AlasOverlay(app).apply(alasDir)
-        if (overlay.failed > 0) {
-            fail("运行文件覆盖失败（${overlay.failed} 项）")
-            return@withLock
-        }
-
-        setState(ProotPhase.PREPARING, "环境自检修复")
-        // 幂等：imageio 钉回上游 2.27.0（T2 崩溃根因=环境未钉版）+ git 还原旧补丁遗留；
-        // 断网/git 不可用一律降级为日志警告，不阻塞启动（对齐 seed_config 哲学）。
-        // proot 下 pip 比原生慢一个量级（首次降级实测 >60s），给独立长超时
-        runGuest(listOf("/bin/bash", "seeds/env_fix.sh"), ENV_FIX_TIMEOUT_MS)?.let { r ->
-            r.output.lineSequence().filter { it.isNotBlank() }.forEach { Timber.i("env_fix| %s", it) }
-            // 失败时输出必须落盘：FileLogTree 只收 W+，i 级逐行在 release 包不可见
-            if (r.exit != 0) Timber.w("env_fix exit=%s out=%s", r.exit, r.output.takeLast(500))
-        }
-
         setState(ProotPhase.PREPARING, "播种实例配置")
-        // 幂等（config/alas.json 已存在即跳过）；失败不阻塞——WebUI 也能救
         runGuest(
-            listOf("/usr/bin/python3", "seeds/seed_config.py"),
+            listOf(".venv/bin/python", "seed_azurpilot.py"),
             SHORT_EXEC_MS,
-            mapOf("ALASAOS_ALAS_ROOT" to GUEST_ALAS_ROOT),
         )?.let { r ->
-            if (r.exit != 0) Timber.w("seed_config exit=%s out=%s", r.exit, r.output.take(300))
+            if (r.exit != 0) Timber.w("seed_azurpilot exit=%s out=%s", r.exit, r.output.take(300))
         }
 
         if (!updateAttempted) {
             updateAttempted = true
-            setState(ProotPhase.UPDATING, "检查 ALAS 热更新")
-            val update = AlasUpdater { cmd, timeout -> runGuestRaw(cmd, timeout) }.update()
-            _state.update { it.copy(updateResult = update.summary) }
-            if (update.updated) {
-                // reset --hard 打回了上游跟踪文件：重放补丁；assets_fix 失败=漂移，记警告不阻塞
-                setState(ProotPhase.PREPARING, "重放本地补丁")
-                AlasOverlay(app).apply(alasDir)
-                runAssetsFix()
+            setState(ProotPhase.UPDATING, "检查 AzurPilot 更新")
+            runGuest(listOf(".venv/bin/python", "android_update.py"), UPDATE_TIMEOUT_MS)?.let { r ->
+                _state.update { it.copy(updateResult = r.output.lineSequence().lastOrNull().orEmpty()) }
+                if (r.exit != 0) Timber.w("AzurPilot update skipped: %s", r.output.takeLast(500))
             }
-        } else {
-            // 每启动一次跑一回当漂移自检（幂等）；失败只记警告
-            runAssetsFix()
-        }
-
-        // args.json/argument.yaml 已不再是补丁（整文件覆盖曾把活动列表冻回烘焙日）：
-        // 每次启动现场再生 args（活动列表随 campaign/Readme.md 走）并补回 alasaos 桥选项。
-        // 失败降级为警告——args.json 仍是上游 git 版，可启动，但 alasaos 选项可能缺失。
-        setState(ProotPhase.PREPARING, "再生 args 配置")
-        runGuest(listOf("/usr/bin/python3", "seeds/regen_args.py"), REGEN_ARGS_TIMEOUT_MS)?.let { r ->
-            if (r.exit != 0) Timber.w("regen_args exit=%s out=%s", r.exit, r.output.takeLast(500))
         }
 
         setState(ProotPhase.STARTING, "拉起 proot 会话")
@@ -163,18 +134,23 @@ class ProotHost(
         supervise(proc)
 
         if (awaitServices(SERVICES_UP_MS)) {
+            File(alasDir, ".android_update_pending").delete()
             setState(ProotPhase.RUNNING)
-            Timber.i("proot session up: wrapper ready on %d", WRAPPER_PORT)
+            Timber.i("proot session up: AzurPilot ready on %d", WEBUI_PORT)
         } else {
-            // wrapper 还没就绪：可能首次 import 慢，也可能马上退出——交给 supervisor 兜底
-            setState(ProotPhase.STARTING, "等待 wrapper 就绪")
-            Timber.w("wrapper not ready within %dms", SERVICES_UP_MS)
+            setState(ProotPhase.STARTING, "等待 AzurPilot 服务就绪")
+            Timber.w("AzurPilot WebUI not ready within %dms", SERVICES_UP_MS)
+            if (File(alasDir, ".android_update_pending").isFile) {
+                runCatching { proc.outputStream.close() }
+                proc.destroyForcibly()
+            }
         }
     }
 
     private fun sanityCheck(): Boolean {
-        if (!File(rootfsDir, "usr/bin/python3").exists()) {
-            fail("rootfs 未部署（python3 缺失）")
+        val python = File(alasDir, ".venv/bin/python")
+        if (!python.exists() && !Files.isSymbolicLink(python.toPath())) {
+            fail("rootfs 未部署（AzurPilot Python 缺失）")
             return false
         }
         if (!File(nativeLibDir, "libproot.so").exists()) {
@@ -199,7 +175,7 @@ class ProotHost(
             "-w", GUEST_ALAS_ROOT,
             "-r", rootfsDir.absolutePath,
             "-b", "/dev:/dev", "-b", "/proc:/proc", "-b", "/sys:/sys",
-            "/usr/bin/python3", "wrapper.py",
+            ".venv/bin/python", "android_host.py",
         )
         Timber.i("proot session spawn: %s", cmd.joinToString(" "))
         val proc = ProcessBuilder(cmd)
@@ -223,8 +199,9 @@ class ProotHost(
         // rootfs 未装 tzdata：用 POSIX 形式 CST-8（UTC+8 无 DST），不依赖 zoneinfo 文件；
         // 不设则全环境 UTC，ALAS 日志/调度时间比设备慢 8 小时
         "TZ" to "CST-8",
-        "ALASAOS_ALAS_ROOT" to GUEST_ALAS_ROOT,
-        "ALASAOS_WEBUI" to "1",
+        "AZURPILOT_ROOT" to GUEST_ALAS_ROOT,
+        "AZURPILOT_ANDROID" to "1",
+        "AZURPILOT_ANDROID_TOKEN" to AndroidControlAuth.get(app),
     )
 
     /** stdout/stderr 汇进 session 日志（带行级时间戳太贵，纯追加即可） */
@@ -271,6 +248,7 @@ class ProotHost(
                 backoff = (backoff * 2).coerceAtMost(RESTART_BACKOFF_MAX_MS)
                 if (!wantRunning) break
                 cleanupStale()
+                rollbackPendingUpdate()
                 val next = runCatching { spawnSession() }
                     .onFailure { Timber.w(it, "proot respawn failed") }
                     .getOrNull() ?: continue
@@ -278,6 +256,7 @@ class ProotHost(
                 proc = next
                 spawnedAt = System.currentTimeMillis()
                 if (awaitServices(SERVICES_UP_MS)) {
+                    File(alasDir, ".android_update_pending").delete()
                     backoff = RESTART_BACKOFF_INIT_MS
                     setState(ProotPhase.RUNNING)
                     Timber.i("proot session respawned, wrapper ready")
@@ -296,8 +275,8 @@ class ProotHost(
     private suspend fun awaitServices(timeoutMs: Long): Boolean {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
-            if (httpOk("http://127.0.0.1:$WRAPPER_PORT/status") &&
-                httpOk("http://127.0.0.1:$WEBUI_PORT/")
+            if (httpOk("http://127.0.0.1:$WEBUI_PORT/android/status") &&
+                httpOk("http://127.0.0.1:$WEBUI_PORT/healthz")
             ) {
                 return true
             }
@@ -308,6 +287,7 @@ class ProotHost(
 
     private fun httpOk(url: String): Boolean = runCatching {
         val conn = URL(url).openConnection() as HttpURLConnection
+        conn.setRequestProperty("X-AzurPilot-Android-Token", AndroidControlAuth.get(app))
         conn.connectTimeout = 800
         conn.readTimeout = 800
         conn.inputStream.use { it.readBytes() }
@@ -360,22 +340,28 @@ class ProotHost(
         ExecResult(if (finished) proc.exitValue() else null, out.toString(), !finished)
     }
 
-    /** assets_fix：幂等 + 漂移自检（Button 找不到会非零退出），失败只记警告 */
-    private suspend fun runAssetsFix() {
-        val r = runGuest(listOf("/usr/bin/python3", "seeds/assets_fix.py", GUEST_ALAS_ROOT), SHORT_EXEC_MS)
-            ?: return
-        if (r.exit == 0) {
-            Timber.d("assets_fix OK")
-        } else {
-            // 漂移=上游改版对不上补丁：roadmap 预定的稀有事件，提示重下整包（不阻塞本次启动）
-            Timber.w("assets_fix drift detected exit=%s: %s", r.exit, r.output.takeLast(500))
-            _state.update {
-                it.copy(updateResult = (it.updateResult ?: "") + " | assets_fix 漂移，建议重下整包")
-            }
-        }
-    }
-
     // ------------------------------------------------------------------ 自愈清理与 DNS
+
+    /** 启动失败时恢复上一个可运行源码版本。 */
+    private fun rollbackPendingUpdate() {
+        val pending = File(alasDir, ".android_update_pending")
+        val previous = File(rootfsDir, "opt/azurpilot.previous")
+        if (!pending.isFile || !previous.isDirectory) return
+        val failed = File(rootfsDir, "opt/azurpilot.failed")
+        failed.deleteRecursively()
+        if (!alasDir.renameTo(failed)) {
+            Timber.e("AzurPilot rollback: failed to move current runtime")
+            return
+        }
+        if (!previous.renameTo(alasDir)) {
+            failed.renameTo(alasDir)
+            Timber.e("AzurPilot rollback: failed to restore previous runtime")
+            return
+        }
+        failed.deleteRecursively()
+        _state.update { it.copy(updateResult = "更新启动失败，已恢复上一版本") }
+        Timber.w("AzurPilot update rolled back after startup failure")
+    }
 
     /** 自愈清锁：proot 临时目录整体重来 + git 锁 + reloadalas（会话不在跑时才可调） */
     private suspend fun cleanupStale() {
@@ -486,17 +472,13 @@ class ProotHost(
     }
 
     companion object {
-        /** wrapper 薄 HTTP（与 rootfs wrapper.py 的 PORT 对齐；避开桥 22300 与 WebUI 22267） */
-        const val WRAPPER_PORT = 22400
-
         /** WebUI 端口（deploy.yaml WebuiPort；AlasScreen 与外部浏览器都打它） */
-        const val WEBUI_PORT = 22267
+        const val WEBUI_PORT = 25548
 
-        private const val GUEST_ALAS_ROOT = "/opt/alas"
+        private const val GUEST_ALAS_ROOT = "/opt/azurpilot"
+        private const val UPDATE_TIMEOUT_MS = 300_000L
         private const val SERVICES_UP_MS = 90_000L
         private const val SHORT_EXEC_MS = 60_000L
-        private const val ENV_FIX_TIMEOUT_MS = 300_000L
-        private const val REGEN_ARGS_TIMEOUT_MS = 360_000L
         private const val STOP_GRACE_MS = 8_000L
         private const val RESTART_BACKOFF_INIT_MS = 3_000L
         private const val RESTART_BACKOFF_MAX_MS = 60_000L

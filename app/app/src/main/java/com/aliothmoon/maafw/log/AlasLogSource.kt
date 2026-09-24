@@ -4,7 +4,7 @@ import android.content.Context
 import java.io.File
 
 /**
- * ALAS 侧日志目录（proot 内 `/opt/alas/log`，实体在内部存储 rootfs 下）的唯一访问口
+ * ALAS 侧日志目录（proot 内 `/opt/azurpilot/log`，实体在内部存储 rootfs 下）的唯一访问口
  *
  * App 进程直接可读，不走 wrapper HTTP：wrapper 的 /logs 只服务 mtime 最新的一个 txt，
  * 历史 txt 与 error 现场根本拿不到；路径拼法与 `ProotHost` 的 alasDir 一致
@@ -13,7 +13,7 @@ import java.io.File
  */
 class AlasLogSource(context: Context) {
 
-    private val logDir: File = File(context.filesDir, "rootfs/opt/alas/log")
+    private val logDir: File = File(context.filesDir, "rootfs/opt/azurpilot/log")
 
     fun logDir(): File = logDir
 

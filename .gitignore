@@ -33,4 +33,5 @@ spike/**/dist/*.apk
 
 # 阶段三：rootfs 资产随包内置（300MB+ 不入库，构建前从 rootfs-dist 拷入）；BUILD_MANIFEST 入库
 /app/app/src/main/assets/rootfs/rootfs.tar.xz
+/app/app/src/main/assets/rootfs/BUILD_MANIFEST
 /keystore/

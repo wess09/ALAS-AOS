@@ -1,0 +1,40 @@
+Deploy:
+  Git:
+    Repository: https://github.com/wess09/AzurPilot.git
+    Branch: master
+    GitExecutable: /usr/bin/git
+    GitProxy: null
+    SSLVerify: true
+  Python:
+    PythonExecutable: ./.venv/bin/python
+    PypiMirror: https://pypi.org/simple
+    InstallDependencies: false
+  Adb:
+    AdbExecutable: /usr/bin/adb
+    ReplaceAdb: false
+    AutoConnect: false
+    InstallUiautomator2: false
+  Ocr:
+    UseOcrServer: false
+    StartOcrServer: false
+    OcrServerPort: 22268
+    OcrClientAddress: 127.0.0.1:22268
+  Update:
+    EnableReload: false
+    CheckUpdateInterval: 0
+    AutoRestartTime: null
+  Misc:
+    DiscordRichPresence: false
+  RemoteAccess:
+    EnableRemoteAccess: false
+  Webui:
+    WebuiHost: 127.0.0.1
+    WebuiPort: 25548
+    Language: zh-CN
+    Theme: default
+    DpiScaling: true
+    Password: null
+    CDN: false
+    Run: null
+    WebuiSSLKey: null
+    WebuiSSLCert: null

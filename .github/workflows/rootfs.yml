@@ -2,6 +2,11 @@ name: rootfs
 
 on:
   workflow_dispatch:
+    inputs:
+      azurpilot_ref:
+        description: AzurPilot master 的 commit SHA；留空使用已验证基线
+        required: false
+        type: string
   push:
     paths:
       - 'rootfs/**'
@@ -25,24 +30,18 @@ jobs:
           nproc
           df -h
 
-      - name: Build rootfs
-        run: bash rootfs/build/build-rootfs.sh
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
-      # Spike F 门禁（rootfs/build/spike-f-ocr-gate.py，并行任务提供）的 CLI 为
-      # --model-dir/--rpc-path/...，不支持 --chroot——故用 chroot 等价写法：
-      # 门禁已随构建装入 /opt/alas/，chroot 进 work/rootfs 用镜像内 python3 跑。
-      # TODO: 若门禁脚本日后支持 --chroot，可简化为宿主机直调
-      #   python3 rootfs/build/spike-f-ocr-gate.py --chroot work/rootfs
-      # 注：rootfs 内无中文字体（--font 缺省），合成图用例按门禁语义记 SKIP，不影响 PASS 判定
-      - name: Spike F OCR gate
-        run: |
-          # 构建脚本打包前已显式卸载全部 bind mount；chroot 跑门禁前重新挂上
-          # （onnxruntime 的 CPU 拓扑探测读 /sys，缺 /proc /sys /dev 时行为不确定）
-          for d in dev proc sys; do sudo mount --bind /$d work/rootfs/$d; done
-          trap 'for d in sys proc dev; do sudo umount -lf work/rootfs/$d || true; done' EXIT
-          sudo chroot work/rootfs /usr/bin/python3 /opt/alas/spike-f-ocr-gate.py \
-            --model-dir /opt/alas/models/ocr \
-            --rpc-path /opt/alas/module/ocr/rpc.py
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Build rootfs
+        env:
+          AZURPILOT_REF: ${{ inputs.azurpilot_ref || '88c4a41cea8aeaeafa7536db510d383ebba7213b' }}
+        run: bash rootfs/build/build-azurpilot.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -51,4 +50,36 @@ jobs:
           path: |
             dist/rootfs.tar.xz
             dist/BUILD_MANIFEST
+            dist/runtime.tar.xz
+            dist/latest.json
+          retention-days: 14
+
+  apk:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: rootfs
+          path: .tmp/azurpilot-artifact
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Bundle runtime and build debug APK
+        env:
+          GRADLE_USER_HOME: ${{ github.workspace }}/.tmp/gradle-home
+        run: |
+          mkdir -p app/app/src/main/assets/rootfs
+          cp .tmp/azurpilot-artifact/rootfs.tar.xz app/app/src/main/assets/rootfs/
+          cp .tmp/azurpilot-artifact/BUILD_MANIFEST app/app/src/main/assets/rootfs/
+          cd app
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: azurpilot-android-debug
+          path: app/app/build/outputs/apk/debug/*.apk
           retention-days: 14

@@ -44,7 +44,7 @@ import com.aliothmoon.maafw.theme.MaaDesignTokens
 import org.koin.compose.koinInject
 
 /** ALAS WebUI：App 内置环境监听的本机回环地址 */
-private const val ALAS_WEBUI_URL = "http://127.0.0.1:22267"
+private const val ALAS_WEBUI_URL = "http://127.0.0.1:25548"
 
 /**
  * 本机（HONOR PPG-AN00, WebView 151）实测 `vh` 单位恒为 0：页面的 layout viewport

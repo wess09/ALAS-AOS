@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">ALAS-AOS</string>
+    <string name="app_name">AzurPilot Android</string>
 
     <!-- Common -->
     <string name="common_close">Close</string>
@@ -130,15 +130,15 @@
     <string name="welcome_title">Welcome</string>
 
     <!-- Notifications -->
-    <string name="notification_channel_run">ALAS runtime guard</string>
+    <string name="notification_channel_run">AzurPilot runtime guard</string>
     <string name="notification_channel_run_desc">Guards the virtual display and bridge so the system does not reclaim the process</string>
     <string name="notification_channel_focus">Project messages</string>
     <string name="notification_channel_focus_desc">Alerts the PI project asks to push to you during a run</string>
     <string name="notification_focus_title">Project message</string>
-    <string name="notification_host_title">Guarding ALAS environment</string>
+    <string name="notification_host_title">Guarding AzurPilot environment</string>
     <string name="notification_host_content_ok">Virtual display #%1$d · bridge OK</string>
     <string name="notification_host_content_degraded">Virtual display #%1$d · bridge unreachable</string>
-    <string name="notification_host_content_proot">Built-in ALAS environment running (no virtual display)</string>
+    <string name="notification_host_content_proot">Built-in AzurPilot environment running (no virtual display)</string>
 
     <!-- Floating control layer -->
     <string name="accessibility_service_description">Press volume up and down together to open the control panel in primary-display mode. Only key events are filtered; screen content is never read.</string>
@@ -153,17 +153,17 @@
     <string name="overlay_host_privileged">Privileged process: %1$s</string>
     <string name="overlay_host_bridge">Bridge: %1$s</string>
     <string name="overlay_host_display">Virtual display: %1$s</string>
-    <string name="overlay_alas_status">ALAS scheduler: %1$s</string>
+    <string name="overlay_alas_status">AzurPilot scheduler: %1$s</string>
     <string name="overlay_alas_running">Running · pid %1$d</string>
     <string name="overlay_alas_stopped">Stopped</string>
     <string name="overlay_alas_unreachable">Environment not ready</string>
     <string name="overlay_alas_preparing">Preparing environment · %1$s</string>
     <string name="overlay_alas_preparing_generic">Preparing environment…</string>
     <string name="overlay_alas_start_failed">Start failed: %1$s</string>
-    <string name="overlay_alas_start">Start ALAS</string>
-    <string name="overlay_alas_stop">Stop ALAS</string>
+    <string name="overlay_alas_start">Start AzurPilot</string>
+    <string name="overlay_alas_stop">Stop AzurPilot</string>
     <string name="overlay_alas_log_empty">No logs yet</string>
-    <string name="overlay_alas_hint">Frequent actions live here; full configuration is in the in-app ALAS console</string>
+    <string name="overlay_alas_hint">Frequent actions live here; full configuration is in the in-app AzurPilot console</string>
     <string name="host_state_connected">connected</string>
     <string name="host_state_disconnected">disconnected</string>
     <string name="host_state_ok">OK</string>
@@ -269,7 +269,7 @@
     <string name="schedule_result_failed_service">Service failed to start</string>
 
     <!-- Navigation & dialogs -->
-    <string name="nav_alas">ALAS</string>
+    <string name="nav_alas">AzurPilot</string>
     <string name="nav_home">Home</string>
     <string name="nav_tasks">Tasks</string>
     <string name="nav_schedule">Schedule</string>
@@ -277,14 +277,14 @@
     <string name="dialog_cannot_start">Cannot start</string>
     <string name="dialog_ok">OK</string>
 
-    <!-- ALAS tab: WebUI container -->
-    <string name="alas_webui_not_running">ALAS is served by the app\'s built-in environment. The first launch needs initialization; if it stays down, check the runtime environment and retry</string>
+    <!-- AzurPilot tab: WebUI container -->
+    <string name="alas_webui_not_running">AzurPilot is served by the app\'s built-in environment. The first launch needs initialization; if it stays down, check the runtime environment and retry</string>
     <string name="alas_webui_retry">Retry connection</string>
     <string name="alas_webui_loading">Loading console…</string>
     <string name="proot_phase_preparing">Preparing runtime environment…</string>
-    <string name="proot_phase_updating">Hot-updating ALAS…</string>
-    <string name="proot_phase_starting">Starting ALAS service…</string>
-    <string name="proot_phase_failed">Failed to start ALAS environment: %1$s</string>
+    <string name="proot_phase_updating">Hot-updating AzurPilot…</string>
+    <string name="proot_phase_starting">Starting AzurPilot service…</string>
+    <string name="proot_phase_failed">Failed to start AzurPilot environment: %1$s</string>
 
     <!-- Hangar tab: virtual display preview + run config + control panel -->
     <string name="nav_hangar">Farming</string>
@@ -424,9 +424,9 @@
     <string name="app_log_clear_title">Clear launcher logs</string>
     <string name="app_log_clear_message">Deletes only the app.log rolling files; session.log and crash records are kept. This cannot be undone.</string>
 
-    <!-- ALAS logs (rootfs/opt/alas/log): error captures + daily logs -->
-    <string name="alas_log_title">ALAS logs</string>
-    <string name="alas_log_empty">No ALAS logs yet</string>
+    <!-- AzurPilot logs (rootfs/opt/azurpilot/log): error captures + daily logs -->
+    <string name="alas_log_title">AzurPilot logs</string>
+    <string name="alas_log_empty">No AzurPilot logs yet</string>
     <string name="alas_log_section_errors">Error records</string>
     <string name="alas_log_section_daily">Daily logs</string>
     <string name="alas_log_error_meta">%1$d files</string>
@@ -437,23 +437,23 @@
     <string name="log_tail_missing">The file no longer exists</string>
 
     <!-- Export -->
-    <string name="log_export_alas_title">Export ALAS logs</string>
+    <string name="log_export_alas_title">Export AzurPilot logs</string>
     <string name="log_export_launcher_title">Export launcher logs</string>
     <string name="log_export_share">Share</string>
     <string name="log_export_save">Save to device</string>
     <string name="log_export_running">Packing…</string>
     <string name="log_export_failed">Export failed: nothing to export</string>
     <string name="log_export_saved">Saved as %1$s</string>
-    <string name="log_export_subject">ALAS-AOS logs</string>
+    <string name="log_export_subject">AzurPilot Android logs</string>
 
     <!-- Settings "Logs" group entries -->
     <string name="settings_section_log">Logs</string>
     <string name="settings_log_launcher_desc">View launcher run logs and crash records</string>
-    <string name="settings_log_alas_desc">View ALAS daily logs and error captures</string>
-    <string name="settings_log_export_alas_desc">Pack the last 7 days of ALAS logs (official issue format)</string>
+    <string name="settings_log_alas_desc">View AzurPilot daily logs and error captures</string>
+    <string name="settings_log_export_alas_desc">Pack the last 7 days of AzurPilot logs and error records</string>
     <string name="settings_log_export_launcher_desc">Pack all launcher logs with device properties</string>
     <string name="settings_auto_clean_logs">Auto-clean logs</string>
-    <string name="settings_auto_clean_logs_desc">On cold start, deletes ALAS logs older than 7 days and truncates stale session logs</string>
+    <string name="settings_auto_clean_logs_desc">On cold start, deletes AzurPilot logs older than 7 days and truncates stale session logs</string>
     <string name="dialog_disable_auto_clean_title">Disable auto-clean</string>
     <string name="dialog_disable_auto_clean_message">With auto-clean off, expired logs are never removed and may take up significant storage over time.</string>
 
@@ -547,7 +547,7 @@
     <string name="notification_include_log_details">Attach the run log to the message</string>
     <string name="notification_section_test">Test push</string>
     <string name="notification_test_title">Test notification</string>
-    <string name="notification_test_message">This is a test notification from ALAS-AOS</string>
+    <string name="notification_test_message">This is a test notification from AzurPilot Android</string>
 
     <!-- Push channel names -->
     <string name="notification_provider_server_chan">ServerChan</string>
