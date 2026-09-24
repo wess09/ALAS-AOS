@@ -7,7 +7,7 @@ WORK_DIR="${WORK_DIR:-$REPO_ROOT/.tmp/azurpilot-build}"
 ROOTFS_DIR="$WORK_DIR/rootfs"
 DIST_DIR="${DIST_DIR:-$REPO_ROOT/dist}"
 SOURCE_REPO="${AZURPILOT_REPO:-https://github.com/wess09/AzurPilot.git}"
-SOURCE_REF="${AZURPILOT_REF:-51d6a60f89e46fe5933e4e31dd0c75f8bab69f23}"
+SOURCE_REF="${AZURPILOT_REF:-bda43b6467f06bd25c986714ab6b1580ac6a7150}"
 BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz}"
 
 if [[ $(id -u) -ne 0 ]]; then
@@ -74,8 +74,6 @@ install -m 0755 "$REPO_ROOT/rootfs/seeds/seed_azurpilot.py" \
     "$ROOTFS_DIR/opt/azurpilot/seed_azurpilot.py"
 install -m 0755 "$REPO_ROOT/rootfs/overlays/android_host.py" \
     "$ROOTFS_DIR/opt/azurpilot/android_host.py"
-install -m 0755 "$REPO_ROOT/rootfs/overlays/android_update.py" \
-    "$ROOTFS_DIR/opt/azurpilot/android_update.py"
 install -m 0755 "$REPO_ROOT/rootfs/build/azurpilot-ocr-gate.py" \
     "$ROOTFS_DIR/opt/azurpilot/azurpilot-ocr-gate.py"
 
@@ -96,6 +94,7 @@ PY
 rm -rf "$FRONTEND/node_modules"
 
 guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -c "import cv2,numpy,scipy,onnxruntime,rapidocr,ncnn; import module.api.app, module.device.device, module.ocr.al_ocr; print(\"IMPORTS_OK\")"'
+mkdir -p "$ROOTFS_DIR/opt/azurpilot/log"
 guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -m dev_tools.import_smoke_test'
 guest /bin/sh -c 'cd /opt/azurpilot && .venv/bin/python azurpilot-ocr-gate.py'
 
@@ -122,23 +121,6 @@ cp "$ROOTFS_DIR/opt/azurpilot/BUILD_MANIFEST" "$DIST_DIR/BUILD_MANIFEST"
 # Python 依赖位于版本目录外，源码更新时继续复用已验证的锁定环境。
 mv "$ROOTFS_DIR/opt/azurpilot/.venv" "$ROOTFS_DIR/opt/azurpilot-venv"
 ln -s ../azurpilot-venv "$ROOTFS_DIR/opt/azurpilot/.venv"
-
-# 热更新包与 APK 中的源码/前端来自同一构建结果；发布由用户另行决定。
-tar -C "$ROOTFS_DIR/opt/azurpilot" \
-    --exclude='./.venv' --exclude='./.git' --exclude='./log' \
-    -cJf "$DIST_DIR/runtime.tar.xz" .
-SOURCE_COMMIT="$SOURCE_COMMIT" DIST_DIR="$DIST_DIR" python3 - <<'PY'
-import json, os, pathlib, hashlib
-dist = pathlib.Path(os.environ['DIST_DIR'])
-commit = os.environ['SOURCE_COMMIT']
-manifest = json.loads((dist / 'BUILD_MANIFEST').read_text())
-index = {key: manifest[key] for key in
-         ('azurpilot_commit', 'uv_lock_sha256', 'android_api_version', 'python_version')}
-index['bundle_sha256'] = hashlib.sha256((dist / 'runtime.tar.xz').read_bytes()).hexdigest()
-index['bundle_url'] = ('https://github.com/wess09/ALAS-AOS/releases/download/'
-                       f'azurpilot-runtime/runtime-{commit}.tar.xz')
-(dist / 'latest.json').write_text(json.dumps(index, indent=2) + '\n')
-PY
 
 unmount_all
 for d in dev dev/pts proc sys etc/resolv.conf; do

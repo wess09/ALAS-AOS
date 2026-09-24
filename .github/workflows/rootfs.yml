@@ -1,67 +1,115 @@
-name: rootfs
+name: AzurPilot Android build
 
 on:
   workflow_dispatch:
     inputs:
       azurpilot_ref:
-        description: AzurPilot dev 的 commit SHA；留空使用已验证基线
+        description: AzurPilot dev commit SHA; blank uses current dev head
         required: false
         type: string
       reuse_rootfs_run_id:
-        description: 已通过的 rootfs Actions run ID；填写后只重建 APK
+        description: Existing successful rootfs run ID; blank rebuilds everything
         required: false
         type: string
+      publish_update:
+        description: Publish APK to the in-app dev update channel
+        required: false
+        default: false
+        type: boolean
+  repository_dispatch:
+    types: [azurpilot_updated]
+  schedule:
+    - cron: '17 * * * *'
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 concurrency:
-  group: rootfs-${{ github.ref }}
+  group: azurpilot-android-update
   cancel-in-progress: true
 
 jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+      should_build: ${{ steps.resolve.outputs.should_build }}
+      publish: ${{ steps.resolve.outputs.publish }}
+      version_code: ${{ steps.resolve.outputs.version_code }}
+      version_name: ${{ steps.resolve.outputs.version_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: resolve
+        env:
+          INPUT_REF: ${{ inputs.azurpilot_ref }}
+          DISPATCH_REF: ${{ github.event.client_payload.sha }}
+          INPUT_PUBLISH: ${{ inputs.publish_update }}
+          EVENT_NAME: ${{ github.event_name }}
+          SIGNING_KEY: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          ref="${DISPATCH_REF:-${INPUT_REF:-}}"
+          if [[ -z "$ref" ]]; then
+            ref="$(git ls-remote https://github.com/wess09/AzurPilot.git refs/heads/dev | awk '{print $1}')"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid AzurPilot ref: $ref" >&2; exit 1; }
+          publish=false
+          if [[ "$EVENT_NAME" != workflow_dispatch || "$INPUT_PUBLISH" == true ]]; then publish=true; fi
+          if [[ "$publish" == true && -z "$SIGNING_KEY" ]]; then
+            echo 'APK update signing secrets are not configured; skipping automatic build.'
+            echo "ref=$ref" >> "$GITHUB_OUTPUT"
+            echo "publish=$publish" >> "$GITHUB_OUTPUT"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            echo "version_code=$(date +%s)" >> "$GITHUB_OUTPUT"
+            echo "version_name=signing-not-configured" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          current="$(curl -fsSL --retry 2 'https://github.com/wess09/ALAS-AOS/releases/download/azurpilot-android-dev/latest.json' 2>/dev/null | jq -r '.azurpilotCommit // empty' || true)"
+          should_build=true
+          if [[ "$publish" == true && "$current" == "$ref" ]]; then should_build=false; fi
+          base="$(git describe --tags --always)"
+          short="${ref:0:10}"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(date +%s)" >> "$GITHUB_OUTPUT"
+          echo "version_name=${base#v}-ap.$short" >> "$GITHUB_OUTPUT"
+
   build:
-    if: ${{ inputs.reuse_rootfs_run_id == '' }}
+    needs: resolve
+    if: ${{ needs.resolve.outputs.should_build == 'true' && inputs.reuse_rootfs_run_id == '' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Runner info
         run: |
           uname -m
           nproc
           df -h
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
-
+      - uses: astral-sh/setup-uv@v6
       - name: Build rootfs
         env:
-          AZURPILOT_REF: ${{ inputs.azurpilot_ref || '51d6a60f89e46fe5933e4e31dd0c75f8bab69f23' }}
+          AZURPILOT_REF: ${{ needs.resolve.outputs.ref }}
         run: bash rootfs/build/build-azurpilot.sh
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: rootfs
           path: |
             dist/rootfs.tar.xz
             dist/BUILD_MANIFEST
-            dist/runtime.tar.xz
-            dist/latest.json
           retention-days: 14
 
   apk:
-    needs: build
-    if: ${{ always() && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
+    needs: [resolve, build]
+    if: ${{ always() && needs.resolve.outputs.should_build == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -76,18 +124,73 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Bundle runtime and build debug APK
+      - name: Prepare signing key
+        if: ${{ needs.resolve.outputs.publish == 'true' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo 'AZURPILOT_ANDROID_KEYSTORE_BASE64 is missing' >&2; exit 1; }
+          mkdir -p .tmp/signing
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > .tmp/signing/azurpilot.jks
+      - name: Bundle runtime and build APK
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.tmp/gradle-home
+          APP_VERSION_CODE: ${{ needs.resolve.outputs.version_code }}
+          APP_VERSION_NAME: ${{ needs.resolve.outputs.version_name }}
+          KEYSTORE_PATH: ${{ github.workspace }}/.tmp/signing/azurpilot.jks
+          KEYSTORE_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEY_PASSWORD }}
+          PUBLISH: ${{ needs.resolve.outputs.publish }}
         run: |
           mkdir -p app/app/src/main/assets/rootfs
           cp .tmp/azurpilot-artifact/rootfs.tar.xz app/app/src/main/assets/rootfs/
           cp .tmp/azurpilot-artifact/BUILD_MANIFEST app/app/src/main/assets/rootfs/
           cd app
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --console=plain --stacktrace
+          if [[ "$PUBLISH" == true ]]; then
+            ./gradlew :app:assembleRelease --console=plain --stacktrace
+          else
+            unset KEYSTORE_PATH KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD
+            ./gradlew :app:assembleDebug --console=plain --stacktrace
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: azurpilot-android-debug
-          path: app/app/build/outputs/apk/debug/*.apk
+          name: azurpilot-android-apk
+          path: app/app/build/outputs/apk/**/*.apk
           retention-days: 14
+
+  publish:
+    needs: [resolve, apk]
+    if: ${{ needs.resolve.outputs.publish == 'true' && needs.apk.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: azurpilot-android-apk
+          path: dist
+      - name: Publish in-app update channel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AP_REF: ${{ needs.resolve.outputs.ref }}
+          VERSION_CODE: ${{ needs.resolve.outputs.version_code }}
+          VERSION_NAME: ${{ needs.resolve.outputs.version_name }}
+        run: |
+          set -euo pipefail
+          apk="$(find dist -type f -name '*release*.apk' -print -quit)"
+          test -n "$apk"
+          asset="AzurPilot-Android-${AP_REF:0:10}.apk"
+          cp "$apk" "$asset"
+          sha="$(sha256sum "$asset" | awk '{print $1}')"
+          size="$(stat -c %s "$asset")"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/azurpilot-android-dev/$asset"
+          jq -n --argjson versionCode "$VERSION_CODE" --arg versionName "$VERSION_NAME" \
+            --arg azurpilotCommit "$AP_REF" --arg apkUrl "$url" --arg apkSha256 "$sha" \
+            --argjson apkSize "$size" \
+            '{versionCode:$versionCode,versionName:$versionName,azurpilotCommit:$azurpilotCommit,apkUrl:$apkUrl,apkSha256:$apkSha256,apkSize:$apkSize}' \
+            > latest.json
+          gh release view azurpilot-android-dev --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create azurpilot-android-dev --repo "$GITHUB_REPOSITORY" --prerelease \
+              --title 'AzurPilot Android 自动更新通道' \
+              --notes '由 AzurPilot dev 更新自动构建。安装后由 App 内更新器继续接收更新。'
+          gh release upload azurpilot-android-dev "$asset" latest.json --clobber --repo "$GITHUB_REPOSITORY"

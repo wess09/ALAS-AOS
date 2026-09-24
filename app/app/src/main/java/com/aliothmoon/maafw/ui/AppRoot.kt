@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -93,6 +95,7 @@ import com.aliothmoon.maafw.ui.logs.AppLogScreen
 import com.aliothmoon.maafw.ui.logs.LogExportController
 import com.aliothmoon.maafw.ui.settings.SettingsScreen
 import com.aliothmoon.maafw.ui.setup.ProvisionScreen
+import com.aliothmoon.maafw.update.AppUpdateManager
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -137,6 +140,7 @@ fun AppRoot(
     settingsViewModel: SettingsViewModel = koinViewModel(),
     permissionManager: PermissionManager = koinInject(),
     provisioner: RootfsProvisioner = koinInject(),
+    appUpdateManager: AppUpdateManager = koinInject(),
 ) {
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val readiness by permissionManager.readiness.collectAsStateWithLifecycle()
@@ -146,6 +150,8 @@ fun AppRoot(
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     var provisionSkipped by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { provisioner.start() }
+    val appUpdateState by appUpdateManager.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { appUpdateManager.check() }
     val showProvision = provisionState !is ProvisionState.Ready && !provisionSkipped
 
     // 部署就绪即起内置 ALAS 环境（自愈清锁→热更新→wrapper/WebUI；ProotHost 内幂等）
@@ -162,6 +168,30 @@ fun AppRoot(
     LaunchedEffect(darkTheme) { onDarkThemeChanged(darkTheme) }
 
     MaaFwTheme(themeStyle = settingsState.themeStyle, darkTheme = darkTheme) {
+        appUpdateState.available?.let { update ->
+            AlertDialog(
+                onDismissRequest = appUpdateManager::dismiss,
+                title = { Text(stringResource(R.string.app_update_title)) },
+                text = {
+                    Text(
+                        if (appUpdateState.downloading) stringResource(R.string.app_update_downloading)
+                        else stringResource(R.string.app_update_message, update.versionName, update.azurPilotCommit.take(10)),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !appUpdateState.downloading,
+                        onClick = appUpdateManager::downloadAndInstall,
+                    ) { Text(stringResource(R.string.app_update_install)) }
+                },
+                dismissButton = {
+                    TextButton(
+                        enabled = !appUpdateState.downloading,
+                        onClick = appUpdateManager::dismiss,
+                    ) { Text(stringResource(R.string.app_update_later)) }
+                },
+            )
+        }
         // NavHost 只承载二级页面；主 tab 仍由下面的 HorizontalPager 渲染
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()

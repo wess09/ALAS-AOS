@@ -13,6 +13,7 @@ import com.aliothmoon.maafw.domain.UserConfiguration
 import com.aliothmoon.maafw.i18n.LocalizedTextRenderer
 import com.aliothmoon.maafw.settings.AppSettingsGateway
 import com.aliothmoon.maafw.settings.AppSettingsManager
+import com.aliothmoon.maafw.update.AppUpdateManager
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -47,4 +48,5 @@ val coreModule = module {
     single<AppSettingsGateway> { get<AppSettingsManager>() }
 
     single { LocalizedTextRenderer(androidContext()) }
+    single { AppUpdateManager(androidContext(), get(named<AppCoroutineScope>())) }
 }

@@ -8,15 +8,15 @@
 - 真机已完成安装、首启部署、热更新和 WebUI 拉起。首轮日志发现 `/proc/stat` 权限故障；适配层已用 `/proc/<pid>/stat` starttime tick 完成进程身份后备，并覆盖进程登记和清场链。针对性测试与原设备/API/OCR 测试共 87 项通过。
 - 新增 `tools/watch-android-logs.ps1` 实时查看 App logcat 或 proot session 日志。对只提供 x86_64 原生 ABI、依赖 ARM 转译的模拟器给出明确失败原因。
 - 用户已确认 Root 模式能够运行。Shizuku 日志中的 `BIND_DENIED` 已在宿主源码修复：启动环境和任务前会走授权入口并等待虚拟屏就绪。AP 移动抽屉的正文穿透已在 AP 自身 CSS 修复。
-- AP 内置 Git 更新器不适用于已移除 `.git` 的 Android 运行时，Android 环境已改为显示 App 整包更新说明并停止 Git 检查。AOS 的整包更新客户端与回滚已就绪，但 `azurpilot-runtime` release 资产尚未发布；未获 release 指令前不能发布。
+- AP 内置 Git 更新器不适用于已移除 `.git` 的 Android 运行时，Android 环境已改为显示 App 整包更新说明并停止 Git 检查。用户随后确定采用 APK 级更新：AP `dev` push 派发构建、AOS 每小时兜底轮询，CI 预构建完整 APK 并更新固定 release，App 下载校验后交给系统覆盖安装。
 
 ## 阻断与下一步
 
-1. AOS 构建已改为直接检出 AzurPilot `dev` 提交 `51d6a60f8`，需重新执行完整 ARM64 rootfs 构建；旧 rootfs 不含移动端和更新器修复，不能复用。
+1. AOS 构建默认检出 AzurPilot `dev` 提交 `bda43b646`，需重新执行完整 ARM64 rootfs 构建；旧 rootfs 不含移动端和更新器修复，不能复用。
 2. 用新 rootfs 构建 APK，交给用户覆盖安装后复测 WebUI 启动、实例列表、调度任务和停止清场。
 3. 完成虚拟屏、截图、触控、挂机和工具任务真机验收。虚拟屏实验前后检查 `GestureNav|GestureSilde|NavigationBar` 均在 display 0；结束杀虚拟屏属主并确认仅剩 display 0。实际游戏任务和屏幕状态实验遵守用户现场授权边界。
 4. 多架构支持仍需分别构建 Python、原生依赖、OCR 和 rootfs，并按 ABI 打包选择；当前成品链是计划基线规定的 ARM64，x86_64 模拟器转译不能作为真机替代。
-5. 若用户明确授权发布，再从通过门禁的同一 Actions run 取 `runtime.tar.xz` 与 `latest.json`，发布到 `wess09/ALAS-AOS` 的 `azurpilot-runtime` release；未发布前 App 会保留内置版本。
+5. 自动发布需要在 `wess09/ALAS-AOS` 配置四个稳定签名 secrets；AP 的即时派发还可配置 `ALAS_AOS_DISPATCH_TOKEN`，未配置时由 AOS 每小时轮询兜底。
 
 ## 注意
 

@@ -20,12 +20,15 @@ private fun Project.versionGitWorkingDir(): File {
     }
 }
 
-/** versionCode counts commits in the selected version repo; the build fails without a git checkout */
+/** Unix commit time is monotonic across normal builds and leaves room for AP-triggered APK builds. */
 internal fun Project.gitVersionCode(): Int {
+    System.getenv("APP_VERSION_CODE")?.trim()?.takeIf { it.isNotEmpty() }?.let {
+        return it.toInt().also { code -> require(code > 0) { "APP_VERSION_CODE must be positive" } }
+    }
     val gitWorkingDir = versionGitWorkingDir()
     return providers.exec {
         workingDir(gitWorkingDir)
-        commandLine("git", "rev-list", "--count", "HEAD")
+        commandLine("git", "log", "-1", "--format=%ct", "HEAD")
     }.standardOutput.asText.get().trim().toInt()
 }
 
@@ -34,6 +37,7 @@ internal fun Project.gitVersionCode(): Int {
  * A describe output that does not match degrades to itself instead of blocking the build
  */
 internal fun Project.gitVersionName(): String {
+    System.getenv("APP_VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
     val gitWorkingDir = versionGitWorkingDir()
     val desc = providers.exec {
         workingDir(gitWorkingDir)

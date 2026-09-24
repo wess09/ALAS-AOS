@@ -31,13 +31,13 @@ import java.util.concurrent.TimeUnit
  * proot 会话宿主：以 App 进程为父，拉起 rootfs 内的 wrapper.py（WebUI 由 wrapper 监管）
  *
  * 链路（roadmap 阶段三第 3 条）：
- * 自愈清锁 → 铺 overlay → 播种实例配置 → 热更新（降级不阻塞）→ 必要时重放补丁
+ * 自愈清锁 → 播种实例配置 → 拉起 WebUI
  * → ProcessBuilder 拉起 proot 长跑会话 → 崩溃/退出带退避重拉
  *
  * 生命周期约定：
  * - **stdin 管道必须保持敞开**：wrapper 挂 stdin 监控线程，App 进程一死管道 EOF，
  *   wrapper 杀 runner/gui 进程组后自尽（防孤儿主链路；stop() 也是先关 stdin）
- * - 重拉走 supervisor 协程，退避 3s 翻倍至 60s；热更新每个 App 进程只跑一次
+ * - 重拉走 supervisor 协程，退避 3s 翻倍至 60s
  * - FGS 保活：会话活跃期间 RunForegroundService 钉住 app 进程（其退出判据已并入本会话状态）
  */
 class ProotHost(
@@ -55,10 +55,6 @@ class ProotHost(
 
     @Volatile
     private var wantRunning = false
-
-    /** 热更新每个 App 进程只跑一次（开屏那次）；崩溃重拉不再重复 */
-    @Volatile
-    private var updateAttempted = false
 
     private val rootfsDir: File get() = File(app.filesDir, "rootfs")
     private val alasDir: File get() = File(rootfsDir, "opt/azurpilot")
@@ -101,7 +97,6 @@ class ProotHost(
             File(rootfsDir, "opt/azurpilot.previous").takeIf { it.isDirectory }
                 ?.renameTo(alasDir)
         }
-        rollbackPendingUpdate()
         if (!sanityCheck()) return@withLock
 
         setState(ProotPhase.PREPARING, "清理残留")
@@ -116,15 +111,6 @@ class ProotHost(
             if (r.exit != 0) Timber.w("seed_azurpilot exit=%s out=%s", r.exit, r.output.take(300))
         }
 
-        if (!updateAttempted) {
-            updateAttempted = true
-            setState(ProotPhase.UPDATING, "检查 AzurPilot 更新")
-            runGuest(listOf(".venv/bin/python", "android_update.py"), UPDATE_TIMEOUT_MS)?.let { r ->
-                _state.update { it.copy(updateResult = r.output.lineSequence().lastOrNull().orEmpty()) }
-                if (r.exit != 0) Timber.w("AzurPilot update skipped: %s", r.output.takeLast(500))
-            }
-        }
-
         setState(ProotPhase.STARTING, "拉起 proot 会话")
         val proc = runCatching { spawnSession() }.getOrElse {
             fail("exec proot: ${it.message}")
@@ -135,16 +121,11 @@ class ProotHost(
         supervise(proc)
 
         if (awaitServices(SERVICES_UP_MS)) {
-            File(alasDir, ".android_update_pending").delete()
             setState(ProotPhase.RUNNING)
             Timber.i("proot session up: AzurPilot ready on %d", WEBUI_PORT)
         } else {
             setState(ProotPhase.STARTING, "等待 AzurPilot 服务就绪")
             Timber.w("AzurPilot WebUI not ready within %dms", SERVICES_UP_MS)
-            if (File(alasDir, ".android_update_pending").isFile) {
-                runCatching { proc.outputStream.close() }
-                proc.destroyForcibly()
-            }
         }
     }
 
@@ -254,7 +235,6 @@ class ProotHost(
                 backoff = (backoff * 2).coerceAtMost(RESTART_BACKOFF_MAX_MS)
                 if (!wantRunning) break
                 cleanupStale()
-                rollbackPendingUpdate()
                 val next = runCatching { spawnSession() }
                     .onFailure { Timber.w(it, "proot respawn failed") }
                     .getOrNull() ?: continue
@@ -262,7 +242,6 @@ class ProotHost(
                 proc = next
                 spawnedAt = System.currentTimeMillis()
                 if (awaitServices(SERVICES_UP_MS)) {
-                    File(alasDir, ".android_update_pending").delete()
                     backoff = RESTART_BACKOFF_INIT_MS
                     setState(ProotPhase.RUNNING)
                     Timber.i("proot session respawned, wrapper ready")
@@ -347,27 +326,6 @@ class ProotHost(
     }
 
     // ------------------------------------------------------------------ 自愈清理与 DNS
-
-    /** 启动失败时恢复上一个可运行源码版本。 */
-    private fun rollbackPendingUpdate() {
-        val pending = File(alasDir, ".android_update_pending")
-        val previous = File(rootfsDir, "opt/azurpilot.previous")
-        if (!pending.isFile || !previous.isDirectory) return
-        val failed = File(rootfsDir, "opt/azurpilot.failed")
-        failed.deleteRecursively()
-        if (!alasDir.renameTo(failed)) {
-            Timber.e("AzurPilot rollback: failed to move current runtime")
-            return
-        }
-        if (!previous.renameTo(alasDir)) {
-            failed.renameTo(alasDir)
-            Timber.e("AzurPilot rollback: failed to restore previous runtime")
-            return
-        }
-        failed.deleteRecursively()
-        _state.update { it.copy(updateResult = "更新启动失败，已恢复上一版本") }
-        Timber.w("AzurPilot update rolled back after startup failure")
-    }
 
     /** 自愈清锁：proot 临时目录整体重来 + git 锁 + reloadalas（会话不在跑时才可调） */
     private suspend fun cleanupStale() {
@@ -482,7 +440,6 @@ class ProotHost(
         const val WEBUI_PORT = 25548
 
         private const val GUEST_ALAS_ROOT = "/opt/azurpilot"
-        private const val UPDATE_TIMEOUT_MS = 300_000L
         private const val SERVICES_UP_MS = 90_000L
         private const val SHORT_EXEC_MS = 60_000L
         private const val STOP_GRACE_MS = 8_000L
