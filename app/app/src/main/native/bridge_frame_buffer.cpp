@@ -27,39 +27,43 @@ static void ProcessFrameDataV2(
         uint8_t *__restrict dst_bgr,
         int width,
         int height,
-        int src_stride) {
+        int src_stride,
+        int pixel_stride) {
     for (int y = 0; y < height; ++y) {
-        const uint8_t *s = src + static_cast<size_t>(y) * src_stride;
         uint8_t *d3 = dst_bgr + y * width * 3;
         int x = 0;
 
 #if defined(__ARM_NEON)
-        for (; x <= width - 16; x += 16) {
-            uint8x16x4_t rgba = vld4q_u8(s);
-            s += 64;
-            uint8x16x3_t bgr;
-            bgr.val[0] = rgba.val[2];
-            bgr.val[1] = rgba.val[1];
-            bgr.val[2] = rgba.val[0];
-            vst3q_u8(d3, bgr);
-            d3 += 48;
-        }
-        for (; x <= width - 8; x += 8) {
-            uint8x8x4_t rgba = vld4_u8(s);
-            s += 32;
-            uint8x8x3_t bgr;
-            bgr.val[0] = rgba.val[2];
-            bgr.val[1] = rgba.val[1];
-            bgr.val[2] = rgba.val[0];
-            vst3_u8(d3, bgr);
-            d3 += 24;
+        if (pixel_stride == 4) {
+            const uint8_t *s = src + static_cast<size_t>(y) * src_stride;
+            for (; x <= width - 16; x += 16) {
+                uint8x16x4_t rgba = vld4q_u8(s);
+                s += 64;
+                uint8x16x3_t bgr;
+                bgr.val[0] = rgba.val[2];
+                bgr.val[1] = rgba.val[1];
+                bgr.val[2] = rgba.val[0];
+                vst3q_u8(d3, bgr);
+                d3 += 48;
+            }
+            for (; x <= width - 8; x += 8) {
+                uint8x8x4_t rgba = vld4_u8(s);
+                s += 32;
+                uint8x8x3_t bgr;
+                bgr.val[0] = rgba.val[2];
+                bgr.val[1] = rgba.val[1];
+                bgr.val[2] = rgba.val[0];
+                vst3_u8(d3, bgr);
+                d3 += 24;
+            }
         }
 #endif
         for (; x < width; ++x) {
-            d3[0] = s[2];
-            d3[1] = s[1];
-            d3[2] = s[0];
-            s += 4;
+            const uint8_t *pixel = src + static_cast<size_t>(y) * src_stride +
+                                   static_cast<size_t>(x) * pixel_stride;
+            d3[0] = pixel[2];
+            d3[1] = pixel[1];
+            d3[2] = pixel[0];
             d3 += 3;
         }
     }
@@ -184,8 +188,6 @@ static void UnlockFrame(const FrameBuffer *frame) {
     }
 }
 
-static constexpr int64_t SEEDED_FRAME_COUNT = -1;
-
 void InitFrameBuffers(int width, int height) {
     if (g_frame_buffers_initialized.load(std::memory_order_acquire)) {
         ReleaseFrameBuffers();
@@ -215,15 +217,10 @@ void InitFrameBuffers(int width, int height) {
         g_buffer_states[i].store(FRAME_STATE_FREE, std::memory_order_release);
         g_reader_counts[i].store(0, std::memory_order_release);
     }
-
-
-    FrameBuffer &seed = g_buffers[0];
-    memset(seed.bgr_data, 0, seed.bgr_size);
-    seed.frame_count = SEEDED_FRAME_COUNT;
-    g_read_buffer.store(&seed, std::memory_order_release);
+    g_read_buffer.store(nullptr, std::memory_order_release);
     g_frame_count.store(0, std::memory_order_release);
     g_frame_buffers_initialized.store(true, std::memory_order_release);
-    LOGI("InitFrameBuffers: Success %dx%d, seeded a blank frame", width, height);
+    LOGI("InitFrameBuffers: Success %dx%d, waiting for first real frame", width, height);
 }
 
 void ReleaseFrameBuffers() {
@@ -245,8 +242,33 @@ void ReleaseFrameBuffers() {
     g_frame_count.store(0, std::memory_order_release);
 }
 
-bool WriteHardwareBufferToFrame(AHardwareBuffer *buffer) {
-    if (!buffer || !g_frame_buffers_initialized.load(std::memory_order_acquire)) {
+bool WriteImageToFrame(AImage *image) {
+    if (!image || !g_frame_buffers_initialized.load(std::memory_order_acquire)) {
+        return false;
+    }
+
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t row_stride = 0;
+    int32_t pixel_stride = 0;
+    int data_length = 0;
+    uint8_t *data = nullptr;
+    const media_status_t width_status = AImage_getWidth(image, &width);
+    const media_status_t height_status = AImage_getHeight(image, &height);
+    const media_status_t row_status = AImage_getPlaneRowStride(image, 0, &row_stride);
+    const media_status_t pixel_status = AImage_getPlanePixelStride(image, 0, &pixel_stride);
+    const media_status_t data_status = AImage_getPlaneData(image, 0, &data, &data_length);
+
+    if (width_status != AMEDIA_OK || height_status != AMEDIA_OK ||
+        row_status != AMEDIA_OK || pixel_status != AMEDIA_OK ||
+        data_status != AMEDIA_OK || !data || pixel_stride < 3) {
+        static std::atomic<bool> logged{false};
+        if (!logged.exchange(true)) {
+            LOGE("AImage plane unavailable: size=%d/%d row=%d pixel=%d data=%d ptr=%p len=%d",
+                 width_status, height_status, row_status, pixel_status, data_status,
+                 static_cast<void *>(data),
+                 data_length);
+        }
         return false;
     }
 
@@ -254,22 +276,28 @@ bool WriteHardwareBufferToFrame(AHardwareBuffer *buffer) {
     if (!target) {
         return false;
     }
-
-    void *srcAddr = nullptr;
-    if (AHardwareBuffer_lock(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1, nullptr,
-                             &srcAddr) != 0) {
+    if (width != target->width || height != target->height ||
+        row_stride < width * pixel_stride ||
+        data_length < row_stride * (height - 1) + width * pixel_stride) {
+        static std::atomic<bool> logged{false};
+        if (!logged.exchange(true)) {
+            LOGE("AImage plane mismatch: got=%dx%d row=%d pixel=%d len=%d expected=%dx%d",
+                 width, height, row_stride, pixel_stride, data_length,
+                 target->width, target->height);
+        }
         MarkBufferFree(target);
         return false;
     }
 
-    AHardwareBuffer_Desc desc;
-    AHardwareBuffer_describe(buffer, &desc);
-    ProcessFrameDataV2(static_cast<uint8_t *>(srcAddr), target->bgr_data, target->width,
-                       target->height, static_cast<int>(desc.stride) * 4);
-    AHardwareBuffer_unlock(buffer, nullptr);
+    ProcessFrameDataV2(data, target->bgr_data, target->width, target->height,
+                       row_stride, pixel_stride);
 
     target->frame_count = g_frame_count.fetch_add(1, std::memory_order_acq_rel) + 1;
     CommitWriteBuffer(target);
+    if (target->frame_count == 1) {
+        LOGI("Captured first real frame: %dx%d row=%d pixel=%d len=%d",
+             width, height, row_stride, pixel_stride, data_length);
+    }
     return true;
 }
 

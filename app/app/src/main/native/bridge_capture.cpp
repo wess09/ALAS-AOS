@@ -26,10 +26,7 @@ static void onImageAvailable(void *context, AImageReader *reader) {
         return;
     }
 
-    AHardwareBuffer *hb = nullptr;
-    if (AImage_getHardwareBuffer(image, &hb) == AMEDIA_OK && hb) {
-        WriteHardwareBufferToFrame(hb);
-    }
+    WriteImageToFrame(image);
 
     bool handedOver = false;
     if (IsPreviewEnabled()) {

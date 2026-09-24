@@ -20,7 +20,7 @@ AzurPilot WebUI + RuntimeService + ProcessManager（单进程任务管理）
 Shizuku 特权进程（虚拟屏 / 截图 / 点击 / 滑动 / 应用控制）
 ```
 
-AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `cafdd115ac008b839353a457490263c476774558`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
+AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `393a57f4eda95ad2fad4a373297605c668a88ffb`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
 
 ## 构建与验证
 
