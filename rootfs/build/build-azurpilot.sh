@@ -31,7 +31,11 @@ mkdir -p "$ROOTFS_DIR"
 tar -xzf "$BASE_ARCHIVE" -C "$ROOTFS_DIR"
 
 MOUNTS=()
-bind_mount() { mkdir -p "$2"; mount --bind "$1" "$2"; MOUNTS+=("$2"); }
+bind_mount() {
+    if [[ -d $1 ]]; then mkdir -p "$2"; else mkdir -p "$(dirname "$2")"; touch "$2"; fi
+    mount --bind "$1" "$2"
+    MOUNTS+=("$2")
+}
 unmount_all() {
     local i
     for ((i=${#MOUNTS[@]}-1;i>=0;i--)); do umount -lf "${MOUNTS[i]}" || true; done
