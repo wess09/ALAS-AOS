@@ -659,6 +659,7 @@
     <string name="app_update_title">AzurPilot Android update</string>
     <string name="app_update_message">Version %1$s is ready (AzurPilot %2$s). App data will be preserved.</string>
     <string name="app_update_downloading">Downloading and verifying the APK…</string>
+    <string name="app_update_error">Update failed: %1$s</string>
     <string name="app_update_install">Download and install</string>
     <string name="app_update_later">Later</string>
 </resources>

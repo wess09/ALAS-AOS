@@ -46,11 +46,7 @@ class AppUpdateManager(
         scope.launch(MaaDispatchers.IO) {
             _state.update { it.copy(checking = true, error = null) }
             runCatching {
-                val connection = URL("$INDEX_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
-                connection.connectTimeout = 12_000
-                connection.readTimeout = 12_000
-                connection.setRequestProperty("Cache-Control", "no-cache")
-                val body = connection.inputStream.bufferedReader().use { it.readText() }
+                val body = requestText("$INDEX_URL?t=${System.currentTimeMillis()}")
                 val json = JSONObject(body)
                 AppUpdateInfo(
                     versionCode = json.getInt("versionCode"),
@@ -85,22 +81,26 @@ class AppUpdateManager(
             runCatching {
                 val dir = File(context.cacheDir, "updates").apply { mkdirs() }
                 val target = File(dir, "azurpilot-update.apk")
+                target.delete()
                 val connection = URL(info.apkUrl).openConnection() as HttpURLConnection
-                connection.connectTimeout = 20_000
-                connection.readTimeout = 120_000
-                connection.inputStream.use { input -> target.outputStream().use(input::copyTo) }
+                try {
+                    connection.instanceFollowRedirects = true
+                    connection.connectTimeout = 20_000
+                    connection.readTimeout = 120_000
+                    require(connection.responseCode in 200..299) { "APK 下载失败（HTTP ${connection.responseCode}）" }
+                    val responseSize = connection.contentLengthLong
+                    require(responseSize <= 0 || responseSize == info.apkSize) { "APK 响应大小与更新清单不一致" }
+                    connection.inputStream.use { input -> target.outputStream().use(input::copyTo) }
+                } finally {
+                    connection.disconnect()
+                }
                 require(target.length() == info.apkSize) { "APK 大小校验失败" }
                 require(sha256(target) == info.apkSha256) { "APK 校验失败" }
-                target
-            }.onSuccess { apk ->
-                val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", apk)
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(intent)
+                launchInstaller(target)
+            }.onSuccess {
                 _state.update { it.copy(downloading = false) }
             }.onFailure { error ->
+                File(context.cacheDir, "updates/azurpilot-update.apk").delete()
                 Timber.w(error, "App update download failed")
                 _state.update { it.copy(downloading = false, error = error.message ?: "下载更新失败") }
             }
@@ -108,6 +108,29 @@ class AppUpdateManager(
     }
 
     fun dismiss() = _state.update { it.copy(available = null, error = null) }
+
+    private fun requestText(url: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        return try {
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = 12_000
+            connection.readTimeout = 12_000
+            connection.setRequestProperty("Cache-Control", "no-cache")
+            require(connection.responseCode in 200..299) { "更新检查失败（HTTP ${connection.responseCode}）" }
+            connection.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun launchInstaller(apk: File) {
+        val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", apk)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    }
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

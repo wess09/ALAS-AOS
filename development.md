@@ -8,7 +8,7 @@
 
 - `app/`：Kotlin/Compose Android 宿主。`provision/RootfsProvisioner.kt` 解包内置 Ubuntu rootfs；`proot/ProotHost.kt` 管理单个 AzurPilot WebUI 进程及最终清场；`remote/internal/BridgeServer.kt` 连接虚拟屏截图、触控、应用控制。挂机页、悬浮窗和 WebView 共用回环控制接口。
 - `rootfs/build/build-azurpilot.sh`：原生 ARM64 Ubuntu 24.04 构建；锁定 Python 3.14.6、`uv.lock`，预构建 React，验证 OCR CPU 推理，输出随 APK 发布的 rootfs 与构建清单。
-- `.github/workflows/rootfs.yml`：监听 AzurPilot 更新派发并按小时兜底检查；新 commit 通过门禁后构建固定签名 APK，更新 `azurpilot-android-dev` release 和 App 更新清单。
+- `.github/workflows/rootfs.yml`：由 AOS 每 15 分钟轮询 AzurPilot `dev`；新 commit 通过门禁后构建固定签名 APK，更新 `azurpilot-android-dev` release 和 App 更新清单。
 - `update/AppUpdateManager.kt`：App 启动时检查 APK 更新清单，下载并校验 SHA-256，随后调用系统安装器覆盖安装。
 - AzurPilot Android 设备后端、控制 API 和 proot 进程兼容位于 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev` 分支；AOS 构建直接钉住对应提交，不维护源码覆盖补丁。
 - `rootfs/seeds/`：Android deploy 配置及实例种子；`rootfs/overlays/`：单进程入口和兼容性检查、原子切换、失败回滚脚本。

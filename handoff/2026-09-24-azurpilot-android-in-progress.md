@@ -8,15 +8,16 @@
 - 真机已完成安装、首启部署、热更新和 WebUI 拉起。首轮日志发现 `/proc/stat` 权限故障；适配层已用 `/proc/<pid>/stat` starttime tick 完成进程身份后备，并覆盖进程登记和清场链。针对性测试与原设备/API/OCR 测试共 87 项通过。
 - 新增 `tools/watch-android-logs.ps1` 实时查看 App logcat 或 proot session 日志。对只提供 x86_64 原生 ABI、依赖 ARM 转译的模拟器给出明确失败原因。
 - 用户已确认 Root 模式能够运行。Shizuku 日志中的 `BIND_DENIED` 已在宿主源码修复：启动环境和任务前会走授权入口并等待虚拟屏就绪。同机 Chrome 正常而 WebView 异常，宿主现追加专用 UA 标记，AP 针对该标记禁用移动抽屉毛玻璃并建立 paint containment。
-- AP 内置 Git 更新器不适用于已移除 `.git` 的 Android 运行时，Android 环境已改为显示 App 整包更新说明并停止 Git 检查。用户随后确定采用 APK 级更新：AP `dev` push 派发构建、AOS 每小时兜底轮询，CI 预构建完整 APK 并更新固定 release，App 下载校验后交给系统覆盖安装。
+- AP 内置 Git 更新器不适用于已移除 `.git` 的 Android 运行时，Android 环境已改为显示 App 整包更新说明并停止 Git 检查。用户随后确定采用 APK 级更新：AOS 每 15 分钟轮询 AP `dev`，CI 预构建完整 APK 并更新固定 release，App 下载校验后交给系统覆盖安装；AP 仓库不再承担跨仓库触发。
+- CI run `36002470839` 已用 AP `266f4222b` 完整通过 ARM64 rootfs 与 debug APK 构建，包含 System WebView 抽屉修复。App 更新器随后补齐 HTTP/响应大小校验、安装器异常收口和界面错误提示，需复用该 rootfs 再跑一次 APK 编译门禁。
 
 ## 阻断与下一步
 
-1. AOS 构建默认检出 AzurPilot `dev` 提交 `266f4222b`；该提交已补齐资源卡新增字段的多语言翻译，本地 React 生产构建通过。需重新执行完整 ARM64 rootfs 构建；旧 rootfs 不含 WebView 兼容和更新器修复，不能复用。
-2. 用新 rootfs 构建 APK，交给用户覆盖安装后复测 WebUI 启动、实例列表、调度任务和停止清场。
+1. 复用 CI run `36002470839` 的新 rootfs 编译更新器收口后的 APK；通过后将 AOS 验证分支快进合入默认分支，使 15 分钟轮询真正生效。
+2. 下载通过门禁的 APK，交给用户覆盖安装后复测 WebUI 启动、实例列表、调度任务和停止清场。
 3. 完成虚拟屏、截图、触控、挂机和工具任务真机验收。虚拟屏实验前后检查 `GestureNav|GestureSilde|NavigationBar` 均在 display 0；结束杀虚拟屏属主并确认仅剩 display 0。实际游戏任务和屏幕状态实验遵守用户现场授权边界。
 4. 多架构支持仍需分别构建 Python、原生依赖、OCR 和 rootfs，并按 ABI 打包选择；当前成品链是计划基线规定的 ARM64，x86_64 模拟器转译不能作为真机替代。
-5. 自动发布需要在 `wess09/ALAS-AOS` 配置四个稳定签名 secrets；AP 的即时派发还可配置 `ALAS_AOS_DISPATCH_TOKEN`，未配置时由 AOS 每小时轮询兜底。
+5. 自动发布需要在 `wess09/ALAS-AOS` 配置四个稳定签名 secrets。检测与构建完全由 AOS workflow 负责，不需要 AP 仓库 token。
 
 ## 注意
 

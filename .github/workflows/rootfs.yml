@@ -16,10 +16,8 @@ on:
         required: false
         default: false
         type: boolean
-  repository_dispatch:
-    types: [azurpilot_updated]
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7,22,37,52 * * * *'
 
 permissions:
   actions: read
@@ -45,13 +43,12 @@ jobs:
       - id: resolve
         env:
           INPUT_REF: ${{ inputs.azurpilot_ref }}
-          DISPATCH_REF: ${{ github.event.client_payload.sha }}
           INPUT_PUBLISH: ${{ inputs.publish_update }}
           EVENT_NAME: ${{ github.event_name }}
           SIGNING_KEY: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          ref="${DISPATCH_REF:-${INPUT_REF:-}}"
+          ref="${INPUT_REF:-}"
           if [[ -z "$ref" ]]; then
             ref="$(git ls-remote https://github.com/wess09/AzurPilot.git refs/heads/dev | awk '{print $1}')"
           fi

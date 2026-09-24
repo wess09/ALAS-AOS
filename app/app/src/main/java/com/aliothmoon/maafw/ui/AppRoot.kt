@@ -175,6 +175,7 @@ fun AppRoot(
                 text = {
                     Text(
                         if (appUpdateState.downloading) stringResource(R.string.app_update_downloading)
+                        else if (appUpdateState.error != null) stringResource(R.string.app_update_error, appUpdateState.error!!)
                         else stringResource(R.string.app_update_message, update.versionName, update.azurPilotCommit.take(10)),
                     )
                 },

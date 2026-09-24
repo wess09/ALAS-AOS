@@ -20,11 +20,11 @@ AzurPilot WebUI + RuntimeService + ProcessManager（单进程任务管理）
 Shizuku 特权进程（虚拟屏 / 截图 / 点击 / 滑动 / 应用控制）
 ```
 
-AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `266f4222beff539b5cf35583d271dc46e8837b08`。Android 设备后端、控制 API、System WebView 移动抽屉兼容和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
+AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `4f8b671a0dcf705d5c5fa322b9cacc0c69261865`。Android 设备后端、控制 API、System WebView 移动抽屉兼容和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
 
 ## 构建与验证
 
-`.github/workflows/rootfs.yml` 支持手动触发、AzurPilot 仓库派发和每小时兜底轮询。检测到新的 `dev` commit 后，ARM64 runner 预构建 React 前端、Python 3.14 rootfs 和 OCR 资源并执行导入/OCR 门禁；随后构建稳定签名的 release APK，发布到 `azurpilot-android-dev` 更新通道。APK 缺少有效 rootfs、构建清单或签名配置时构建会失败。
+`.github/workflows/rootfs.yml` 支持手动触发，并由 AOS 每 15 分钟检查一次 AzurPilot `dev`。检测到新 commit 后，ARM64 runner 预构建 React 前端、Python 3.14 rootfs 和 OCR 资源并执行导入/OCR 门禁；随后构建稳定签名的 release APK，发布到 `azurpilot-android-dev` 更新通道。APK 缺少有效 rootfs、构建清单或签名配置时构建会失败。
 
 App 启动时读取更新通道的 `latest.json`。远端 `versionCode` 更新时弹出安装提示，下载后校验文件大小与 SHA-256，再调用 Android 系统安装器覆盖安装。首次切换到自动更新通道需要安装使用该通道固定签名的 APK；之后可连续覆盖更新。
 
