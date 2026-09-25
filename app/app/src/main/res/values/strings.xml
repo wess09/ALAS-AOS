@@ -657,4 +657,12 @@
     <string name="azurpilot_browser_title">AzurPilot WebUI</string>
     <string name="azurpilot_browser_ready">WebUI 已在浏览器标签页中打开。关闭标签页即可返回 App。</string>
     <string name="azurpilot_browser_open">打开 WebUI</string>
+    <string name="gateway_startup_auto">启动后自动开始挂机</string>
+    <string name="gateway_overview_empty">暂无调度任务</string>
+    <string name="gateway_overview_next">下一个任务：%1$s · %2$s（共 %3$d 个）</string>
+    <string name="settings_runtime">运行时</string>
+    <string name="settings_runtime_commit">AzurPilot 提交</string>
+    <string name="settings_runtime_unknown">未知</string>
+    <string name="settings_runtime_managed">内置运行时随 App 整包更新，不单独热更；有新版本时打开 App 会提示安装。</string>
+    <string name="settings_runtime_check">检查 App 更新</string>
 </resources>

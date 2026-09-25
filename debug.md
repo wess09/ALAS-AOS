@@ -30,6 +30,18 @@
 - **根本原因**：Windows 不允许重命名仍被进程持有句柄的目录——当时 shell 的工作目录（以及 IDE 的索引）正落在该目录里。
 - **解决方案**：先把 shell 的 cwd 切到仓库根再执行 `mv`，或对该目录单独重试（句柄随上一条命令退出而释放）：`for i in 1 2 3; do mv ... && break; sleep 2; done`。批量脚本里不要用 `set -e` 掩盖成「部分成功」——失败后先 `ls` 确认真实状态再补做，避免漏改。
 
+## [2026-09-25] 裸调 `/android/*` 会 400：上游实例解析有一个必然落空的硬编码回落
+
+- **现象**：App 里「停止挂机」点了没反应、工具任务（半自动点击/活动剧情）点了没反应；调度器没跑时整个控制面板还显示「环境未就绪」。同一个后端，用浏览器打开 WebUI 一切正常。
+- **根本原因**：上游 `module/api/android.py` 的 `instance(request)` 在请求没带 `config` 查询参数时，会 `next((key for key, proc in _processes.items() if proc.alive), '<硬编码的实例名>')`，再拿结果过一次 `configs.path(name)`（文件不存在即抛 `NOT_FOUND`）。那个硬编码名字是上游基础模块的默认实例名，而本部署播种的实例名是另一个（见同日另一条坑），因此**只要走到回落分支就必然 400**。哪些调用会走到：`/status`、`/logs`、`/stop`、`/tool/stop`——App 原先只给 `/start` 与 `/tool/start` 带了 `config`，其余全裸调。调度器在跑时 `/stop` 恰好能借「取第一个存活进程」蒙对，一旦那一刻进程状态没读到就落回硬编码名 → 400 → 界面停在原状，表现就是「停止没反应」。
+- **解决方案**：把 `config` 当作必填——`/status`、`/logs`、`/stop`、`/tool/stop` 全部显式带上（停止优先用 `/status` 回报的在跑实例名，否则用下拉选中项）。另外把 `GET /configs` 提到刷新链最前：它**不**解析实例，是「WebUI 进程活着」最可靠的探针，还能在调度器没起时就把实例列表读出来。**判据：调用带「可选参数」的接口时，先去看它在参数缺省时回落到什么——回落值若是对方的默认值，跨部署就会变成一个必然失败的分支。**
+
+## [2026-09-25] AGP 默认 debug keystore 是每次构建现生成的：CI 出的 debug APK 互相装不上
+
+- **现象**：CI 产出的 debug APK 覆盖安装到已装同版本 APK 的设备上，报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`（签名不一致）；每次 CI 构建的 APK 签名都不同。
+- **根本原因**：构建脚本只给 release 配了签名；debug 走 AGP 默认的 `~/.android/debug.keystore`。本地这份由 Android SDK 生成、CI runner 上每次都是**新生成**的（`~/.android` 不在缓存里），于是每个 runner、每次构建的 debug 签名都不一样。
+- **解决方案**：仓库内固定一份 `app/app/debug.keystore`（Android 通用的公开调试密钥，`androiddebugkey`/`android`/有效期 30 年），在约定插件里让 debug signingConfig 指向它，路径与口令可用 `DEBUG_KEYSTORE_PATH` / `DEBUG_KEYSTORE_PASSWORD` 等覆盖。提交调试密钥是标准做法——它本就是公开的，为的正是让所有产物签名一致。用 `./gradlew :app:signingReport` 确认 debug variant 的 Store 已指向仓内文件。
+
 ## [2026-09-25] seed 把「模块名」当成「实例名」：首启播种的配置名整个是错的
 
 - **现象**：首启播种出的实例配置文件名、上游默认实例名、App 侧默认选中项，三者互不相同，谁都不是上游认的那一个。

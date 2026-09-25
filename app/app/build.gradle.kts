@@ -90,6 +90,9 @@ dependencies {
     implementation(libs.androidx.window)
     implementation(libs.androidx.browser)
 
+    // AzurPilot /api/v1/ws 网关：WebSocket 富接口（实例/总览/自启/热更新）
+    implementation(libs.okhttp)
+
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 

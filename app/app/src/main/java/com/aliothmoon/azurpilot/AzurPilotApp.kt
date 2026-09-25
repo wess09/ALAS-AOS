@@ -19,12 +19,16 @@ import com.aliothmoon.azurpilot.overlay.OverlayController
 import com.aliothmoon.azurpilot.overlay.screensaver.ScreenSaverOverlayManager
 import com.aliothmoon.azurpilot.privileged.PermissionManager
 import com.aliothmoon.azurpilot.privileged.RemoteServiceManager
+import com.aliothmoon.azurpilot.proot.AzurPilotApi
+import com.aliothmoon.azurpilot.proot.AzurPilotGateway
 import com.aliothmoon.azurpilot.proot.AzurPilotRunController
 import com.aliothmoon.azurpilot.service.HostState
 import com.aliothmoon.azurpilot.settings.AppSettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
@@ -79,7 +83,18 @@ class AzurPilotApp : Application() {
         val provider = koin.get<AppSettingsManager>().startupBackend::value
         RemoteServiceManager.initialize(this, provider)
         koin.get<HostState>().start()
-        koin.get<AzurPilotRunController>().start()
+        val runController = koin.get<AzurPilotRunController>()
+        runController.start()
+        // 富接口：与薄接口并存。实例选择由运行控制器持有，这里把它转给网关做订阅
+        koin.get<AzurPilotGateway>().start()
+        val api = koin.get<AzurPilotApi>()
+        api.start()
+        koin.get<CoroutineScope>(named<AppCoroutineScope>()).launch {
+            runController.state
+                .map { it.selectedConfig }
+                .distinctUntilChanged()
+                .collect { api.onInstanceSelected(it) }
+        }
         koin.get<OverlayController>().setup()
         koin.get<ScreenSaverOverlayManager>().setup()
     }

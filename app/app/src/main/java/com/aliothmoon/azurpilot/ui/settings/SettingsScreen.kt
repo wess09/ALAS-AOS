@@ -24,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.koinInject
 import com.aliothmoon.azurpilot.BuildConfig
 import com.aliothmoon.azurpilot.R
 import com.aliothmoon.azurpilot.domain.RemoteBackend
@@ -32,12 +34,15 @@ import com.aliothmoon.azurpilot.i18n.AppLocales
 import com.aliothmoon.azurpilot.settings.SettingsIntent
 import com.aliothmoon.azurpilot.settings.SettingsUiState
 import com.aliothmoon.azurpilot.theme.AppTokens
+import androidx.compose.material3.Button
+import com.aliothmoon.azurpilot.proot.AzurPilotApi
 import com.aliothmoon.azurpilot.ui.components.AppCard
 import com.aliothmoon.azurpilot.ui.components.AppFieldLabel
 import com.aliothmoon.azurpilot.ui.components.AppInfoRow
 import com.aliothmoon.azurpilot.ui.components.AppLabeledControlRow
 import com.aliothmoon.azurpilot.ui.components.AppNavigationRow
 import com.aliothmoon.azurpilot.ui.components.AppSingleChoiceFlow
+import com.aliothmoon.azurpilot.update.AppUpdateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +79,7 @@ fun SettingsScreen(
             DisplayCard(state, onIntent)
             LogCard(state, onIntent, onOpenAppLog, onOpenRunnerLog, onExportRunnerLogs, onExportLauncherLogs)
             OtherCard(state, onIntent)
+            RuntimeCard()
             AboutCard()
         }
     }
@@ -231,5 +237,36 @@ private fun AboutCard() {
     AppCard(title = stringResource(R.string.settings_about), collapsible = true) {
         AppInfoRow(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME)
         AppInfoRow(stringResource(R.string.settings_build), BuildConfig.VERSION_CODE.toString())
+    }
+}
+
+/**
+ * 运行时卡：内置 AzurPilot 的提交，以及「更新怎么走」
+ *
+ * Android 下上游有意关闭了运行时热更（`updater.status` 直接回 `managedByAndroid=true`、
+ * `available=false`），运行时是随 App 整包走的——所以这里不做 git 式热更按钮，
+ * 只展示版本并把用户引到 App 整包更新上。
+ */
+@Composable
+private fun RuntimeCard(api: AzurPilotApi = koinInject(), updateManager: AppUpdateManager = koinInject()) {
+    val apiState by api.state.collectAsStateWithLifecycle()
+    val updateState by updateManager.state.collectAsStateWithLifecycle()
+    AppCard(title = stringResource(R.string.settings_runtime), collapsible = true) {
+        AppInfoRow(
+            stringResource(R.string.settings_runtime_commit),
+            apiState.runtimeCommit?.take(10) ?: stringResource(R.string.settings_runtime_unknown),
+        )
+        Text(
+            text = stringResource(R.string.settings_runtime_managed),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(
+            onClick = updateManager::check,
+            enabled = !updateState.downloading,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_runtime_check))
+        }
     }
 }

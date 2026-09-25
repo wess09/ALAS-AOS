@@ -1,8 +1,19 @@
 # Devlog
 
 > 倒序排列，最新在上；按发版版本号分段。
->
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
+>
+### 2026-09-25 · 未发版：接入 AzurPilot 富接口（自启 / 任务总览 / 运行时）
+- **接入 AzurPilot 富接口 `/api/v1/ws`**（用户选定「自启 + 任务总览」「运行时热更新」）：新增 WS 网关客户端与 App 侧状态层，挂机页加「调度总览 + 启动后自动开始挂机」，设置页加「运行时」卡。鉴权走**本机直连免密**——网关的 `is_local_client()` 只要求来源与 Host 是回环且无 Origin 头，而 OkHttp 的 WebSocket 天然不带 Origin，故无需 WebUI 密码。
+- **运行时热更在 Android 下被上游有意关闭**：`update_service.py` 的 `status()` 开头即 `if self.android: ... managedByAndroid=True, available=False`，运行时随 APK 整包走。因此设置页那张卡只展示运行时提交并提供「检查 App 更新」（走已有整包更新器），未做 git 式热更按钮；要真热更需先在上游放开该分支。
+### 2026-09-25 · 未发版：版本号/签名标准化，修 WebUI 就绪判定、停止挂机与工具任务
+
+- **版本号标准化**：改为 `1.0.<本仓提交数>[.<内置运行时的上游短 SHA>]`，例如 `1.0.84.1841cb1941`。三个输入（提交数、上游 commit）都与构建时刻无关，因此同一份「外壳 + 运行时」在任何机器、任何时刻构建都得到同一个版本号，CI 与本地一致。原先 CI 用 `date +%s` 覆盖 versionCode、用 `git describe` 拼 versionName，导致同一份代码每次构建版本都不同、且与本地不一致。
+- **签名一致**：新增仓内固定的 `app/app/debug.keystore` 并让 debug 构建走它。AGP 默认取 `~/.android/debug.keystore`——本地由 SDK 生成、CI runner 上每次都是新的，于是每个 CI debug APK 签名都不同、互相覆盖安装报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`。该文件是 Android 通用的公开调试密钥（`androiddebugkey`/`android`），提交它正是为了让所有产物签名一致；可用 `DEBUG_KEYSTORE_PATH` 等环境变量覆盖。
+- **修「卡在环境准备」**：WebUI 页原先等 `ProotPhase.RUNNING` 才允许/自动打开浏览器，而那是 **wrapper** 就绪的判据；实践上 `gui.py` 一起来、浏览器打开 `127.0.0.1:25548` 就能用，外壳却还在「环境准备中」白拦一道。改为以真实可达为准（复用运行控制器每 4s 的探针）。
+- **修「无法停止挂机」与「工具任务不可用」**：上游 `instance()` 在请求未显式带 `config` 时会**回落到硬编码的某个实例名**再经 `configs.path()` 校验，该名字在本部署里不存在 → 400 NOT_FOUND。App 原先只给 `/start`、`/tool/start` 带了 `config`，`/status`、`/logs`、`/stop`、`/tool/stop` 都裸调，于是停止与工具停在「点了没反应」。现在四者一律显式带 `config`（停止时优先用 `/status` 回报的在跑实例），并把 `/configs` 挪到刷新链最前——它不解析实例，是「WebUI 进程活着」最可靠的探针，也让实例列表在调度器没起时照样可读。
+- **验证**：`:app:compileDebugKotlin` 通过；`check_i18n_strings.py` 563/563 零差异；版本号本地与注入运行时两种取法都验过；`signingReport` 确认 debug variant 已指向仓内 keystore。
+
 
 ### 2026-09-25 · 未发版：宿主源码全量去掉历史品牌命名，统一为 AzurPilot
 

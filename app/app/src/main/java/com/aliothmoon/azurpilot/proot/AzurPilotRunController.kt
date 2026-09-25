@@ -102,7 +102,14 @@ class AzurPilotRunController(
         startAfterEnvironmentReady("$BASE/start?config=$config")
     }
 
-    fun stopRunner() = postThenRefresh("$BASE/stop")
+    /**
+     * 停止调度器：**必须显式带 config**
+     *
+     * 上游 `instance()` 在没给 config 时回落到硬编码的实例名再做 `configs.path()` 校验，
+     * 那个名字在本部署里不存在 → 400 NOT_FOUND → 表现就是「点了停止没反应」。
+     * 正在跑时以 /status 回报的实例为准，否则退回下拉选中的那个。
+     */
+    fun stopRunner() = postThenRefresh("$BASE/stop?config=${encodedConfig(running = true)}")
 
     /**
      * 工具启停：与调度器同一条 postThenRefresh 通道。
@@ -110,11 +117,18 @@ class AzurPilotRunController(
      */
     fun startTool(name: String) {
         val tool = URLEncoder.encode(name, "UTF-8")
-        val config = URLEncoder.encode(_state.value.selectedConfig, "UTF-8")
-        startAfterEnvironmentReady("$BASE/tool/start?name=$tool&config=$config")
+        startAfterEnvironmentReady("$BASE/tool/start?name=$tool&config=${encodedConfig()}")
     }
 
-    fun stopTool() = postThenRefresh("$BASE/tool/stop")
+    /** 同 [stopRunner]：不带 config 会落到上游那个必然不存在的回落实例名上 */
+    fun stopTool() = postThenRefresh("$BASE/tool/stop?config=${encodedConfig(running = true)}")
+
+    /** 当前该对哪个实例说话：优先 /status 回报的在跑实例，否则用下拉选中项 */
+    private fun encodedConfig(running: Boolean = false): String {
+        val state = _state.value
+        val name = if (running) state.runningConfig ?: state.selectedConfig else state.selectedConfig
+        return URLEncoder.encode(name, "UTF-8")
+    }
 
     private fun startAfterEnvironmentReady(url: String) {
         scope.launch {
@@ -145,10 +159,21 @@ class AzurPilotRunController(
         }
     }
 
-    /** 可达即拉日志尾：loopback 读文件尾部开销可忽略，空闲时 gui 启动日志恰是排障现场 */
+    /**
+     * 一次刷新
+     *
+     * 顺序有讲究：`/configs` 不解析实例（直接回 `config/` 下的文件名列表），因此它是
+     * 「WebUI 进程活着」最可靠的探针——首次部署、实例还没播种、调度器没起时它照样能答。
+     * 先用它定可达性并把选中的实例自愈到列表里，后面带 `config=` 的调用才不会撞上
+     * 上游那个必然不存在的回落实例名。
+     */
     private fun refreshLocked() {
-        val body = get("$BASE/status", HTTP_TIMEOUT_MS)
-        if (body == null) {
+        val configs = runCatching {
+            val arr = JSONObject(get("$BASE/configs", HTTP_TIMEOUT_MS) ?: return@runCatching null)
+                .getJSONArray("configs")
+            List(arr.length()) { arr.getString(it) }
+        }.getOrNull()
+        if (configs == null) {
             _state.update {
                 it.copy(
                     reachable = false, runnerAlive = false, pid = null,
@@ -159,7 +184,24 @@ class AzurPilotRunController(
             }
             return
         }
-        val j = runCatching { JSONObject(body) }.getOrNull() ?: return
+        // 持久化的选择可能已被 WebUI 删掉；列表非空时自愈回第一项
+        if (configs.isNotEmpty() && _state.value.selectedConfig !in configs) {
+            selectConfig(configs.first())
+        }
+
+        val body = get("$BASE/status?config=${encodedConfig()}", HTTP_TIMEOUT_MS)
+        val j = body?.let { runCatching { JSONObject(it) }.getOrNull() }
+        if (j == null) {
+            // WebUI 在答，但这个实例还没有状态可报（例如实例文件刚被删、或播种还没落盘）
+            _state.update {
+                it.copy(
+                    reachable = true, runnerAlive = false, pid = null,
+                    logLines = 0, logTail = emptyList(), configs = configs,
+                    runningConfig = null, toolAlive = false, toolName = null,
+                )
+            }
+            return
+        }
         val runnerAlive = j.optBoolean("runner_alive")
         val pid = if (j.isNull("pid")) null else j.optInt("pid")
         val runningConfig = if (j.isNull("config")) null else j.optString("config")
@@ -167,17 +209,8 @@ class AzurPilotRunController(
         val toolName = if (j.isNull("tool_name")) null else j.optString("tool_name")
         val guiAlive = j.optBoolean("gui_alive")
         val logLines = j.optInt("log_lines")
-        val configs = runCatching {
-            val arr = JSONObject(get("$BASE/configs", HTTP_TIMEOUT_MS) ?: return@runCatching null)
-                .getJSONArray("configs")
-            List(arr.length()) { arr.getString(it) }
-        }.getOrNull() ?: _state.value.configs
-        // 持久化的选择可能已被 WebUI 删掉；列表非空时自愈回第一项
-        val selected = _state.value.selectedConfig
-        if (configs.isNotEmpty() && selected !in configs) {
-            selectConfig(configs.first())
-        }
-        val tail = get("$BASE/logs?tail=$LOG_TAIL", HTTP_TIMEOUT_MS)
+        // 日志同样要带 config：不带的话上游会去解析那个不存在的回落实例名
+        val tail = get("$BASE/logs?tail=$LOG_TAIL&config=${encodedConfig()}", HTTP_TIMEOUT_MS)
             ?.split('\n')
             ?.filter { it.isNotBlank() }
             ?: _state.value.logTail

@@ -662,4 +662,12 @@
     <string name="azurpilot_browser_title">AzurPilot WebUI</string>
     <string name="azurpilot_browser_ready">The WebUI is open in a browser tab. Close the tab to return to the app.</string>
     <string name="azurpilot_browser_open">Open WebUI</string>
+    <string name="gateway_startup_auto">Auto-start on launch</string>
+    <string name="gateway_overview_empty">No scheduled tasks</string>
+    <string name="gateway_overview_next">Next: %1$s · %2$s (%3$d total)</string>
+    <string name="settings_runtime">Runtime</string>
+    <string name="settings_runtime_commit">AzurPilot commit</string>
+    <string name="settings_runtime_unknown">Unknown</string>
+    <string name="settings_runtime_managed">The bundled runtime ships with the app package and is not hot-updated separately; when a new build exists the app prompts to install it.</string>
+    <string name="settings_runtime_check">Check for app update</string>
 </resources>

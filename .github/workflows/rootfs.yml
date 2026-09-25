@@ -34,8 +34,7 @@ jobs:
       ref: ${{ steps.resolve.outputs.ref }}
       should_build: ${{ steps.resolve.outputs.should_build }}
       publish: ${{ steps.resolve.outputs.publish }}
-      version_code: ${{ steps.resolve.outputs.version_code }}
-      version_name: ${{ steps.resolve.outputs.version_name }}
+      runtime_commit_time: ${{ steps.resolve.outputs.runtime_commit_time }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,20 +59,19 @@ jobs:
             echo "ref=$ref" >> "$GITHUB_OUTPUT"
             echo "publish=$publish" >> "$GITHUB_OUTPUT"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
-            echo "version_code=$(date +%s)" >> "$GITHUB_OUTPUT"
-            echo "version_name=signing-not-configured" >> "$GITHUB_OUTPUT"
+            echo "runtime_commit_time=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           current="$(curl -fsSL --retry 2 "https://github.com/${{ github.repository }}/releases/download/azurpilot-android-dev/latest.json" 2>/dev/null | jq -r '.azurpilotCommit // empty' || true)"
           should_build=true
           if [[ "$publish" == true && "$current" == "$ref" ]]; then should_build=false; fi
-          base="$(git describe --tags --always)"
-          short="${ref:0:10}"
+          # 版本号由 Gradle 统一算：max(本仓提交时间, 上游提交时间)。这里只负责把上游那半取回来。
+          runtime_commit_time="$(curl -fsSL "https://api.github.com/repos/wess09/AzurPilot/commits/$ref" 2>/dev/null | jq -r '.commit.committer.date' 2>/dev/null || true)"
+          runtime_commit_time="$(date -u -d "$runtime_commit_time" +%s 2>/dev/null || echo 0)"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
-          echo "version_code=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "version_name=${base#v}-ap.$short" >> "$GITHUB_OUTPUT"
+          echo "runtime_commit_time=$runtime_commit_time" >> "$GITHUB_OUTPUT"
 
   build:
     needs: resolve
@@ -106,6 +104,10 @@ jobs:
 
   apk:
     needs: [resolve, build]
+    outputs:
+      # 版本号由 Gradle 从代码算出，这里从构建产物元数据读回，供发布步骤写进更新清单
+      version_code: ${{ steps.version.outputs.version_code }}
+      version_name: ${{ steps.version.outputs.version_name }}
     if: ${{ always() && needs.resolve.outputs.should_build == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -132,8 +134,8 @@ jobs:
       - name: Bundle runtime and build APK
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.tmp/gradle-home
-          APP_VERSION_CODE: ${{ needs.resolve.outputs.version_code }}
-          APP_VERSION_NAME: ${{ needs.resolve.outputs.version_name }}
+          APP_RUNTIME_COMMIT: ${{ needs.resolve.outputs.ref }}
+          APP_RUNTIME_COMMIT_TIME: ${{ needs.resolve.outputs.runtime_commit_time }}
           KEYSTORE_PATH: ${{ github.workspace }}/.tmp/signing/azurpilot.jks
           KEYSTORE_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
@@ -151,6 +153,18 @@ jobs:
             unset KEYSTORE_PATH KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD
             ./gradlew :app:assembleDebug --console=plain --stacktrace
           fi
+      - name: Read version from build output
+        id: version
+        run: |
+          set -euo pipefail
+          meta="$(find app/app/build/outputs/apk -name output-metadata.json -print -quit)"
+          test -n "$meta"
+          code="$(jq -r '.elements[0].versionCode' "$meta")"
+          name="$(jq -r '.elements[0].versionName' "$meta")"
+          test -n "$code" && test "$code" != null
+          echo "version_code=$code" >> "$GITHUB_OUTPUT"
+          echo "version_name=$name" >> "$GITHUB_OUTPUT"
+          echo "APK version: $name ($code)"
       - uses: actions/upload-artifact@v4
         with:
           name: azurpilot-android-apk
@@ -170,13 +184,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AP_REF: ${{ needs.resolve.outputs.ref }}
-          VERSION_CODE: ${{ needs.resolve.outputs.version_code }}
-          VERSION_NAME: ${{ needs.resolve.outputs.version_name }}
+          VERSION_CODE: ${{ needs.apk.outputs.version_code }}
+          VERSION_NAME: ${{ needs.apk.outputs.version_name }}
         run: |
           set -euo pipefail
           apk="$(find dist -type f -name '*release*.apk' -print -quit)"
           test -n "$apk"
-          asset="AzurPilot-Android-${AP_REF:0:10}.apk"
+          asset="AzurPilot-Android-${VERSION_NAME}.apk"
           cp "$apk" "$asset"
           sha="$(sha256sum "$asset" | awk '{print $1}')"
           size="$(stat -c %s "$asset")"

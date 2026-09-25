@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aliothmoon.azurpilot.R
+import com.aliothmoon.azurpilot.proot.AzurPilotRunController
 import com.aliothmoon.azurpilot.proot.ProotHost
 import com.aliothmoon.azurpilot.proot.ProotPhase
 import com.aliothmoon.azurpilot.service.HostState
@@ -42,6 +43,11 @@ private val AZURPILOT_WEBUI_URI: Uri = Uri.parse("http://127.0.0.1:25548")
  * 同机 Chrome 已验证页面正常，而 System WebView 在 fixed 抽屉的合成上存在设备相关
  * 故障。Custom Tab 仍停留在 App 的返回栈内，并直接访问同一设备的回环 WebUI；若浏览器
  * 不支持 Custom Tabs，则退回普通 ACTION_VIEW。
+ *
+ * **就绪判据是「WebUI 在答」，不是 proot 阶段**：`ProotPhase.RUNNING` 等的是 wrapper 就绪，
+ * 而 WebUI 进程往往更早就能服务——实践上 gui.py 一起来，浏览器打开 127.0.0.1:25548 就能用，
+ * 此时外壳还停在「环境准备中」，用户被白拦一道。这里改看 `AzurPilotRunController.reachable`
+ * （它每 4s 打一次 `/android/configs`），答得上就允许打开并自动打开一次。
  */
 @Composable
 fun AzurPilotScreen(
@@ -49,10 +55,13 @@ fun AzurPilotScreen(
     modifier: Modifier = Modifier,
     hostState: HostState = koinInject(),
     prootHost: ProotHost = koinInject(),
+    runController: AzurPilotRunController = koinInject(),
 ) {
     val context = LocalContext.current
     val hostSnapshot by hostState.snapshot.collectAsStateWithLifecycle()
     val prootState by prootHost.state.collectAsStateWithLifecycle()
+    val runState by runController.state.collectAsStateWithLifecycle()
+    val webUiReady = runState.reachable
     var openedForActivation by remember { mutableStateOf(false) }
     var browserError by remember { mutableStateOf<String?>(null) }
 
@@ -66,8 +75,8 @@ fun AzurPilotScreen(
         }
     }
 
-    LaunchedEffect(active, prootState.phase) {
-        if (active && prootState.phase == ProotPhase.RUNNING && !openedForActivation) {
+    LaunchedEffect(active, webUiReady) {
+        if (active && webUiReady && !openedForActivation) {
             openedForActivation = true
             openWebUi(context).onFailure {
                 browserError = it.message
@@ -89,10 +98,10 @@ fun AzurPilotScreen(
         )
         Spacer(Modifier.height(AppTokens.Spacing.md))
         Text(
-            text = when (prootState.phase) {
+            text = if (webUiReady) {
+                browserError ?: stringResource(R.string.azurpilot_browser_ready)
+            } else when (prootState.phase) {
                 ProotPhase.FAILED -> stringResource(R.string.proot_phase_failed, prootState.detail)
-                ProotPhase.RUNNING -> browserError
-                    ?: stringResource(R.string.azurpilot_browser_ready)
                 ProotPhase.PREPARING -> stringResource(R.string.proot_phase_preparing)
                 ProotPhase.UPDATING -> stringResource(R.string.proot_phase_updating)
                 ProotPhase.STARTING -> stringResource(R.string.proot_phase_starting)
@@ -102,12 +111,12 @@ fun AzurPilotScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(AppTokens.Spacing.lg))
-        if (prootState.phase != ProotPhase.RUNNING) {
+        if (!webUiReady) {
             CircularProgressIndicator()
             Spacer(Modifier.height(AppTokens.Spacing.lg))
         }
         Button(
-            enabled = prootState.phase == ProotPhase.RUNNING,
+            enabled = webUiReady,
             onClick = {
                 browserError = null
                 openWebUi(context).onFailure { browserError = it.message }

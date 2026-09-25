@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.aliothmoon.azurpilot.R
 import com.aliothmoon.azurpilot.constant.DefaultDisplayConfig
+import com.aliothmoon.azurpilot.proot.AzurPilotApi
+import com.aliothmoon.azurpilot.proot.AzurPilotApiState
 import com.aliothmoon.azurpilot.proot.AzurPilotRunState
 import com.aliothmoon.azurpilot.proot.ProotHost
 import com.aliothmoon.azurpilot.proot.ProotPhase
@@ -49,11 +52,15 @@ fun AzurPilotControlPanel(
     onToolStop: () -> Unit,
     modifier: Modifier = Modifier,
     showTools: Boolean = true,
+    /** 挂机页传 true：额外显示 /api/v1/ws 来的「调度总览」与「自启」；悬浮窗空间紧张，保持关闭 */
+    showGateway: Boolean = false,
 ) {
     // wrapper 不可达时区分「环境准备中（带阶段明细）」与真正的「未就绪」——
     // 准备链全程 2~5 分钟且 release 日志静默，状态行是唯一可见的进度面
     val prootHost: ProotHost = koinInject()
     val proot by prootHost.state.collectAsStateWithLifecycle()
+    val api: AzurPilotApi = koinInject()
+    val apiState by api.state.collectAsStateWithLifecycle()
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
@@ -102,6 +109,9 @@ fun AzurPilotControlPanel(
                 },
             )
         }
+        if (showGateway && apiState.connected) {
+            AzurPilotSchedulerOverview(apiState)
+        }
         AzurPilotLogBoard(
             lines = run.logTail,
             linesCount = run.logLines,
@@ -109,6 +119,18 @@ fun AzurPilotControlPanel(
                 .weight(1f)
                 .fillMaxWidth(),
         )
+        if (showGateway) {
+            AppLabeledControlRow(
+                label = stringResource(R.string.gateway_startup_auto),
+                trailing = {
+                    Switch(
+                        checked = apiState.startupEnabled,
+                        enabled = apiState.connected && !apiState.busy,
+                        onCheckedChange = api::setStartupEnabled,
+                    )
+                },
+            )
+        }
         Button(
             onClick = if (run.runnerAlive) onRunStop else onRunStart,
             enabled = run.reachable && !run.busy,
@@ -250,4 +272,30 @@ fun ToolSlotButton(
     ) {
         Text(stringResource(if (running) R.string.hangar_tool_stop else labelRes))
     }
+}
+
+/**
+ * 调度总览：来自 `/api/v1/ws` 的 `overview` 主题（与日志板同源不同接口）
+ *
+ * 只显示「下一个要跑什么」这一件事——完整任务表在 WebUI 里，App 侧给一眼就够。
+ */
+@Composable
+private fun AzurPilotSchedulerOverview(apiState: AzurPilotApiState) {
+    val next = apiState.tasks.firstOrNull { it.state != "running" } ?: apiState.tasks.firstOrNull()
+    val text = when {
+        apiState.tasks.isEmpty() -> stringResource(R.string.gateway_overview_empty)
+        next != null -> stringResource(
+            R.string.gateway_overview_next,
+            next.name,
+            next.nextRun,
+            apiState.tasks.size,
+        )
+        else -> stringResource(R.string.gateway_overview_empty)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

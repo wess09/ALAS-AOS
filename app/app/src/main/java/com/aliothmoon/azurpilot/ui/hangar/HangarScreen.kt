@@ -123,6 +123,8 @@ fun HangarScreen(
                     .weight(1f)
                     .fillMaxWidth(),
                 showTools = false,
+                // 挂机页带上 /api/v1/ws 的调度总览与自启开关
+                showGateway = true,
             )
         }
     }
