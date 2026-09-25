@@ -250,13 +250,17 @@ jobs:
           set -euo pipefail
           signer="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
           for apk in dist/azurpilot-full.apk dist/azurpilot-update.apk; do
-            result="$("$signer" verify --verbose --print-certs "$apk")"
-            printf '%s\n' "$result"
-            for scheme in v1 v2 v3; do
+            # apksigner reports the scheme used for the requested Android API range.
+            # The APK's minSdk is 28, so the default verification reports only v3.
+            for entry in 'v1 23 23' 'v2 24 27' 'v3 28 36'; do
+              read -r scheme min_sdk max_sdk <<< "$entry"
+              result="$("$signer" verify --verbose --min-sdk-version "$min_sdk" --max-sdk-version "$max_sdk" "$apk")"
               grep -Eq "^Verified using ${scheme} scheme .*: true$" <<< "$result" || {
+                printf '%s\n' "$result" >&2
                 echo "$apk is missing a valid $scheme signature" >&2
                 exit 1
               }
+              echo "$apk: $scheme verified for Android API $min_sdk-$max_sdk"
             done
           done
       - uses: actions/upload-artifact@v4
