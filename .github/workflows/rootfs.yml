@@ -159,6 +159,18 @@ jobs:
         with:
           node-version: '24'
       - uses: astral-sh/setup-uv@v6
+      - uses: actions/cache@v4
+        with:
+          # uv / npm 缓存都是内容寻址的：restore-keys 命中上一次的条目就能复用绝大部分
+          # wheel 与包，只会补差额；key 里带上游 ref 是为了每次上游更新后能重新存一份最新的。
+          # 版本与哈希仍由 uv.lock / package-lock.json 校验，旧缓存不会串味。
+          path: |
+            .tmp/azurpilot-build/ubuntu-base.tar.gz
+            .tmp/azurpilot-build/uv-cache
+            .tmp/azurpilot-build/npm-cache
+          key: rootfs-${{ runner.os }}-${{ runner.arch }}-${{ needs.resolve.outputs.ref }}
+          restore-keys: |
+            rootfs-${{ runner.os }}-${{ runner.arch }}-
       - name: Build rootfs
         env:
           AZURPILOT_REF: ${{ needs.resolve.outputs.ref }}

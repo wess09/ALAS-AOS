@@ -47,6 +47,11 @@ touch "$ROOTFS_DIR/etc/resolv.conf"
 bind_mount "$WORK_DIR/resolv.conf" "$ROOTFS_DIR/etc/resolv.conf"
 for d in dev dev/pts proc sys; do bind_mount "/$d" "$ROOTFS_DIR/$d"; done
 
+# uv 的下载缓存外移到宿主：内容寻址，CI 可跨提交复用，省掉每次重下 arm64 wheel。
+# 只能外移 uv-cache（打包前本来就要删）；UV_PYTHON_INSTALL_DIR 要随 rootfs 出厂，动不得。
+mkdir -p "$WORK_DIR/uv-cache"
+bind_mount "$WORK_DIR/uv-cache" "$ROOTFS_DIR/opt/uv-cache"
+
 guest() {
     chroot "$ROOTFS_DIR" /usr/bin/env -i HOME=/root LANG=C.UTF-8 LC_ALL=C.UTF-8 \
         DEBIAN_FRONTEND=noninteractive GIT_TERMINAL_PROMPT=0 \
@@ -140,9 +145,16 @@ mv "$ROOTFS_DIR/opt/azurpilot/.venv" "$ROOTFS_DIR/opt/azurpilot-venv"
 ln -s ../azurpilot-venv "$ROOTFS_DIR/opt/azurpilot/.venv"
 
 unmount_all
-for d in dev dev/pts proc sys etc/resolv.conf; do
+for d in dev dev/pts proc sys etc/resolv.conf opt/uv-cache; do
     if mountpoint -q "$ROOTFS_DIR/$d"; then echo "挂载未清理: $d" >&2; exit 1; fi
 done
+# 缓存是 root 写的，这里交还 runner 用户：post-step 的 actions/cache 以 runner 身份打包上传
+if [[ -n ${SUDO_UID:-} ]]; then
+    chown -R "$SUDO_UID:${SUDO_GID:-$SUDO_UID}" \
+        "$WORK_DIR/uv-cache" "$WORK_DIR/npm-cache" "$WORK_DIR/ubuntu-base.tar.gz" ||
+        echo '缓存目录 chown 失败（不影响构建，只可能影响缓存保存）' >&2
+fi
+# opt/uv-cache 是宿主缓存挂进来的，此刻已卸挂，下面删掉的只是空挂载点
 rm -rf "$ROOTFS_DIR/opt/uv-cache" "$ROOTFS_DIR/root/.cache" "$ROOTFS_DIR/var/lib/apt/lists"/*
 rm -rf "$ROOTFS_DIR/opt/azurpilot/.git"
 find "$ROOTFS_DIR" -type d -name __pycache__ -prune -exec rm -rf {} +

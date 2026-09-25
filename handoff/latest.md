@@ -2,7 +2,8 @@
 
 ## 最新进度
 
-- 2026-09-26 后续变更：APK 编译从 ubuntu-24.04 迁到 macOS arm64（默认 `macos-26`，dispatch 输入 `apk_runner` 可回落 macos-15 / ubuntu-24.04）；apk job 去掉第二次 assemble 前的 `clean`、给 `GRADLE_USER_HOME` 挂缓存、GNU-only 用法（`base64 -d`、`sort -V`、`find -quit`）换成两平台通吃的写法、增量包发布前加体积断言；新增 `.github/actions/runner-info` 复合 action，build 与 apk 两个 job 开头打印 CPU 型号、核数、内存、磁盘、JDK、Android SDK 组件与单核粗基准。rootfs job 仍必须留在 Linux arm64。未跑过 CI。
+- 2026-09-26 后续变更（2）：rootfs 构建接入缓存。uv 下载缓存原本在 chroot 内（`/opt/uv-cache`）随 rootfs 一起删，现改为 bind-mount 宿主 `.tmp/azurpilot-build/uv-cache` 再挂回 guest，构建完留在宿主侧供下次复用；`UV_PYTHON_INSTALL_DIR` 要随 rootfs 出厂（venv 指向它），未动。CI 侧缓存 uv-cache / npm-cache / Ubuntu base 包三处，key 带上游 ref、restore-keys 兜底。卸挂校验加入 `opt/uv-cache`（否则残留挂载会让后面那句 `rm -rf` 删掉宿主缓存），构建末尾把缓存 chown 回 runner 供 post-step 打包。未跑过 CI。
+- 2026-09-26 后续变更：APK 编译从 ubuntu-24.04 迁到 macOS arm64（默认 `macos-26`，dispatch 输入 `apk_runner` 可回落 macos-15 / ubuntu-24.04）；apk job 去掉第二次 assemble 前的 `clean`、给 `GRADLE_USER_HOME` 挂缓存、GNU-only 用法（`base64 -d`、`sort -V`、`find -quit`）换成两平台通吃的写法、增量包发布前加体积断言；新增 `.github/actions/runner-info` 复合 action，build 与 apk 两个 job 开头打印 CPU 型号、核数、内存、磁盘、JDK、Android SDK 组件与单核粗基准。rootfs job 仍必须留在 Linux arm64（chroot + apt + uv 执行 arm64 用户态）。
 - 2026-09-26 当前变更：Runtime 缺失（轻量 APK 未内置、或已装目录不完整）时不再停在「未内置」，改为自动从 GitHub Release 下载 rootfs 部署，与内置包走同一条解压流水线；部署页新增下载源选择（直连 GitHub / ghproxy 镜像，复用设置里的同一个开关），下载途中换源立即从零重下，读超时期间换源按换源处理而不报失败。调试包在失败态也保留「跳过」入口。README 四语与中英字符串同步；`:app:compileDebugKotlin` 通过，真机与 CI 链路未验证。
 - 2026-09-25 当前变更：App 启动时独立检查 APK 新版本并弹选择；语言切换保留当前标签页，避免落入 WebUI；挂机页返回时以虚拟屏实际存在为准，并在运行/恢复期间隐藏误导性的启动按钮；关于页加 App 简介，界面中的运行环境名称统一为 Runtime。
 - CI 读取 Latest 清单内上次真正构建 APK 的 `appCommit`：App 源码和 APK 工作流不变时只构建、发布 Runtime，保留已发布 APK 版本与下载元数据。旧清单首次缺少 `appCommit` 时会补建一次 APK，之后按变更跳过。
