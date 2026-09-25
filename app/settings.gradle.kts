@@ -34,16 +34,16 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        google()
+        mavenCentral()
         maven {
             name = "AliyunGoogle"
             url = uri("https://maven.aliyun.com/repository/google")
         }
-        google()
         maven {
             name = "AliyunCentral"
             url = uri("https://maven.aliyun.com/repository/central")
         }
-        mavenCentral()
         maven { url = uri("https://jitpack.io") }
     }
 }

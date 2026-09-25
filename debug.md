@@ -6,6 +6,12 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜AzurPilot PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜AzurPilot 截图 BGR↔AzurPilot RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
+## [2026-09-25] GitHub Actions 正式构建在依赖解析时遇到阿里云镜像 502
+
+- **现象**：签名密钥已准备成功，但 `:app:mergeReleaseNativeLibs` 解析 `org.jetbrains.compose.ui:ui-unit:1.10.2` 时失败，镜像 POM 请求返回 HTTP 502。
+- **根本原因**：`dependencyResolutionManagement` 把阿里云 Google 镜像放在官方仓库之前；Gradle 遇到镜像服务错误后没有继续从 Maven Central 取同一依赖。
+- **解决方案**：把 `google()` 与 `mavenCentral()` 排在镜像前面；该 POM 在 Maven Central 可正常获取。保留镜像作为后备。
+
 ## [2026-09-25] 包名重命名漏改 native JNI 类名与 R8 keep 规则：编译通过但 release 静默失效
 
 - **现象**：把 `com.aliothmoon.azurpilot` 全量改成 `com.aliothmoon.azurpilot` 后 `compileDebugKotlin`/`compileDebugAidl` 全绿，看起来万事大吉。

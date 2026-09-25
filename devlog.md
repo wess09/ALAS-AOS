@@ -3,6 +3,10 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：正式签名与 CI 依赖修复
+- 创建独立的 Android 正式签名密钥并将四项签名参数写入新仓库的 GitHub Actions Secrets；密钥和本地加密口令保存在忽略目录 `keystore/`，未入库。
+- 首次正式版构建因阿里云 Maven 镜像返回 502 中断；调整依赖解析顺序，优先使用 Google Maven 与 Maven Central。
+
 ### 2026-09-25 · 未发版：新仓库、身份与 Logo；Latest 自动构建
 - 仓库迁至 `wess09/AzurPilot-for-Android`，更新应用内 APK/rootfs 检查地址与本地 `origin`；App 显示名改为 AzurPilot，applicationId、namespace、源码/AIDL、JNI 和混淆规则统一为 `com.azurpilot.ghio`。
 - 参考 AzurPilot Logo 设计 Android 版品牌图与简化图标，接入 README、传统及自适应启动图标；重写 README 的安装、使用条件、更新与构建说明。
