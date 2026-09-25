@@ -1,6 +1,8 @@
 name: AzurPilot Android build
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       azurpilot_ref:
@@ -52,6 +54,7 @@ jobs:
           INPUT_REF: ${{ inputs.azurpilot_ref }}
           INPUT_PUBLISH: ${{ inputs.publish_update }}
           INPUT_FORCE: ${{ inputs.force }}
+          EVENT_NAME: ${{ github.event_name }}
           SIGNING_KEY: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
           SIGNING_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
           SIGNING_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
@@ -65,7 +68,7 @@ jobs:
           fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid AzurPilot ref: $ref" >&2; exit 1; }
           publish=false
-          if [[ "$INPUT_PUBLISH" == true ]]; then publish=true; fi
+          if [[ "$EVENT_NAME" == push || "$INPUT_PUBLISH" == true ]]; then publish=true; fi
           signing_ready=false
           if [[ -n "$SIGNING_KEY" && -n "$SIGNING_PASSWORD" && -n "$SIGNING_ALIAS" && -n "$SIGNING_KEY_PASSWORD" ]]; then
             signing_ready=true
@@ -83,10 +86,12 @@ jobs:
             gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
               --pattern latest.json --dir .tmp/previous-release
             previous_ap_commit="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
+            previous_host_commit="$(jq -r '.androidHostCommit // empty' .tmp/previous-release/latest.json)"
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
             previous_version_code="$(jq -r '.versionCode // empty' .tmp/previous-release/latest.json)"
             previous_version_name="$(jq -r '.versionName // empty' .tmp/previous-release/latest.json)"
-            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" ]]; then
+            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" &&
+                  ( "$EVENT_NAME" != push || "$previous_host_commit" == "$GITHUB_SHA" ) ]]; then
               should_build=false
             fi
           fi
