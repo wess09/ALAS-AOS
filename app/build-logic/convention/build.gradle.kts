@@ -4,7 +4,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.aliothmoon.azurpilot.buildlogic"
+group = "com.azurpilot.ghio.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -32,19 +32,19 @@ gradlePlugin {
     plugins {
         register("androidApplication") {
             id = "azurpilot.android.application"
-            implementationClass = "com.aliothmoon.azurpilot.gradle.AndroidApplicationConventionPlugin"
+            implementationClass = "com.azurpilot.ghio.gradle.AndroidApplicationConventionPlugin"
         }
         register("androidLibrary") {
             id = "azurpilot.android.library"
-            implementationClass = "com.aliothmoon.azurpilot.gradle.AndroidLibraryConventionPlugin"
+            implementationClass = "com.azurpilot.ghio.gradle.AndroidLibraryConventionPlugin"
         }
         register("androidCompose") {
             id = "azurpilot.android.compose"
-            implementationClass = "com.aliothmoon.azurpilot.gradle.AndroidComposeConventionPlugin"
+            implementationClass = "com.azurpilot.ghio.gradle.AndroidComposeConventionPlugin"
         }
         register("kotlinJvm") {
             id = "azurpilot.kotlin.jvm"
-            implementationClass = "com.aliothmoon.azurpilot.gradle.KotlinJvmConventionPlugin"
+            implementationClass = "com.azurpilot.ghio.gradle.KotlinJvmConventionPlugin"
         }
     }
 }

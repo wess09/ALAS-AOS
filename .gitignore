@@ -32,3 +32,6 @@ spike/**/dist/*.apk
 /app/app/src/main/assets/rootfs/rootfs.tar.xz
 /app/app/src/main/assets/rootfs/BUILD_MANIFEST
 /keystore/
+
+handoff/*
+!handoff/latest.md

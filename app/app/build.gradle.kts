@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.aliothmoon.azurpilot"
+    namespace = "com.azurpilot.ghio"
 
     sourceSets {
         named("main") {

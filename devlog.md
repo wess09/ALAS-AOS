@@ -3,6 +3,13 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：新仓库、身份与 Logo；Latest 自动构建
+- 仓库迁至 `wess09/AzurPilot-for-Android`，更新应用内 APK/rootfs 检查地址与本地 `origin`；App 显示名改为 AzurPilot，applicationId、namespace、源码/AIDL、JNI 和混淆规则统一为 `com.azurpilot.ghio`。
+- 参考 AzurPilot Logo 设计 Android 版品牌图与简化图标，接入 README、传统及自适应启动图标；重写 README 的安装、使用条件、更新与构建说明。
+- CI 增加 `main` push 与每小时定时触发，完整构建 rootfs 和 APK，并将 rootfs 发布到正式 Latest。发布签名 Secret 未配置时，APK 仅作为调试构建产物，Latest 先提供 rootfs；发布签名配置齐全后同时提供正式 APK。
+- rootfs 清单版本同时包含上游提交与本仓提交，避免宿主 overlay/seeds 改动后只凭上游 SHA 判定「无需更新」。
+- 核对仓库清理结果，保留用户移除的历史资料；恢复项目规则仍要求维护的 `AGENTS.md`、`development.md`、`devlog.md`、`debug.md`、`CHANGELOG.md` 和 `docs/roadmap-v3.md`。
+
 ### 2026-09-25 · 未发版：运行环境独立自动更新
 - 启动时从 GitHub `azurpilot-android-dev` 发布通道检查 rootfs；下载完整归档，按清单大小与 SHA-256 校验，在启动 proot 前解包并原子替换。保留用户实例配置与日志；网络或更新失败则继续使用已安装版本。
 - 发布流程新增 `rootfs.tar.xz`、`BUILD_MANIFEST` 资产及 `latest.json` 的 rootfs 版本、地址、校验值字段。旧清单缺字段时跳过运行环境更新。

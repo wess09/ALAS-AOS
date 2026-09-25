@@ -1,33 +1,42 @@
-# AzurPilot Android
+# AzurPilot for Android
 
-本仓库正在把原有宿主改造为独立的 AzurPilot Android App。新包名为 `io.github.shinarin.azurpilotandroid`，使用独立私有数据目录，可与旧版并存；旧配置不会自动迁移。ARM64 rootfs 与 debug APK 已通过 CI，完整真机后台挂机仍待验收。
+<p align="center"><img src="app/app/src/main/res/drawable-nodpi/azurpilot_android_logo.png" alt="AzurPilot for Android 标志" width="280"></p>
 
-## 目标功能
+AzurPilot 的 Android 宿主。它在手机内部运行 ARM64 Ubuntu 环境和 [AzurPilot](https://github.com/wess09/AzurPilot)，通过 Shizuku 或 Root 控制游戏，并用浏览器打开本机 WebUI。App 包名为 `com.azurpilot.ghio`，桌面显示名为 **AzurPilot**。
 
-- Shizuku 虚拟屏承载 1280×720 的游戏画面；本机桥提供截图、触控和应用控制。
-- AzurPilot React WebUI、挂机页和悬浮窗共用同一个 `ProcessManager`，支持调度与工具任务、状态和日志。
-- WebUI 使用回环端口 `25548`，特权桥使用 `22301`，与旧版端口分离。
-- APK 内置 Python 3.14、锁定依赖、OCR 模型和预构建的 React 页面；手机首启仅部署与校验。
-- AzurPilot `dev` 更新后由 GitHub Actions 重新构建完整 APK；App 校验更新清单与 APK SHA-256 后交给系统覆盖安装。
+> 当前仍处于验证阶段：rootfs 和 APK 构建链已跑通，完整真机后台挂机尚未完成验收。
 
-## 架构
+## 使用条件
 
-```text
-Android App（挂机页 / 悬浮窗 / 浏览器 Custom Tab）
-    │ 回环控制 API :25548
-AzurPilot WebUI + RuntimeService + ProcessManager（单进程任务管理）
-    │ 本机桥 :22301
-Shizuku 特权进程（虚拟屏 / 截图 / 点击 / 滑动 / 应用控制）
-```
+- Android 9（API 28）及以上的 ARM64 设备；rootfs 不支持 x86 或 32 位 ARM。
+- 约 2 GB 可用内部存储空间，用于首次部署和后续完整 rootfs 更新。
+- 可用的 Shizuku-m 服务，或具备 Root 权限的设备。App 内会引导授权与切换后端。
+- 首次安装和检查更新时需要网络连接；运行中的本机控制接口仅监听回环地址。
 
-AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `1841cb1941751a81ab70668b4d2383c369c4506e`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧版 rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
+## 安装与启动
 
-## 构建与验证
+1. 从本仓库的 [Releases 最新版本](https://github.com/wess09/AzurPilot-for-Android/releases/latest)下载 APK。正式签名尚未配置时，Actions 仅提供调试 APK 构建产物，Latest release 先发布 rootfs。
+2. 安装后打开 AzurPilot，等待内置运行环境部署完成；首次解压可能需要数分钟。
+3. 按页面提示连接 Shizuku-m，或在设置中选择 Root 后端。
+4. 在挂机页检查设备画面与状态，再打开 AzurPilot WebUI 配置实例和任务。
 
-`.github/workflows/rootfs.yml` 支持手动触发，并由 AOS 每 15 分钟检查一次 AzurPilot `dev`。检测到新 commit 后，ARM64 runner 预构建 React 前端、Python 3.14 rootfs 和 OCR 资源并执行导入/OCR 门禁；随后构建稳定签名的 release APK，发布到 `azurpilot-android-dev` 更新通道。APK 缺少有效 rootfs、构建清单或签名配置时构建会失败。
+更换为 `com.azurpilot.ghio` 后，Android 会把它视为一个新应用。旧包的数据不会自动迁移；调试签名 APK 也不能直接覆盖安装将来的正式签名 APK。
 
-App 启动时读取更新通道的 `latest.json`。远端 `versionCode` 更新时弹出安装提示，下载后校验文件大小与 SHA-256，再调用 Android 系统安装器覆盖安装。首次切换到自动更新通道需要安装使用该通道固定签名的 APK；之后可连续覆盖更新。
+## 更新机制
 
-**尚待完成的验收**：新 APK 安装、新旧双包并存、Shizuku 授权、虚拟屏手势窗口归属检查、截图触控、浏览器 WebUI/挂机页/悬浮窗共用任务状态、实际挂机、工具任务及划掉 App 后清场。任何失败的原生依赖或设备能力均属于交付阻断项。
+App 冷启动时会读取 GitHub **Latest** release 的 `latest.json`。有新 rootfs 时，它先下载并核对大小与 SHA-256，再在启动 AzurPilot 进程前替换运行环境；用户实例配置与日志会保留。网络或下载失败时继续使用当前版本。若 Latest 同时有新 APK，App 会提示下载，校验后交给 Android 系统安装器完成覆盖安装。
 
-开发结构、构建约束与状态见 [development.md](development.md) 和最新 [handoff](handoff/)；历史设计保存在 `docs/roadmap-v3.md` 与 `m0-archive/`。
+工作流在推送 `main` 和每小时第 7 分钟触发。Ubuntu ARM64 runner 构建并验证 rootfs，另一台 Ubuntu runner 编译 APK；四项发布签名 Secret 齐备时生成正式签名 APK，否则生成调试 APK 供 Actions 下载，并只向 Latest 发布 rootfs。GitHub 托管的 ARM Mac runner 规格低于当前公开仓库的 Ubuntu runner，而且 rootfs 脚本依赖 Linux 的 `chroot` 与 bind mount，因此构建保留在 Linux。
+
+正式 APK 发布需要在仓库 Actions Secrets 中配置 `AZURPILOT_ANDROID_KEYSTORE_BASE64`、`AZURPILOT_ANDROID_KEYSTORE_PASSWORD`、`AZURPILOT_ANDROID_KEY_ALIAS` 和 `AZURPILOT_ANDROID_KEY_PASSWORD`。密钥库应由项目维护者离线生成并妥善备份；丢失密钥会使后续 APK 无法覆盖安装既有正式版。
+
+## 开发
+
+- Android 工程：[`app/`](app/)
+- rootfs 构建脚本：[`rootfs/build/build-azurpilot.sh`](rootfs/build/build-azurpilot.sh)
+- GitHub Actions：[`rootfs.yml`](.github/workflows/rootfs.yml)
+- 项目结构和本地验证：[`development.md`](development.md)
+
+宿主 UI 使用 Kotlin 与 Compose Material 3。AzurPilot Python 与 React 由 rootfs 构建步骤预先打包，手机端不运行 `uv sync`、`npm` 或原生编译。
+
+本项目基于 [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS) 改造；AzurPilot 来源与相应许可证见各上游仓库。

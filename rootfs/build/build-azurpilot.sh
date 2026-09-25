@@ -102,10 +102,12 @@ SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_REPO="$SOURCE_REPO" REPO_ROOT="$REPO_ROOT"
     ROOTFS_DIR="$ROOTFS_DIR" python3 - <<'PY'
 import datetime, hashlib, json, os, pathlib, subprocess
 root = pathlib.Path(os.environ['ROOTFS_DIR']) / 'opt/azurpilot'
+host_commit = subprocess.check_output(['git', '-C', os.environ['REPO_ROOT'], 'rev-parse', 'HEAD'], text=True).strip()
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 manifest = {
-    'rootfs_version': os.environ['SOURCE_COMMIT'][:12],
+    'rootfs_version': os.environ['SOURCE_COMMIT'][:12] + '-' + host_commit[:10],
     'runtime': 'azurpilot-android',
+    'android_host_commit': host_commit,
     'azurpilot_repo': os.environ['SOURCE_REPO'],
     'azurpilot_commit': os.environ['SOURCE_COMMIT'],
     'android_api_version': 1,

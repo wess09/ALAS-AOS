@@ -75,8 +75,8 @@ static JNINativeMethod gMethods[] = {
         {"getCaptureDiagnostics", "()Ljava/lang/String;",        reinterpret_cast<void *>(nativeGetCaptureDiagnostics)},
 };
 
-static constexpr char kNativeBridgeClass[] = "com/aliothmoon/azurpilot/bridge/NativeBridgeLib";
-static constexpr char kDriverClass[] = "com/aliothmoon/azurpilot/bridge/DriverClass";
+static constexpr char kNativeBridgeClass[] = "com/azurpilot/ghio/bridge/NativeBridgeLib";
+static constexpr char kDriverClass[] = "com/azurpilot/ghio/bridge/DriverClass";
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     (void) reserved;

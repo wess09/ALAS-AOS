@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AzurPilot Android</string>
+    <string name="app_name">AzurPilot</string>
 
     <!-- 通用 -->
     <string name="common_close">关闭</string>
