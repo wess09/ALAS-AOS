@@ -78,6 +78,10 @@ install -m 0755 "$REPO_ROOT/rootfs/build/azurpilot-ocr-gate.py" \
     "$ROOTFS_DIR/opt/azurpilot/azurpilot-ocr-gate.py"
 
 guest /bin/sh -c 'cd /opt/azurpilot && uv sync --frozen --no-dev --python 3.14.6'
+VENV_SITE_PACKAGES="$(find "$ROOTFS_DIR/opt/azurpilot/.venv/lib" -maxdepth 2 -type d -name site-packages -print -quit)"
+[[ -n "$VENV_SITE_PACKAGES" ]] || { echo 'AzurPilot venv site-packages missing' >&2; exit 1; }
+install -m 0644 "$REPO_ROOT/rootfs/overlays/android_process_compat.py" "$VENV_SITE_PACKAGES/android_process_compat.py"
+install -m 0644 "$REPO_ROOT/rootfs/overlays/sitecustomize.py" "$VENV_SITE_PACKAGES/sitecustomize.py"
 guest /bin/sh -c 'cd /opt/azurpilot && .venv/bin/python -m module.config.config_updater'
 
 FRONTEND="$ROOTFS_DIR/opt/azurpilot/frontend"
@@ -93,7 +97,7 @@ spec.loader.exec_module(mod)
 PY
 rm -rf "$FRONTEND/node_modules"
 
-guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -c "import cv2,numpy,scipy,onnxruntime,rapidocr,ncnn; import module.api.app, module.device.device, module.ocr.al_ocr; print(\"IMPORTS_OK\")"'
+guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -c "import cv2,numpy,scipy,onnxruntime,rapidocr,ncnn,psutil; import module.api.app, module.device.device, module.ocr.al_ocr; assert psutil.Process.children.__module__ == \"android_process_compat\"; print(\"IMPORTS_OK\")"'
 mkdir -p "$ROOTFS_DIR/opt/azurpilot/log"
 guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -m dev_tools.import_smoke_test'
 guest /bin/sh -c 'cd /opt/azurpilot && .venv/bin/python azurpilot-ocr-gate.py'

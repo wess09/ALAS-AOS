@@ -13,7 +13,7 @@
 - `provision/RootfsProvisioner.kt`：冷启动先部署内置包，再检查 GitHub Latest 的 rootfs；下载并校验后，在 proot 启动前原子替换，保留实例配置与日志。离线或更新失败继续使用现有 rootfs。
 - `update/AppUpdateManager.kt`：App 启动时检查 APK 更新清单，下载并校验 SHA-256，随后调用系统安装器覆盖安装。
 - AzurPilot Android 设备后端、控制 API 和 proot 进程兼容位于 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev` 分支；AOS 构建直接钉住对应提交，不维护源码覆盖补丁。
-- `rootfs/seeds/`：Android deploy 配置及实例种子；`rootfs/overlays/`：单进程入口和兼容性检查、原子切换、失败回滚脚本。
+- `rootfs/seeds/`：Android deploy 配置及实例种子；`rootfs/overlays/`：单进程入口及 Android 专用进程枚举兼容层等宿主自有文件。兼容层通过虚拟环境的 `sitecustomize` 加载，不改 AP 上游跟踪文件。
 - `tools/watch-android-logs.ps1`：通过 adb 实时查看 App logcat 或 proot `session.log`，支持传入设备序列号和 adb 路径。
 - `devlog.md`：倒序开发流水；`debug.md`：已解决的隐性问题；`handoff/`：阶段交接；`.tmp/`：项目内临时文件。
 

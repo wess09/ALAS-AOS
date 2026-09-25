@@ -6,6 +6,12 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜AzurPilot PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜AzurPilot 截图 BGR↔AzurPilot RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
+## [2026-09-25] Android proot 中 AP WebUI 与宿主均无法停止调度器
+
+- **现象**：WebUI 提示“尚未确认全部工作进程停止”；宿主 `/android/stop?config=ap` 返回 400。AP 日志反复出现“无法确认worker ap进程树身份”和“worker 未完全停止”，PID 27345 无法结束。
+- **根本原因**：两条入口都调用 AP `ProcessManager.stop()`，再进入 `stop_process_tree()`；其中 `psutil.Process.children(recursive=True)` 会直接调用 `create_time()`，Android 应用域读取全局 `/proc/stat` 被拒绝。AP 的 `process_created_at()` 对 `/proc/<pid>/stat` 已有后备，但该后备没有覆盖 psutil 内部的 `children()`。
+- **解决方案**：在 AOS 构建的 rootfs 虚拟环境中注入 Android 专用 `sitecustomize`，只在 psutil 子进程枚举遇到权限拒绝时按同 UID `/proc/<pid>/stat` 构建后代树；按启动 tick 排除 PID 复用，保留 AP 的登记身份校验和终止逻辑。AP 上游跟踪文件不改。
+
 ## [2026-09-25] 跨页切换动画短暂激活中间的 WebUI 页
 
 - **现象**：从挂机页点击设置，滑动动画经过中间的 AzurPilot 页时，浏览器会自动弹出 WebUI。
