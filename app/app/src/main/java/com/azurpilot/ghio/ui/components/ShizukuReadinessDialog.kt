@@ -19,7 +19,7 @@ import com.azurpilot.ghio.privileged.ShizukuReadinessStage
 @Composable
 fun ShizukuReadinessDialog(
     readiness: ShizukuReadiness,
-    onInstall: () -> Unit,
+    onDownload: () -> Unit,
     onOpenApp: () -> Unit,
     onRequestAuth: () -> Unit,
     onUninstall: () -> Unit,
@@ -38,8 +38,8 @@ fun ShizukuReadinessDialog(
             title = stringResource(R.string.dialog_shizuku_not_installed_title),
             message = stringResource(R.string.dialog_shizuku_not_installed_message),
             icon = Icons.Outlined.WarningAmber,
-            confirmText = stringResource(R.string.dialog_shizuku_install_confirm),
-            onConfirm = onInstall,
+            confirmText = stringResource(R.string.dialog_shizuku_download_confirm),
+            onConfirm = onDownload,
             neutralText = switchToRootText,
             onNeutralClick = onSwitchToRoot,
             dismissText = skipText,

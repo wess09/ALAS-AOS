@@ -31,7 +31,7 @@
 <p align="center">
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Host-Kotlin%20%7C%20Compose%20M3-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Host: Kotlin / Jetpack Compose"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/WebUI-React%20%7C%20Vite-61DAFB.svg?style=flat-square&logo=react&logoColor=black" alt="WebUI: React + Vite"></a>
-  <a href="https://shizuku.rikka.app/"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
+  <a href="https://github.com/wess09/shizuku-m"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
   <a href="https://opencv.org/"><img src="https://img.shields.io/badge/Vision-OpenCV%20%7C%20RapidOCR-5C3EE8.svg?style=flat-square&logo=opencv&logoColor=white" alt="Vision: OpenCV + RapidOCR"></a>
   <a href="https://proot-me.github.io/"><img src="https://img.shields.io/badge/Isolation-PRoot-lightgrey.svg?style=flat-square" alt="Isolation: PRoot"></a>
   <a href="https://deepwiki.com/wess09/AzurPilot-for-Android"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
@@ -162,11 +162,13 @@
 
 透過在 APK 安裝包內預置完整的 Linux 執行階段容器（Ubuntu 24.04 ARM64），結合輕量級 PRoot 容器隔離技術，實現了在 **完全免 Root** 條件下穩定執行 CPython、預編譯 OCR 演算法模型及本地 Web 控制台服務。借助背景虛擬螢幕與無障礙互動服務，使用者可以在手機主螢幕正常聊天、遊戲或辦公的同時，無感完成各項自動化巡航與出擊任務。
 
+本倉庫 fork 自 [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS)：宿主架構、PRoot 容器化路線與免 Root 提權設計均由此繼承，程式碼歷史與 AGPL-3.0 授權一併延續。
+
 ---
 
 ## 關聯生態專案
 
-本專案與上下游核心專案緊密連動，關鍵相依與源流專案如下：
+本專案與相關聯的核心專案緊密連動，關鍵相依與來源專案如下：
 
 <table width="100%">
   <tr>
@@ -209,8 +211,8 @@
         </a>
       </div>
       <br>
-      <b>容器化方案源流</b>
-      <p>行動端 Linux 執行環境方案與免 Root 提權思維的基石專案，為 Android 自動化部署提供核心技術路線參考。</p>
+      <b>來源專案（本倉 fork 自此處）</b>
+      <p>行動端 Linux 執行環境與免 Root 提權方案的先行實作，本倉的宿主架構與容器化路線由此演化而來。</p>
       <hr>
       <div>
         <img src="https://img.shields.io/badge/Core-PRoot%20Linux-lightgrey?style=flat-square" alt="PRoot">
@@ -378,7 +380,7 @@ graph TD
       <td><b>權限支援</b></td>
       <td><img src="https://img.shields.io/badge/方案-Shizuku%20%2F%20Root-orange?style=flat-square" alt="Shizuku / Root"></td>
       <td><img src="https://img.shields.io/badge/方案-Shizuku--m%20(免除錯模式)-brightgreen?style=flat-square" alt="Shizuku-m"></td>
-      <td>用於系統層級觸控模擬與虛擬螢幕投影授權</td>
+      <td>用於系統層級觸控模擬與虛擬螢幕投影授權；聯發科（MediaTek）裝置請使用下方指定的修正版</td>
     </tr>
   </tbody>
 </table>
@@ -408,7 +410,7 @@ graph TD
         <img src="https://img.shields.io/badge/步驟-03-purple?style=flat-square" alt="Step 3"><br>
         <h4>接入提權服務</h4>
       </div>
-      依照介面指示連接 <a href="https://github.com/Shinarin/shizuku-m">Shizuku-m</a> 授權，或在設定頁面直接切換為 Root 執行後端。
+      依照介面指示連接 <a href="https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a">Shizuku-m</a> 授權，或在設定頁面直接切換為 Root 執行後端。
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -421,7 +423,10 @@ graph TD
 </table>
 
 > [!TIP]
-> 推薦使用 **Shizuku-m**，該分支支援免開啟無線偵錯模式、無外部 WLAN 網路環境下亦能正常啟動，大幅提升行動情境下的穩定性。
+> 推薦使用 **[Shizuku-m](https://github.com/wess09/shizuku-m)**（本專案維護的修正版），該分支支援免開啟無線偵錯模式、無外部 WLAN 網路環境下亦能正常啟動，並已修正聯發科裝置上的使用者服務啟動失敗，詳見下方說明。
+
+> [!WARNING]
+> **聯發科（MediaTek）裝置請使用本專案維護的[修正版 Shizuku-m](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a)，不要使用官方 13.6.x。** 官方 13.6 起改用 `Application` 初始化特權服務處理程序，會踩到聯發科注入在 `LoadedApk.makeApplication` 的資源預載程式碼（`procName` 為空 → NPE），處理程序隨即 `System.exit(1)`；表現為 Shizuku 已授權、binder 可達，但特權服務始終連線逾時，且 `debug/` 下不會產生 `service_boot_debug.log`。該問題官方已確認但至今未修正（[#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)），修正版在此基礎上回退到 13.6 之前的 Context-only 路徑。
 
 > [!IMPORTANT]
 > **完整版 APK** 內建 Runtime，首次啟動直接在本機解壓縮，無需連網；**輕量增量 APK** 不含 Runtime，首次啟動會自動從 GitHub 下載約 1GB 的 Runtime（建議在 Wi-Fi 環境下進行）。後續若僅有 Android 宿主程式碼更新，下載輕量增量 APK 直接覆蓋安裝即可，無需重新解壓 Runtime。
@@ -615,7 +620,7 @@ graph TD
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | 現代高效能 Python 套件管理工具 |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | 核心直譯器執行環境 |
 | **AzurPilot** | <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0"> | 核心自動化決策邏輯與任務排程引擎 |
-| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Android 容器化執行路線的重要起點與參考基線 |
+| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | 本專案的來源倉庫；本倉 fork 自此處，宿主架構與容器化路線直接繼承 |
 | **MaaFwApp** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Android 宿主架構與工程框架模板 |
 
 ### Android 宿主技術棧

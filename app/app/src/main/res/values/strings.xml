@@ -381,8 +381,8 @@
     <string name="home_service_connect">重新加载服务</string>
     <string name="home_service_disconnect">关闭服务</string>
     <string name="dialog_shizuku_not_installed_title">未检测到 shizuku-m</string>
-    <string name="dialog_shizuku_not_installed_message">本应用依赖 shizuku-m（修改版 Shizuku）提供的特权服务，检测到设备未安装。请先安装 shizuku-m（获取方式见项目 README），装完后点下方按钮重新检测。</string>
-    <string name="dialog_shizuku_install_confirm">我已安装，重新检测</string>
+    <string name="dialog_shizuku_not_installed_message">本应用依赖 shizuku-m（修改版 Shizuku）提供的特权服务，检测到设备未安装。点下方按钮前往下载页安装，装完切回本应用会自动重新检测。</string>
+    <string name="dialog_shizuku_download_confirm">前往下载 shizuku-m</string>
     <string name="dialog_shizuku_switch_to_root">切换至 Root 模式</string>
     <string name="dialog_shizuku_skip_check">跳过检查（不推荐）</string>
     <string name="dialog_shizuku_not_running_title">Shizuku 未启动</string>
@@ -393,7 +393,7 @@
     <string name="dialog_shizuku_need_auth_title">Shizuku 未授权</string>
     <string name="dialog_shizuku_need_auth_message">Shizuku 服务正在运行但尚未授权本应用，请完成授权。授权成功前会持续提示。</string>
     <string name="dialog_shizuku_official_conflict_title">检测到官方版 Shizuku</string>
-    <string name="dialog_shizuku_official_conflict_message">本应用配套的特权服务是魔改版 shizuku-m：重启手机后可离线自连，无需 WLAN 或电脑。它与官方 Shizuku 包名相同但签名不同，无法覆盖安装——请先在系统中卸载官方 Shizuku，再安装 shizuku-m（获取方式见项目 README）。卸载官方版不影响本应用的数据。</string>
+    <string name="dialog_shizuku_official_conflict_message">本应用配套的特权服务是魔改版 shizuku-m：重启手机后可离线自连，无需 WLAN 或电脑。它与官方 Shizuku 包名相同但签名不同，无法覆盖安装——请先在系统中卸载官方 Shizuku，再按提示安装 shizuku-m。卸载官方版不影响本应用的数据。</string>
     <string name="dialog_shizuku_uninstall_confirm">去卸载官方版</string>
     <string name="common_got_it">知道了</string>
 

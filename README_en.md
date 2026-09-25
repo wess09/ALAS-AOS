@@ -31,7 +31,7 @@ An all-in-one integrated Android runtime environment tailored for the full-featu
 <p align="center">
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Host-Kotlin%20%7C%20Compose%20M3-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Host: Kotlin / Jetpack Compose"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/WebUI-React%20%7C%20Vite-61DAFB.svg?style=flat-square&logo=react&logoColor=black" alt="WebUI: React + Vite"></a>
-  <a href="https://shizuku.rikka.app/"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
+  <a href="https://github.com/wess09/shizuku-m"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
   <a href="https://opencv.org/"><img src="https://img.shields.io/badge/Vision-OpenCV%20%7C%20RapidOCR-5C3EE8.svg?style=flat-square&logo=opencv&logoColor=white" alt="Vision: OpenCV + RapidOCR"></a>
   <a href="https://proot-me.github.io/"><img src="https://img.shields.io/badge/Isolation-PRoot-lightgrey.svg?style=flat-square" alt="Isolation: PRoot"></a>
   <a href="https://deepwiki.com/wess09/AzurPilot-for-Android"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
@@ -162,11 +162,13 @@ An all-in-one integrated Android runtime environment tailored for the full-featu
 
 By embedding a full Linux runtime container (Ubuntu 24.04 ARM64) inside the APK package, coupled with lightweight PRoot container isolation, it achieves **completely Root-free** and reliable execution of CPython, precompiled OCR models, and local WebUI services. Leveraging background virtual displays and accessibility services, users can chat, play games, or work on their device's main screen without interruption while automated sortie tasks run seamlessly in the background.
 
+This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS): the host architecture, the PRoot containerization approach and the rootless privilege escalation design are inherited directly, along with the git history and the AGPL-3.0 license.
+
 ---
 
 ## Related Ecosystem Projects
 
-This project collaborates closely with upstream and downstream projects:
+This project works closely with its related core projects; key dependencies and source projects are listed below:
 
 <table width="100%">
   <tr>
@@ -209,8 +211,8 @@ This project collaborates closely with upstream and downstream projects:
         </a>
       </div>
       <br>
-      <b>Containerization Provenance</b>
-      <p>The pioneering initiative for running Linux automation runtimes and rootless privilege escalation on mobile Android systems.</p>
+      <b>Source Project (this repo is forked from it)</b>
+      <p>A pioneering implementation of Linux runtimes and rootless privilege escalation on mobile Android, from which this repo's host architecture and containerization approach evolved.</p>
       <hr>
       <div>
         <img src="https://img.shields.io/badge/Core-PRoot%20Linux-lightgrey?style=flat-square" alt="PRoot">
@@ -378,7 +380,7 @@ graph TD
       <td><b>Privilege Backend</b></td>
       <td><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-orange?style=flat-square" alt="Shizuku / Root"></td>
       <td><img src="https://img.shields.io/badge/Backend-Shizuku--m%20(No%20Debugging)-brightgreen?style=flat-square" alt="Shizuku-m"></td>
-      <td>Required for input simulation and Virtual Display projection authorization</td>
+      <td>Required for input simulation and Virtual Display projection authorization; MediaTek devices should use the patched build linked below</td>
     </tr>
   </tbody>
 </table>
@@ -408,7 +410,7 @@ graph TD
         <img src="https://img.shields.io/badge/Step-03-purple?style=flat-square" alt="Step 3"><br>
         <h4>Grant Permissions</h4>
       </div>
-      Authorize via <a href="https://github.com/Shinarin/shizuku-m">Shizuku-m</a> according to the prompt, or switch to the Root backend in Settings.
+      Authorize via <a href="https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a">Shizuku-m</a> according to the prompt, or switch to the Root backend in Settings.
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -421,7 +423,10 @@ graph TD
 </table>
 
 > [!TIP]
-> **Shizuku-m** is highly recommended: it operates without wireless debugging and works reliably even in environments without external Wi-Fi networks.
+> **[Shizuku-m](https://github.com/wess09/shizuku-m)** — the patched build maintained by this project — is highly recommended: it operates without wireless debugging, works reliably without external Wi-Fi networks, and fixes the user-service startup failure on MediaTek devices. See the note below.
+
+> [!WARNING]
+> **On MediaTek devices use the [patched Shizuku-m build](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a), not the official 13.6.x.** Since 13.6, Shizuku initializes the privileged user-service process with an `Application`, which hits MediaTek's resource-preload hook injected into `LoadedApk.makeApplication` (`procName` is null → NPE) and the process immediately calls `System.exit(1)`. The symptom is that Shizuku is authorized and its binder is reachable, yet the privileged service always times out, and `service_boot_debug.log` is never written under `debug/`. Acknowledged by the official project but still unfixed ([#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)); the patched build falls back to the pre-13.6 Context-only path.
 
 > [!IMPORTANT]
 > The **Full APK** bundles Runtime and unpacks it locally on first launch, with no network needed; the **Incremental APK** carries no Runtime and downloads about 1GB from GitHub on first launch (Wi-Fi recommended). For later host-only updates, install the incremental APK over the existing app to reuse the Runtime already on disk.
@@ -615,7 +620,7 @@ Adaptive dark/light mode Star History chart reflecting project growth:
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | High-performance modern Python package manager |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | Core Python execution runtime |
 | **AzurPilot** | <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0"> | Core automation logic and task engine |
-| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Fundamental reference for mobile containerized automation |
+| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Source repository of this project; this repo is forked from it and inherits its host architecture and containerization approach |
 | **MaaFwApp** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Android host architecture and app framework template |
 
 ### Android Host Stack

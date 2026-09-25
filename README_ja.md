@@ -31,7 +31,7 @@
 <p align="center">
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Host-Kotlin%20%7C%20Compose%20M3-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Host: Kotlin / Jetpack Compose"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/WebUI-React%20%7C%20Vite-61DAFB.svg?style=flat-square&logo=react&logoColor=black" alt="WebUI: React + Vite"></a>
-  <a href="https://shizuku.rikka.app/"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
+  <a href="https://github.com/wess09/shizuku-m"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
   <a href="https://opencv.org/"><img src="https://img.shields.io/badge/Vision-OpenCV%20%7C%20RapidOCR-5C3EE8.svg?style=flat-square&logo=opencv&logoColor=white" alt="Vision: OpenCV + RapidOCR"></a>
   <a href="https://proot-me.github.io/"><img src="https://img.shields.io/badge/Isolation-PRoot-lightgrey.svg?style=flat-square" alt="Isolation: PRoot"></a>
   <a href="https://deepwiki.com/wess09/AzurPilot-for-Android"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
@@ -162,6 +162,8 @@
 
 APK パッケージ内に完全な Linux 実行環境（Ubuntu 24.04 ARM64）を内蔵し、軽量な PRoot コンテナ分離技術と組み合わせることで、**完全 Root 不要**の条件下で CPython、ビルド済み OCR モデル、およびローカル Web コンソールサービスを安定稼働させます。バックグラウンドの仮想ディスプレイとアクセシビリティを活用することで、スマートフォンのメイン画面でチャットやゲーム、日常操作を行いながら、バックグラウンドで何ら干渉されることなく自動出撃・巡航タスクを完了できます。
 
+本リポジトリは [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS) からのフォークです。ホストアーキテクチャ、PRoot によるコンテナ化路線、Root 不要の権限昇格設計をそのまま継承し、git 履歴と AGPL-3.0 ライセンスも引き継いでいます。
+
 ---
 
 ## 関連エコシステムプロジェクト
@@ -209,8 +211,8 @@ APK パッケージ内に完全な Linux 実行環境（Ubuntu 24.04 ARM64）を
         </a>
       </div>
       <br>
-      <b>コンテナ化ソリューションの原点</b>
-      <p>Android 上での Linux 実行環境および Root 不要権限昇格を実現した先駆的プロジェクト。モバイル自動化の設計思想と基礎を提供。</p>
+      <b>ソースプロジェクト（本リポジトリのフォーク元）</b>
+      <p>モバイル Android における Linux 実行環境と Root 不要の権限昇格の先行実装で、本リポジトリのホストアーキテクチャとコンテナ化路線はここから発展しました。</p>
       <hr>
       <div>
         <img src="https://img.shields.io/badge/Core-PRoot%20Linux-lightgrey?style=flat-square" alt="PRoot">
@@ -378,7 +380,7 @@ graph TD
       <td><b>権限バックエンド</b></td>
       <td><img src="https://img.shields.io/badge/方式-Shizuku%20%2F%20Root-orange?style=flat-square" alt="Shizuku / Root"></td>
       <td><img src="https://img.shields.io/badge/方式-Shizuku--m%20(デバッグ不要)-brightgreen?style=flat-square" alt="Shizuku-m"></td>
-      <td>タッチ入力シミュレーションおよび仮想画面プロジェクション権限に使用</td>
+      <td>タッチ入力シミュレーションおよび仮想画面プロジェクション権限に使用；MediaTek 端末は下記の修正版を使用してください</td>
     </tr>
   </tbody>
 </table>
@@ -408,7 +410,7 @@ graph TD
         <img src="https://img.shields.io/badge/ステップ-03-purple?style=flat-square" alt="Step 3"><br>
         <h4>権限の付与</h4>
       </div>
-      案内に従って <a href="https://github.com/Shinarin/shizuku-m">Shizuku-m</a> で権限を許可するか、設定画面で Root バックエンドに切り替えます。
+      案内に従って <a href="https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a">Shizuku-m</a> で権限を許可するか、設定画面で Root バックエンドに切り替えます。
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -421,7 +423,10 @@ graph TD
 </table>
 
 > [!TIP]
-> **Shizuku-m** の利用を強く推奨します。ワイヤレスデバッグの有効化が不要で、外部 Wi-Fi ネットワークがない環境でも正常に起動できるため、モバイル環境での利便性が大幅に向上します。
+> **[Shizuku-m](https://github.com/wess09/shizuku-m)**（本プロジェクトが保守する修正版）の利用を強く推奨します。ワイヤレスデバッグの有効化が不要で、外部 Wi-Fi ネットワークがない環境でも正常に起動でき、MediaTek 端末におけるユーザーサービスの起動失敗も修正済みです。詳細は下記の注意を参照してください。
+
+> [!WARNING]
+> **MediaTek 搭載端末では[修正版 Shizuku-m](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a) を使用し、公式の 13.6.x は使わないでください。** 13.6 以降 Shizuku は特権サービスプロセスを `Application` で初期化するようになり、MediaTek が `LoadedApk.makeApplication` に注入したリソース先読みコード（`procName` が null → NPE）を踏み、プロセスが即座に `System.exit(1)` します。症状は「Shizuku は認可済みで binder も到達可能なのに、特権サービスが必ずタイムアウトし、`debug/` 配下に `service_boot_debug.log` が生成されない」というものです。公式で確認済みですが未修正のままです（[#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)）。修正版は 13.6 以前の Context-only 経路へフォールバックします。
 
 > [!IMPORTANT]
 > **完全版 APK** は Runtime を内蔵しており、初回起動時にローカルで展開するためネットワークは不要です。**軽量差分 APK** は Runtime を含まず、初回起動時に GitHub から約 1GB を自動ダウンロードします（Wi-Fi 環境を推奨）。その後の Android アプリ本体のみの更新では、軽量差分 APK を上書きインストールするだけで、既存の Runtime を再利用できます。
@@ -615,7 +620,7 @@ graph TD
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | 高速なモダン Python パッケージマネージャー |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | コアインタープリタ実行環境 |
 | **AzurPilot** | <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0"> | 自動化ロジック本体およびタスクエンジン |
-| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | モバイルコンテナ化自動化路線の重要参照ベース |
+| **ALAS-AOS** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | 本プロジェクトのソースリポジトリ。本リポジトリはここからのフォークで、ホストアーキテクチャとコンテナ化路線を継承 |
 | **MaaFwApp** | <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"> | Android ホストアーキテクチャおよびアプリ設計テンプレート |
 
 ### Android ホスト側技術スタック

@@ -265,6 +265,20 @@ class PermissionManager(
         }.onFailure { Timber.w(it, "Failed to open Shizuku") }.getOrDefault(false)
     }
 
+    /**
+     * 未装 shizuku-m 时唯一的正经出口：跳浏览器到分发页
+     *
+     * 用户在浏览器里装完切回来，[onResume] 会自动重新探测，不必再点「重新检测」——
+     * 在此之前弹窗只写「获取方式见项目 README」，手机上等于没有出口
+     */
+    fun openShizukuDownload(context: Context): Boolean {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SHIZUKU_DOWNLOAD_URL))
+        return runCatching {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        }.onFailure { Timber.w(it, "Failed to open Shizuku download page") }.getOrDefault(false)
+    }
+
     private suspend fun resolveReadiness(
         remoteState: RemoteAccessState,
         skipCheck: Boolean,
@@ -340,6 +354,9 @@ class PermissionManager(
 
         /** shizuku-m 的应用名（官方版是 "Shizuku"），flavor 判别标记 */
         const val MOD_LABEL_MARK = "Shizuku-m"
+
+        /** shizuku-m 分发页；用 latest 而非固定版本号，出包时不必回来改 App */
+        const val SHIZUKU_DOWNLOAD_URL = "https://github.com/wess09/shizuku-m/releases/latest"
     }
 }
 

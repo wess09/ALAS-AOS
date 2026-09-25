@@ -385,8 +385,8 @@
     <string name="home_service_connect">Reload service</string>
     <string name="home_service_disconnect">Close service</string>
     <string name="dialog_shizuku_not_installed_title">shizuku-m Not Detected</string>
-    <string name="dialog_shizuku_not_installed_message">This app relies on the privileged service provided by shizuku-m (a modified Shizuku), which was not detected on this device. Install shizuku-m first (see the project README), then tap below to re-check.</string>
-    <string name="dialog_shizuku_install_confirm">Installed, re-check</string>
+    <string name="dialog_shizuku_not_installed_message">This app relies on the privileged service provided by shizuku-m (a modified Shizuku), which was not detected on this device. Tap below to open the download page and install it, then come back — the app re-checks automatically.</string>
+    <string name="dialog_shizuku_download_confirm">Download shizuku-m</string>
     <string name="dialog_shizuku_switch_to_root">Switch to Root</string>
     <string name="dialog_shizuku_skip_check">Skip check (not recommended)</string>
     <string name="dialog_shizuku_not_running_title">Shizuku Not Running</string>
@@ -397,7 +397,7 @@
     <string name="dialog_shizuku_need_auth_title">Shizuku Not Authorized</string>
     <string name="dialog_shizuku_need_auth_message">Shizuku is running but has not authorized this app yet. Please grant access. This prompt keeps showing until access is granted.</string>
     <string name="dialog_shizuku_official_conflict_title">Official Shizuku Detected</string>
-    <string name="dialog_shizuku_official_conflict_message">This app works with shizuku-m, a modified Shizuku that reconnects offline after every reboot without WLAN or a computer. It shares the official package name but uses a different signature, so it cannot be installed over the official build — uninstall the official Shizuku first, then install shizuku-m (see the project README). Uninstalling it does not affect this app data.</string>
+    <string name="dialog_shizuku_official_conflict_message">This app works with shizuku-m, a modified Shizuku that reconnects offline after every reboot without WLAN or a computer. It shares the official package name but uses a different signature, so it cannot be installed over the official build — uninstall the official Shizuku first, then install shizuku-m as prompted. Uninstalling it does not affect this app data.</string>
     <string name="dialog_shizuku_uninstall_confirm">Uninstall official build</string>
     <string name="common_got_it">Got it</string>
 
