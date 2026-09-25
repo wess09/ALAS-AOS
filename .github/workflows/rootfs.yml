@@ -113,6 +113,10 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 版本名第三段取本仓提交数：浅克隆下 `git rev-list --count HEAD` 只回 1，
+          # 会让 CI 与本地算出不同的版本号，必须取全量历史
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: rootfs
