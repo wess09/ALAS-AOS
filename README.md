@@ -13,6 +13,12 @@ AzurPilot 的 Android 宿主。它在手机内部运行 ARM64 Ubuntu 环境和 [
 - 可用的 Shizuku-m 服务，或具备 Root 权限的设备。App 内会引导授权与切换后端。
 - 首次安装和检查更新时需要网络连接；运行中的本机控制接口仅监听回环地址。
 
+## 许可证
+
+延续 AGPL-3
+
+同时附属 MaaFwApp AGPL-3 许可证 & ALAS-AOS AGPL-3 许可证 & AzurPilot 项目 GPL-3 许可证
+
 ## 安装与启动
 
 1. 从本仓库的 [Releases 最新版本](https://github.com/wess09/AzurPilot-for-Android/releases/latest)下载正式签名 APK。
