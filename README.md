@@ -27,6 +27,7 @@
   <a href="https://shizuku.rikka.app/"><img src="https://img.shields.io/badge/Backend-Shizuku%20%2F%20Root-brightgreen.svg?style=flat-square" alt="Backend: Shizuku / Root"></a>
   <a href="https://opencv.org/"><img src="https://img.shields.io/badge/Vision-OpenCV%20%7C%20RapidOCR-5C3EE8.svg?style=flat-square&logo=opencv&logoColor=white" alt="Vision: OpenCV + RapidOCR"></a>
   <a href="https://proot-me.github.io/"><img src="https://img.shields.io/badge/Isolation-PRoot-lightgrey.svg?style=flat-square" alt="Isolation: PRoot"></a>
+  <a href="https://deepwiki.com/wess09/AzurPilot-for-Android"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <!-- 仓库动态与社区指标标签组 -->
@@ -40,18 +41,111 @@
 </p>
 
 <p align="center">
+  <a href="#工程总览与指标">工程总览</a> •
+  <a href="#代码知识库与-ai-问答">智能问答</a> •
   <a href="#项目概述">项目概述</a> •
-  <a href="#核心亮点卡片矩阵">核心亮点</a> •
+  <a href="#关联生态工程">关联生态</a> •
+  <a href="#核心特性">核心特性</a> •
   <a href="#系统架构全景">系统架构</a> •
-  <a href="#关联工程仓库卡片">关联工程</a> •
-  <a href="#环境规格矩阵">环境规格</a> •
+  <a href="#环境规格与兼容性">环境规格</a> •
   <a href="#快速开始">快速开始</a> •
-  <a href="#界面矩阵">界面矩阵</a> •
-  <a href="#双轨独立更新体系">双轨更新</a> •
-  <a href="#贡献者与社区统计">社区统计</a>
+  <a href="#功能界面一览">功能界面</a> •
+  <a href="#双轨独立更新机制">双轨更新</a> •
+  <a href="#研发活跃度">研发活跃</a> •
+  <a href="#star-增长趋势">增长趋势</a> •
+  <a href="#社区生态与支持">社区支持</a>
 </p>
 
 </div>
+
+---
+
+## 工程总览与指标
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th colspan="4" align="left">
+        <img src="https://img.shields.io/badge/Project%20Overview-AzurPilot%20for%20Android-181717?style=flat-square&logo=github&logoColor=white" alt="Overview">
+        <b>工程核心运行与研发指标</b>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td width="25%"><b>最新正式版</b><br><a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest"><img src="https://img.shields.io/github/v/release/wess09/AzurPilot-for-Android?style=flat-square&color=007ec6" alt="Release"></a></td>
+      <td width="25%"><b>累计下载量</b><br><a href="https://github.com/wess09/AzurPilot-for-Android/releases"><img src="https://img.shields.io/github/downloads/wess09/AzurPilot-for-Android/total?style=flat-square&color=28a745" alt="Downloads"></a></td>
+      <td width="25%"><b>开源许可证</b><br><a href="./LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0"></a></td>
+      <td width="25%"><b>主分支状态</b><br><a href="https://github.com/wess09/AzurPilot-for-Android/actions"><img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square&logo=githubactions&logoColor=white" alt="Build Status"></a></td>
+    </tr>
+    <tr>
+      <td width="25%"><b>代码库体积</b><br><img src="https://img.shields.io/github/repo-size/wess09/AzurPilot-for-Android?style=flat-square&color=586069" alt="Repo Size"></td>
+      <td width="25%"><b>代码语言</b><br><img src="https://img.shields.io/badge/Language-Kotlin%20%7C%20Shell-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Language"></td>
+      <td width="25%"><b>提权执行方式</b><br><img src="https://img.shields.io/badge/Backend-Shizuku--m%20%7C%20Root-brightgreen?style=flat-square" alt="Backend"></td>
+      <td width="25%"><b>目标系统</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <b>快速操作快捷入口：</b>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest"><img src="https://img.shields.io/badge/Release-下载最新安装包-0052cc?style=flat-square&logo=android&logoColor=white" alt="Download"></a>
+        <a href="https://deepwiki.com/wess09/AzurPilot-for-Android"><img src="https://img.shields.io/badge/Wiki-Ask%20DeepWiki-6366F1?style=flat-square" alt="Ask DeepWiki"></a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/issues/new/choose"><img src="https://img.shields.io/badge/Issue-提交错误报告与需求-d73a49?style=flat-square&logo=githubissues&logoColor=white" alt="New Issue"></a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/pulls"><img src="https://img.shields.io/badge/PR-合并请求代码贡献-28a745?style=flat-square&logo=git&logoColor=white" alt="Pull Request"></a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/stargazers"><img src="https://img.shields.io/badge/Star-关注项目发展-f5a623?style=flat-square&logo=github&logoColor=white" alt="Star"></a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## 代码知识库与 AI 问答
+
+<table width="100%">
+  <tr>
+    <td width="70%" valign="middle">
+      <img src="https://img.shields.io/badge/AI%20Doc-DeepWiki-6366F1?style=flat-square" alt="DeepWiki Tag"><br>
+      <h3>Ask DeepWiki 代码库智能问答</h3>
+      <p>对项目的内部模块、PRoot 沙盒机制、虚拟屏渲染逻辑或定时任务调度规则有任何疑问？直接向已索引本仓库全量上下文的 DeepWiki 发起提问，快速获取针对性的架构解析与代码导引。</p>
+      <div>
+        <a href="https://deepwiki.com/wess09/AzurPilot-for-Android">
+          <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">
+        </a>
+        <a href="https://deepwiki.com/wess09/AzurPilot-for-Android">
+          <img src="https://img.shields.io/badge/知识库检索-即时提问解答-0052cc?style=flat-square" alt="Ask Question">
+        </a>
+      </div>
+    </td>
+    <td width="30%" align="center" valign="middle">
+      <a href="https://deepwiki.com/wess09/AzurPilot-for-Android">
+        <img src="https://img.shields.io/badge/Ask%20DeepWiki-AI%20Chat-6366F1?style=for-the-badge&logoColor=white" alt="Ask DeepWiki"><br><br>
+        <img src="https://img.shields.io/badge/Documentation-Auto%20Updated-brightgreen?style=flat-square" alt="Documentation Status">
+      </a>
+    </td>
+  </tr>
+</table>
+
+---
+
+<table width="100%">
+  <tr>
+    <td width="70%" valign="middle">
+      <h3>如果 AzurPilot for Android 为你带来了便利</h3>
+      <p>给项目点亮一颗 Star 是对维护者持续更新与技术攻关最大的肯定。只需点击右侧按钮即可加入关注者列表！</p>
+      <div>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/stargazers"><img src="https://img.shields.io/github/stars/wess09/AzurPilot-for-Android?style=for-the-badge&color=f5a623&logo=github&logoColor=white" alt="Star on GitHub"></a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/network/members"><img src="https://img.shields.io/github/forks/wess09/AzurPilot-for-Android?style=for-the-badge&color=6f42c1&logo=github&logoColor=white" alt="Fork on GitHub"></a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/watchers"><img src="https://img.shields.io/github/watchers/wess09/AzurPilot-for-Android?style=for-the-badge&color=007ec6&logo=github&logoColor=white" alt="Watch on GitHub"></a>
+      </div>
+    </td>
+    <td width="30%" align="center" valign="middle">
+      <a href="https://github.com/wess09/AzurPilot-for-Android">
+        <img src="https://img.shields.io/badge/Star%20Project-Click%20To%20Star-f5a623?style=for-the-badge&logo=github&logoColor=white" alt="Star Project Now"><br><br>
+        <img src="https://img.shields.io/badge/Status-Actively%20Maintained-brightgreen?style=flat-square" alt="Maintained">
+      </a>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -63,21 +157,66 @@
 
 ---
 
-## 关联工程仓库卡片
+## 关联生态工程
 
-本工程与上下游核心项目紧密联动，相关仓库卡片如下：
+本工程与上下游核心项目紧密联动，关键依赖与源流工程如下：
 
-<div align="center">
-
-| 宿主运行环境 (当前项目) | 核心自动化引擎本体 | 容器化方案源流 |
-| :---: | :---: | :---: |
-| <a href="https://github.com/wess09/AzurPilot-for-Android"><img src="https://github-readme-stats.vercel.app/api/pin/?username=wess09&repo=AzurPilot-for-Android&theme=transparent&show_owner=true" width="300" alt="AzurPilot-for-Android Repo Card"></a> | <a href="https://github.com/wess09/AzurPilot"><img src="https://github-readme-stats.vercel.app/api/pin/?username=wess09&repo=AzurPilot&theme=transparent&show_owner=true" width="300" alt="AzurPilot Repo Card"></a> | <a href="https://github.com/Shinarin/ALAS-AOS"><img src="https://github-readme-stats.vercel.app/api/pin/?username=Shinarin&repo=ALAS-AOS&theme=transparent&show_owner=true" width="300" alt="ALAS-AOS Repo Card"></a> |
-
-</div>
+<table width="100%">
+  <tr>
+    <td width="33%" valign="top">
+      <div align="center">
+        <a href="https://github.com/wess09/AzurPilot-for-Android">
+          <img src="https://img.shields.io/badge/Repository-AzurPilot--for--Android-181717?style=for-the-badge&logo=github&logoColor=white" alt="AzurPilot-for-Android">
+        </a>
+      </div>
+      <br>
+      <b>宿主运行环境 (当前项目)</b>
+      <p>面向 Android 移动端的一体化运行基座，打通 PRoot 免 Root 容器、后台虚拟屏、全域悬浮窗与生命周期管理。</p>
+      <hr>
+      <div>
+        <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
+        <img src="https://img.shields.io/badge/UI-Compose%20M3-4285F4?style=flat-square" alt="Compose">
+        <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0">
+      </div>
+    </td>
+    <td width="33%" valign="top">
+      <div align="center">
+        <a href="https://github.com/wess09/AzurPilot">
+          <img src="https://img.shields.io/badge/Repository-AzurPilot-181717?style=for-the-badge&logo=github&logoColor=white" alt="AzurPilot">
+        </a>
+      </div>
+      <br>
+      <b>核心自动化引擎本体</b>
+      <p>《碧蓝航线》自动化助手核心，包含完备的计算机视觉图像识别、出击调度算法与本地 Web 控制台服务。</p>
+      <hr>
+      <div>
+        <img src="https://img.shields.io/badge/Language-Python%203.14-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+        <img src="https://img.shields.io/badge/WebUI-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React">
+        <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0">
+      </div>
+    </td>
+    <td width="33%" valign="top">
+      <div align="center">
+        <a href="https://github.com/Shinarin/ALAS-AOS">
+          <img src="https://img.shields.io/badge/Repository-ALAS--AOS-181717?style=for-the-badge&logo=github&logoColor=white" alt="ALAS-AOS">
+        </a>
+      </div>
+      <br>
+      <b>容器化方案源流</b>
+      <p>移动端 Linux 运行时方案与免 Root 提权思路的基石项目，为 Android 自动化部署提供核心路线参考。</p>
+      <hr>
+      <div>
+        <img src="https://img.shields.io/badge/Core-PRoot%20Linux-lightgrey?style=flat-square" alt="PRoot">
+        <img src="https://img.shields.io/badge/Architecture-ARM64-E10098?style=flat-square" alt="ARM64">
+        <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0">
+      </div>
+    </td>
+  </tr>
+</table>
 
 ---
 
-## 核心亮点卡片矩阵
+## 核心亮点
 
 <table width="100%">
   <tr>
@@ -192,7 +331,7 @@ graph TD
 
 ---
 
-## 环境规格矩阵
+## 环境规格与兼容性
 
 <table width="100%">
   <thead>
@@ -282,7 +421,7 @@ graph TD
 
 ---
 
-## 界面矩阵
+## 功能界面一览
 
 <table width="100%">
   <thead>
@@ -335,7 +474,7 @@ graph TD
 
 ---
 
-## 双轨独立更新体系
+## 双轨独立更新机制
 
 为确保环境的极致稳定与升级灵活性，系统采用宿主层与运行时解耦的双轨管理策略：
 
@@ -367,6 +506,73 @@ graph TD
     </td>
   </tr>
 </table>
+
+---
+
+## 研发活跃度
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th colspan="3" align="left">
+        <img src="https://img.shields.io/badge/Metrics-RepoBeats%20Style-5C3EE8?style=flat-square&logo=github&logoColor=white" alt="RepoBeats">
+        <b>仓库研发活跃度与响应态势</b>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td width="33%">
+        <b>代码提交频度</b><br>
+        <img src="https://img.shields.io/github/commit-activity/m/wess09/AzurPilot-for-Android?style=flat-square&color=00d4aa" alt="Commit Activity"><br>
+        <small>月度提交活跃状态</small>
+      </td>
+      <td width="33%">
+        <b>合并请求处理</b><br>
+        <img src="https://img.shields.io/github/issues-pr-closed/wess09/AzurPilot-for-Android?style=flat-square&color=6f42c1" alt="Closed PRs"><br>
+        <small>已归档合并请求总计</small>
+      </td>
+      <td width="33%">
+        <b>问题反馈解决</b><br>
+        <img src="https://img.shields.io/github/issues-closed/wess09/AzurPilot-for-Android?style=flat-square&color=28a745" alt="Closed Issues"><br>
+        <small>已成功解决 Issue 统计</small>
+      </td>
+    </tr>
+    <tr>
+      <td width="33%">
+        <b>研发分支</b><br>
+        <img src="https://img.shields.io/badge/Branch-main-181717?style=flat-square&logo=git&logoColor=white" alt="Main Branch"><br>
+        <small>主干持续交付流</small>
+      </td>
+      <td width="33%">
+        <b>自动化构建</b><br>
+        <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="CI"><br>
+        <small>ARM64 Runner 持续验证</small>
+      </td>
+      <td width="33%">
+        <b>最新提交记录</b><br>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/commits/main"><img src="https://img.shields.io/github/last-commit/wess09/AzurPilot-for-Android?style=flat-square&color=586069" alt="Last Commit"></a><br>
+        <small>追踪最新代码演进</small>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## Star 增长趋势
+
+采用自适应深浅模式的 Star-History 矢量历史图谱，直观反映项目发展脉络：
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=wess09/AzurPilot-for-Android&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=wess09/AzurPilot-for-Android&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=wess09/AzurPilot-for-Android&type=Date" width="100%" />
+  </picture>
+  <br>
+  <sub>数据源基于 <a href="https://star-history.com/#wess09/AzurPilot-for-Android&Date">Star-History</a> 实时更新 · 点击可查看交互式完整走势</sub>
+</div>
 
 ---
 
@@ -421,25 +627,41 @@ graph TD
 
 ---
 
-## 贡献者与社区统计
+## 社区生态与支持
 
-### 代码贡献者
-
-感谢所有为本项目提交代码、提出改进建议与参与测试的开发者：
-
-<div align="center">
-  <a href="https://github.com/wess09/AzurPilot-for-Android/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=wess09/AzurPilot-for-Android" alt="Contributors" />
-  </a>
-</div>
-
-### Star 历史趋势
-
-<div align="center">
-  <a href="https://star-history.com/#wess09/AzurPilot-for-Android&Date">
-    <img src="https://api.star-history.com/svg?repos=wess09/AzurPilot-for-Android&type=Date" alt="Star History Chart" width="100%">
-  </a>
-</div>
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <div align="center">
+        <a href="https://github.com/wess09/AzurPilot-for-Android/graphs/contributors">
+          <img src="https://img.shields.io/badge/Community-Contributors-blueviolet?style=for-the-badge&logo=github&logoColor=white" alt="Contributors">
+        </a>
+        <br><br>
+        <h4>开源共建与参与</h4>
+        <p>感谢所有参与代码提交、架构改进、问题排查与功能验证的开发者。欢迎随时提交 Issue 与 PR 参与共建！</p>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/graphs/contributors">
+          <img src="https://img.shields.io/badge/查看完整贡献名单-GitHub%20Graph-181717?style=flat-square&logo=github&logoColor=white" alt="View Contributors">
+        </a>
+        <a href="https://github.com/wess09/AzurPilot-for-Android/issues/new/choose">
+          <img src="https://img.shields.io/badge/提交反馈-New%20Issue-0052cc?style=flat-square&logo=githubissues&logoColor=white" alt="New Issue">
+        </a>
+      </div>
+    </td>
+    <td width="50%" valign="top">
+      <div align="center">
+        <a href="https://github.com/wess09/AzurPilot-for-Android/stargazers">
+          <img src="https://img.shields.io/badge/Project-Star%20History-f5a623?style=for-the-badge&logo=star&logoColor=white" alt="Star History">
+        </a>
+        <br><br>
+        <h4>项目成长与支持</h4>
+        <p>如果 AzurPilot for Android 为你的游戏挂机体验提供了便利，欢迎前往仓库主页点亮 Star 支持项目演进。</p>
+        <a href="https://star-history.com/#wess09/AzurPilot-for-Android&Date">
+          <img src="https://img.shields.io/badge/Star%20趋势看板-Star--History-orange?style=flat-square" alt="Star History Link">
+        </a>
+      </div>
+    </td>
+  </tr>
+</table>
 
 ---
 
