@@ -76,9 +76,10 @@ jobs:
             echo 'Release signing secrets are incomplete; cannot publish all APKs.' >&2
             exit 1
           fi
-          # Both push and dispatch only build when the upstream source changed.
-          # Dispatch may have waited for an earlier build, so check again here.
+          # A push may change Kotlin without changing upstream. Check both against
+          # the last published release before starting the expensive jobs.
           should_build=true
+          kt_changed=true
           mkdir -p .tmp/previous-release
           previous_ap_commit=''
           previous_version_code=''
@@ -91,18 +92,7 @@ jobs:
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
             previous_version_code="$(jq -r '.versionCode // empty' .tmp/previous-release/latest.json)"
             previous_version_name="$(jq -r '.versionName // empty' .tmp/previous-release/latest.json)"
-            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" ]]; then
-              should_build=false
-            fi
           fi
-          echo "Upstream dev: $ref; published: ${previous_ap_commit:-none}; build: $should_build"
-          {
-            echo '### AzurPilot upstream check'
-            echo "- Trigger: $EVENT_NAME"
-            echo "- Upstream dev: \`$ref\`"
-            echo "- Published commit: \`${previous_ap_commit:-none}\`"
-            echo "- Build rootfs and APKs: **$should_build**"
-          } >> "$GITHUB_STEP_SUMMARY"
           # Rebuild both APK variants with every new rootfs, but keep their package version
           # unless a Kotlin source file changed since the last versioned APK.
           version_code="$(git log -1 --format=%ct HEAD)"
@@ -113,6 +103,7 @@ jobs:
               git merge-base --is-ancestor "$app_commit" HEAD; then
             previous_patch="${previous_version_name##*.}"
             if [[ -z "$(git diff --name-only "$app_commit" HEAD -- '*.kt')" ]]; then
+              kt_changed=false
               version_code="$previous_version_code"
               version_name="$previous_version_name"
             else
@@ -123,6 +114,19 @@ jobs:
           else
             app_commit="$GITHUB_SHA"
           fi
+          if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" && "$kt_changed" == false ]]; then
+            should_build=false
+          fi
+          echo "Upstream dev: $ref; published: ${previous_ap_commit:-none}; Kotlin changed: $kt_changed; build: $should_build"
+          {
+            echo '### AzurPilot build decision'
+            echo "- Trigger: $EVENT_NAME"
+            echo "- Upstream dev: \`$ref\`"
+            echo "- Published commit: \`${previous_ap_commit:-none}\`"
+            echo "- Kotlin changed: **$kt_changed**"
+            echo "- Build rootfs and APKs: **$should_build**"
+            echo "- APK version: \`$version_name ($version_code)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
           (( version_code > 0 && version_code <= 2147483647 )) || { echo 'Invalid APK version code' >&2; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
