@@ -45,4 +45,8 @@ data class AppSettings(
     @PrefKey(default = "true")
     val autoCleanLogs: String = "true",
 
+    /** Runtime and App release checks/downloads use ghproxy.net when enabled. */
+    @PrefKey(default = "false")
+    val useGithubMirror: String = "false",
+
 )

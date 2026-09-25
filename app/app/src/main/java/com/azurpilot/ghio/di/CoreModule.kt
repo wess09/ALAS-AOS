@@ -48,5 +48,5 @@ val coreModule = module {
     single<AppSettingsGateway> { get<AppSettingsManager>() }
 
     single { LocalizedTextRenderer(androidContext()) }
-    single { AppUpdateManager(androidContext(), get(named<AppCoroutineScope>())) }
+    single { AppUpdateManager(androidContext(), get(named<AppCoroutineScope>()), get<AppSettingsManager>()) }
 }

@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -38,6 +39,7 @@ import com.azurpilot.ghio.theme.AppTokens
 import androidx.compose.material3.Button
 import com.azurpilot.ghio.proot.AzurPilotApi
 import com.azurpilot.ghio.provision.RootfsProvisioner
+import com.azurpilot.ghio.settings.AppSettingsManager
 import com.azurpilot.ghio.ui.components.AppCard
 import com.azurpilot.ghio.ui.components.AppFieldLabel
 import com.azurpilot.ghio.ui.components.AppInfoRow
@@ -45,6 +47,7 @@ import com.azurpilot.ghio.ui.components.AppLabeledControlRow
 import com.azurpilot.ghio.ui.components.AppNavigationRow
 import com.azurpilot.ghio.ui.components.AppSingleChoiceFlow
 import com.azurpilot.ghio.update.AppUpdateManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -282,11 +285,14 @@ private fun RuntimeCard(
     api: AzurPilotApi = koinInject(),
     provisioner: RootfsProvisioner = koinInject(),
     updateManager: AppUpdateManager = koinInject(),
+    settings: AppSettingsManager = koinInject(),
 ) {
+    val scope = rememberCoroutineScope()
     val apiState by api.state.collectAsStateWithLifecycle()
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
     val updateState by updateManager.state.collectAsStateWithLifecycle()
+    val useGithubMirror by settings.useGithubMirror.collectAsStateWithLifecycle()
     val installedVersion = provisioner.installedVersion()
     AppCard(title = stringResource(R.string.settings_runtime), collapsible = true) {
         AppInfoRow(
@@ -312,6 +318,20 @@ private fun RuntimeCard(
         }
         Text(
             text = stringResource(R.string.settings_runtime_managed),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        AppLabeledControlRow(
+            label = stringResource(R.string.settings_github_mirror),
+            trailing = {
+                Switch(
+                    checked = useGithubMirror,
+                    onCheckedChange = { enabled -> scope.launch { settings.setUseGithubMirror(enabled) } },
+                )
+            },
+        )
+        Text(
+            text = stringResource(R.string.settings_github_mirror_desc),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

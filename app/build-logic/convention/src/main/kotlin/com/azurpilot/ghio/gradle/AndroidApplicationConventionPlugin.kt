@@ -94,6 +94,9 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     storePassword = signingSetting("KEYSTORE_PASSWORD", "KEYSTORE_PASSWORD")
                     keyAlias = signingSetting("KEY_ALIAS", "KEY_ALIAS")
                     keyPassword = signingSetting("KEY_PASSWORD", "KEY_PASSWORD")
+                    enableV1Signing = true
+                    enableV2Signing = true
+                    enableV3Signing = true
                 }
             }
 

@@ -679,6 +679,8 @@
     <string name="runtime_update_message">Installed: %1$s\nLatest: %2$s\nDownload and update Runtime now?</string>
     <string name="runtime_update_now">Update now</string>
     <string name="settings_runtime_managed">The app checks GitHub Latest on launch and asks before downloading or updating Runtime. A manual check shows the available version; restart the app to choose an update.</string>
+    <string name="settings_github_mirror">Use ghproxy.net for updates</string>
+    <string name="settings_github_mirror_desc">Use the mirror for Runtime and App update checks and downloads. File size and SHA-256 are still verified against the release manifest.</string>
     <string name="settings_runtime_check">Check Runtime update</string>
     <string name="settings_runtime_checking">Checking Runtime…</string>
     <string name="settings_runtime_current">Runtime is up to date with Latest</string>

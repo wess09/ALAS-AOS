@@ -2,6 +2,8 @@ package com.azurpilot.ghio.provision
 
 import android.app.Application
 import android.system.Os
+import com.azurpilot.ghio.settings.AppSettingsManager
+import com.azurpilot.ghio.update.ReleaseUrls
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +67,7 @@ data class RuntimeUpdateCheck(
 class RootfsProvisioner(
     private val app: Application,
     private val scope: CoroutineScope,
+    private val settings: AppSettingsManager,
 ) {
 
     private val _state = MutableStateFlow<ProvisionState>(ProvisionState.Checking)
@@ -78,7 +81,8 @@ class RootfsProvisioner(
         _updateCheck.value = RuntimeUpdateCheck(checking = true)
         scope.launch(Dispatchers.IO) {
             runCatching {
-                val connection = URL("$INDEX_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+                val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+                val connection = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
                 try {
                     connection.connectTimeout = 12_000
                     connection.readTimeout = 12_000
@@ -87,7 +91,7 @@ class RootfsProvisioner(
                     val info = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
                     val version = info.getString("rootfsVersion")
                     require(version.isNotBlank()) { "运行时版本缺失" }
-                    require(info.getString("rootfsUrl").startsWith(RELEASE_BASE)) { "运行时下载地址无效" }
+                    require(info.getString("rootfsUrl").startsWith(ReleaseUrls.BASE)) { "运行时下载地址无效" }
                     require(info.getString("rootfsSha256").matches(Regex("[0-9a-f]{64}"))) { "运行时校验值无效" }
                     require(info.getLong("rootfsSize") > 0) { "运行时大小无效" }
                     version
@@ -195,7 +199,8 @@ class RootfsProvisioner(
     }
 
     private fun updateFromRelease() {
-        val index = URL("$INDEX_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+        val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+        val index = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
         val info = try {
             index.connectTimeout = 12_000
             index.readTimeout = 12_000
@@ -210,12 +215,13 @@ class RootfsProvisioner(
         val url = info.getString("rootfsUrl")
         val sha = info.getString("rootfsSha256")
         val size = info.getLong("rootfsSize")
-        require(url.startsWith(RELEASE_BASE))
+        require(url.startsWith(ReleaseUrls.BASE))
         require(sha.matches(Regex("[0-9a-f]{64}")) && size > 0)
         checkDisk()
         val archive = File(app.filesDir, "rootfs-update.tar.xz")
         try {
-            val connection = URL(url).openConnection() as HttpURLConnection
+            val downloadUrl = ReleaseUrls.selected(url, settings.useGithubMirror.value)
+            val connection = URL(downloadUrl).openConnection() as HttpURLConnection
             try {
                 connection.connectTimeout = 20_000
                 connection.readTimeout = 120_000
@@ -385,13 +391,6 @@ class RootfsProvisioner(
         const val MANIFEST_REL = "opt/azurpilot/BUILD_MANIFEST"
         const val PYTHON_REL = "opt/azurpilot/.venv/bin/python"
         const val MARKER_NAME = ".provisioned"
-        /**
-         * 发布通道根地址。仓库名必须与 CI 的 `${{ github.repository }}` 一致——
-         * 写成别的名字会让索引 404、整个 rootfs 更新链静默失效（异常在 runCatching 里被吞）。
-         * 白名单与索引地址共用这一个常量，杜绝两处漂移。
-         */
-        const val RELEASE_BASE = "https://github.com/wess09/AzurPilot-for-Android/releases/download/azurpilot-android-latest/"
-        const val INDEX_URL = "https://github.com/wess09/AzurPilot-for-Android/releases/latest/download/latest.json"
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024
         val VERSION_KEY = Regex(""""rootfs_version"\s*:\s*"([^"]+)"""")

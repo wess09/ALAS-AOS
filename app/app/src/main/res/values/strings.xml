@@ -674,6 +674,8 @@
     <string name="runtime_update_message">已安装：%1$s\nLatest：%2$s\n现在下载并更新 Runtime 吗？</string>
     <string name="runtime_update_now">立即更新</string>
     <string name="settings_runtime_managed">启动时检查 GitHub Latest；发现新版本会先询问，只有确认后才下载并更新 Runtime。手动检查可查看版本，重启 App 时可选择更新。</string>
+    <string name="settings_github_mirror">使用 ghproxy.net 更新镜像</string>
+    <string name="settings_github_mirror_desc">用于 Runtime 和 App 的更新检查与下载；文件仍按发布清单校验大小和 SHA-256。</string>
     <string name="settings_runtime_check">检查 Runtime 更新</string>
     <string name="settings_runtime_checking">正在检查 Runtime…</string>
     <string name="settings_runtime_current">Runtime 已是 Latest 版本</string>

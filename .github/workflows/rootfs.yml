@@ -249,8 +249,16 @@ jobs:
         run: |
           set -euo pipefail
           signer="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
-          "$signer" verify --verbose --print-certs dist/azurpilot-full.apk
-          "$signer" verify --verbose --print-certs dist/azurpilot-update.apk
+          for apk in dist/azurpilot-full.apk dist/azurpilot-update.apk; do
+            result="$("$signer" verify --verbose --print-certs "$apk")"
+            printf '%s\n' "$result"
+            for scheme in v1 v2 v3; do
+              grep -Eq "^Verified using ${scheme} scheme .*: true$" <<< "$result" || {
+                echo "$apk is missing a valid $scheme signature" >&2
+                exit 1
+              }
+            done
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: azurpilot-android-apk

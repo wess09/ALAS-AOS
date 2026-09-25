@@ -70,6 +70,9 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
     private val _autoCleanLogs = MutableStateFlow(defaults.autoCleanLogs.toBoolean())
     override val autoCleanLogs: StateFlow<Boolean> = _autoCleanLogs.asStateFlow()
 
+    private val _useGithubMirror = MutableStateFlow(defaults.useGithubMirror.toBoolean())
+    val useGithubMirror: StateFlow<Boolean> = _useGithubMirror.asStateFlow()
+
     init {
         // 一处 collect 铺开到各字段，而不是每个字段各起一条 stateIn：
         // 那样 loaded 置位与各字段拿到首值是两件并发的事，早读的人仍可能读到默认值
@@ -82,6 +85,7 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
                 _overlayControlMode.value = parseOverlayMode(s.overlayControlMode)
                 _screenSaverEnabled.value = s.screenSaverEnabled.toBoolean()
                 _autoCleanLogs.value = s.autoCleanLogs.toBoolean()
+                _useGithubMirror.value = s.useGithubMirror.toBoolean()
                 // 必须是最后一行：置位即宣告上面全部就位
                 _loaded.value = true
             }
@@ -114,6 +118,10 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
 
     override suspend fun setAutoCleanLogs(enabled: Boolean): Unit = with(AppSettingsSchema) {
         context.dataStore.edit { it[autoCleanLogs] = enabled.toString() }
+    }
+
+    suspend fun setUseGithubMirror(enabled: Boolean): Unit = with(AppSettingsSchema) {
+        context.dataStore.edit { it[useGithubMirror] = enabled.toString() }
     }
 
     /** 盘上是历史遗留或手改的非法值时回落默认，不让设置读取本身抛异常 */

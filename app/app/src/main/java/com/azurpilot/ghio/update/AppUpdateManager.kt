@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import com.azurpilot.ghio.BuildConfig
 import com.azurpilot.ghio.AppDispatchers
+import com.azurpilot.ghio.settings.AppSettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,7 @@ data class AppUpdateState(
 class AppUpdateManager(
     private val context: Context,
     private val scope: CoroutineScope,
+    private val settings: AppSettingsManager,
 ) {
     private val _state = MutableStateFlow(AppUpdateState())
     val state = _state.asStateFlow()
@@ -45,7 +47,8 @@ class AppUpdateManager(
         scope.launch(AppDispatchers.IO) {
             _state.update { it.copy(checking = true, error = null) }
             runCatching {
-                val body = requestText("$INDEX_URL?t=${System.currentTimeMillis()}")
+                val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+                val body = requestText("$indexUrl?t=${System.currentTimeMillis()}")
                 val json = JSONObject(body)
                 // Latest 可先只发布 rootfs；正式签名尚未配置时没有可安装的 APK。
                 if (!json.has("apkUrl")) return@runCatching null
@@ -56,7 +59,7 @@ class AppUpdateManager(
                     apkSha256 = json.getString("apkSha256"),
                     apkSize = json.getLong("apkSize"),
                 ).also {
-                    require(it.apkUrl.startsWith("https://"))
+                    require(it.apkUrl.startsWith(ReleaseUrls.BASE))
                     require(it.apkSha256.matches(Regex("[0-9a-f]{64}")))
                     require(it.apkSize > 0)
                 }
@@ -87,7 +90,8 @@ class AppUpdateManager(
                     val partial = File(dir, "${info.apkSha256}.apk.part")
                     partial.delete()
                     try {
-                        val connection = URL(info.apkUrl).openConnection() as HttpURLConnection
+                        val downloadUrl = ReleaseUrls.selected(info.apkUrl, settings.useGithubMirror.value)
+                        val connection = URL(downloadUrl).openConnection() as HttpURLConnection
                         try {
                             connection.instanceFollowRedirects = true
                             connection.connectTimeout = 20_000
@@ -154,7 +158,4 @@ class AppUpdateManager(
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private companion object {
-        const val INDEX_URL = "https://github.com/wess09/AzurPilot-for-Android/releases/latest/download/latest.json"
-    }
 }
