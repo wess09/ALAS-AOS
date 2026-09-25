@@ -1,0 +1,326 @@
+{
+  "repo_notes": [
+    {
+      "content": "文档语言要求：DeepWiki 以简体中文为主，关键技术名词、类名、文件名、目录名、API、Gradle task、Android/Compose/Shizuku/PRoot 等专有名词保留英文；首次出现的重要概念可补充英文名称。不要生成纯英文页面。页面标题允许采用“中文（English）”形式，但正文应以中文解释为主。",
+      "author": "AzurPilot Maintainer"
+    },
+    {
+      "content": "本仓库是 AzurPilot for Android。核心不是单一 Android UI，而是一整套运行系统：Kotlin + Jetpack Compose Material 3 Android 宿主负责权限、生命周期、虚拟显示、日志、更新和用户交互；PRoot 在应用私有目录中启动 ARM64 Ubuntu Runtime；Runtime 内运行 Python AzurPilot、OCR 与 React WebUI；宿主通过回环控制 API 和虚拟显示桥与 Runtime 协作。生成文档时必须解释跨层调用链，而不是只按目录逐个罗列文件。",
+      "author": "AzurPilot Maintainer"
+    },
+    {
+      "content": "优先覆盖当前有效源码与运行链：app/app/src/main/java/com/azurpilot/ghio、app/app/src/main/native、app/hidden-api、app/annotation-api、app/ksp-processor、app/build-logic、rootfs、.github/workflows/rootfs.yml、README.md、development.md。devlog.md、debug.md、handoff/、docs/roadmap-v3.md 可作为背景和维护资料，但不要把历史方案、已删除模块或旧端口误写为当前架构。",
+      "author": "AzurPilot Maintainer"
+    },
+    {
+      "content": "当前关键约束：Android 9+、ARM64；UI 使用标准 Material 3，theme/Theme.kt 是唯一主题入口，DesignTokens.kt 只保存 M3 之外的间距/图标尺寸；AzurPilot WebUI 当前通过浏览器 Custom Tab 打开；本机 WebUI 端口为 25548，虚拟屏桥端口为 22301；控制 API 仅监听回环地址并使用每次安装独立 token。旧版 22267/22300/22400 仅可在迁移/历史说明中出现。",
+      "author": "AzurPilot Maintainer"
+    },
+    {
+      "content": "构建与更新必须区分 App 与 Runtime 两条链：rootfs 是预构建产物，Android 首启不得执行 uv sync、npm 或原生编译；Runtime 更新由 RootfsProvisioner 管理并保护用户配置/日志；AppUpdateManager 仅处理宿主 APK 更新。正式发布流程、SHA-256 校验、Latest release、签名与 CI 的职责边界需要在相关页面写清楚。",
+      "author": "AzurPilot Maintainer"
+    }
+  ],
+  "pages": [
+    {
+      "title": "项目总览（Project Overview）",
+      "purpose": "作为 Wiki 入口，基于 README.md 与 development.md 说明 AzurPilot for Android 的目标、用户场景、支持平台、核心功能、仓库主要组成，以及 Android 宿主、PRoot Runtime、AzurPilot Python、React WebUI、虚拟显示之间的关系。给出高层组件图和从安装到挂机的端到端流程。",
+      "parent": null,
+      "page_notes": [
+        {
+          "content": "明确区分“Android 宿主 App”和“Runtime 内的 AzurPilot”。不要把 AzurPilot Python 源码误认为主要保存在本仓库中；本仓库主要负责宿主、Runtime 构建与集成。"
+        }
+      ]
+    },
+    {
+      "title": "系统架构与运行链路（Architecture & Runtime Flow）",
+      "purpose": "深入描述应用启动、Runtime 部署、特权后端连接、虚拟显示创建、AzurPilot/PRoot 启动、回环控制 API、WebUI 打开、任务运行、停止与最终清场的完整时序。重点引用 AzurPilotApp.kt、MainActivity.kt、service/、privileged/、proot/、provision/、remote/ 与 native bridge。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "用时序图/架构图展示跨层交互；标出 Android 进程、特权远程服务、PRoot/Linux 进程、AzurPilot Python 进程和浏览器 Custom Tab 的边界。"
+        }
+      ]
+    },
+    {
+      "title": "Android 宿主核心（Android Host Core）",
+      "purpose": "说明 app/app 模块的应用入口、Application 初始化、MainActivity、Koin 依赖注入、HostState、RunForegroundService、配置与状态流。解释宿主如何协调 UI、后台服务、Runtime、权限和日志。",
+      "parent": "系统架构与运行链路（Architecture & Runtime Flow）",
+      "page_notes": [
+        {
+          "content": "重点覆盖 com/azurpilot/ghio/di、service、domain、config、constant，而不是只列类名；说明各层职责和依赖方向。"
+        }
+      ]
+    },
+    {
+      "title": "Material 3 UI 与导航（UI & Navigation）",
+      "purpose": "文档化 Compose UI 的整体结构：ui/AppRoot.kt、ui/navigation/Routes.kt、首页/挂机页、AzurPilot 页面、设置、日志、首次部署页面和共享组件。说明标准 Material 3 设计约束、响应式布局、状态注入和页面间导航。",
+      "parent": "Android 宿主核心（Android Host Core）",
+      "page_notes": [
+        {
+          "content": "强调当前 UI 规范：Theme.kt 为唯一主题入口，使用 MaterialTheme 默认色板/形状/字阶/动效；不要把旧版自绘控件方案描述为现状。"
+        }
+      ]
+    },
+    {
+      "title": "挂机页与实时预览（Hangar & Live Preview）",
+      "purpose": "说明 ui/hangar/HangarScreen.kt、HangarPreview.kt、AzurPilotControlPanel.kt 与底层截图/触控链路如何实现后台虚拟屏预览、手动控制、运行状态展示和任务启停。",
+      "parent": "Material 3 UI 与导航（UI & Navigation）",
+      "page_notes": [
+        {
+          "content": "把 UI 事件一路追踪到 RemoteService/BridgeServer/native bridge，解释坐标、帧缓冲与触控注入的边界。"
+        }
+      ]
+    },
+    {
+      "title": "设置、配置与 DataStore（Settings & Configuration）",
+      "purpose": "说明 settings/、config/UserConfigurationStore.kt、domain/UserConfiguration.kt、Preferences DataStore、annotation-api 与 ksp-processor 如何定义、生成、持久化和消费配置。涵盖显示、后端、任务、资源、日志与更新相关设置。",
+      "parent": "Android 宿主核心（Android Host Core）",
+      "page_notes": [
+        {
+          "content": "说明 @PrefSchema / @PrefKey 的代码生成链和生成产物职责，同时区分用户配置、运行状态和常量。"
+        }
+      ]
+    },
+    {
+      "title": "国际化（i18n）",
+      "purpose": "说明 i18n/AppLocales.kt、LocalizedTextRenderer.kt、UiText.kt、ui/i18n/DomainStrings.kt、res/values 与 values-en，以及 scripts/check_i18n_strings.py 的本地化策略、字符串来源与校验流程。",
+      "parent": "Material 3 UI 与导航（UI & Navigation）",
+      "page_notes": [
+        {
+          "content": "说明 Compose 层如何使用结构化 UiText，而不是只描述 Android strings.xml。"
+        }
+      ]
+    },
+    {
+      "title": "日志、诊断与问题导出（Logging & Diagnostics）",
+      "purpose": "覆盖 log/ 下的 AppLogWriter、AzurPilotLogSource、LogTailReader、CrashHandler、LogCleaner、LogExportService/Collector、各日志 ViewModel 与 ui/logs 页面；说明启动器日志、AzurPilot 日志、截图、崩溃信息、自动清理与 issue 导出流程。",
+      "parent": "Android 宿主核心（Android Host Core）",
+      "page_notes": [
+        {
+          "content": "结合 domain/Diagnostics.kt 与 tools/watch-android-logs.ps1，给出开发者排障入口和日志数据流。"
+        }
+      ]
+    },
+    {
+      "title": "悬浮窗、边框与屏保（Overlay System）",
+      "purpose": "说明 overlay/、overlay/border、overlay/screensaver 的悬浮球、控制面板、边框状态提示、屏保层、ViewModelOwner 与权限/生命周期管理。",
+      "parent": "Android 宿主核心（Android Host Core）",
+      "page_notes": [
+        {
+          "content": "解释悬浮窗与主 Activity 的状态共享方式，以及后台挂机时它如何避免依赖前台页面。"
+        }
+      ]
+    },
+    {
+      "title": "特权访问总览（Privileged Access）",
+      "purpose": "解释为什么应用需要 Shizuku-m 或 Root，说明 privileged/ 中 PermissionManager、RemoteAccessCoordinator、RemoteServiceManager、权限请求、后端抽象与状态机，以及特权服务与普通 App 进程之间的 IPC 边界。",
+      "parent": "系统架构与运行链路（Architecture & Runtime Flow）",
+      "page_notes": [
+        {
+          "content": "把权限获取、后端选择、远程服务连接、断线恢复和失败状态串成完整流程；不要把 Shizuku 与 Root 混为同一种启动方式。"
+        }
+      ]
+    },
+    {
+      "title": "Shizuku 后端（Shizuku Backend）",
+      "purpose": "详细说明 ShizukuManager、ShizukuReadiness、ShizukuRemoteServiceConnector、相关 UI 引导和 Shizuku-m 依赖，描述连接条件、权限授权、服务启动及异常恢复。",
+      "parent": "特权访问总览（Privileged Access）",
+      "page_notes": [
+        {
+          "content": "突出项目使用 Shizuku-m 的目的：在更多设备上避免无线调试/WLAN 依赖；只根据仓库源码和文档描述能力。"
+        }
+      ]
+    },
+    {
+      "title": "Root 后端与启动桥（Root Backend）",
+      "purpose": "覆盖 RootManager、RootRemoteServiceConnector、root/ 下的 RootServiceBootstrapClient/Provider/Registry、RootServiceStarter、RootUserService 及 libsu 集成，说明 Root 模式如何启动远程服务。",
+      "parent": "特权访问总览（Privileged Access）",
+      "page_notes": [
+        {
+          "content": "说明 Root bootstrap 与 Shizuku user service 的差异、公共接口以及失败清理路径。"
+        }
+      ]
+    },
+    {
+      "title": "远程特权服务（Remote Privileged Service）",
+      "purpose": "说明 remote/RemoteServiceImpl.kt、RemoteBootTrace.kt 与 AIDL 接口的职责，展示普通 App 进程如何通过远程特权进程执行显示、输入、应用控制、电源与权限相关操作。",
+      "parent": "特权访问总览（Privileged Access）",
+      "page_notes": [
+        {
+          "content": "明确 IPC 调用边界，并关联 AndroidManifest.xml、AIDL、PrivilegedServicePort/RemoteAccessPort。"
+        }
+      ]
+    },
+    {
+      "title": "虚拟显示与应用控制（Virtual Display & App Control）",
+      "purpose": "深入文档化 remote/internal 的 VirtualDisplayManager、PrimaryDisplayManager、ScreenManager、ActivityUtils、AppWatchdog、WakeUnlockController、PowerController、PermissionGrantHelper 等，解释后台虚拟屏创建、游戏启动、前后台切换、解锁和 watchdog。",
+      "parent": "远程特权服务（Remote Privileged Service）",
+      "page_notes": [
+        {
+          "content": "关注“游戏跑在后台虚拟屏、主屏可继续使用”的实现链路与清场机制，注明真实限制和设备差异。"
+        }
+      ]
+    },
+    {
+      "title": "截图、触控与 Native Bridge（Capture, Input & Native Bridge）",
+      "purpose": "覆盖 bridge/ Java/Kotlin 封装与 app/app/src/main/native 下 bridge.cpp、bridge_capture、bridge_frame_buffer、bridge_input、bridge_preview、launcher.c 等。解释帧捕获、共享缓冲、预览、触控注入、JNI/Native 接口和性能关键点。",
+      "parent": "远程特权服务（Remote Privileged Service）",
+      "page_notes": [
+        {
+          "content": "给出从虚拟显示到 HangarPreview 的图像数据流，以及从 Compose 手势到 InputManager/Native 输入的反向数据流。"
+        }
+      ]
+    },
+    {
+      "title": "Hidden API 与系统包装层（Hidden APIs & System Wrappers）",
+      "purpose": "说明 app/hidden-api 模块以及 third/、third/wrappers 中对 ActivityManager、DisplayManager、InputManager、PowerManager、SurfaceControl、WindowManager 等 Android 隐藏/系统 API 的兼容包装。",
+      "parent": "远程特权服务（Remote Privileged Service）",
+      "page_notes": [
+        {
+          "content": "说明为何这些 API 只能在特权上下文使用，以及 Android 版本兼容策略；不要把 third/ 误认为普通业务层。"
+        }
+      ]
+    },
+    {
+      "title": "Runtime 总览（PRoot Runtime Overview）",
+      "purpose": "说明 APK 内置 ARM64 Ubuntu 24.04 Runtime 的组成、目录布局、Python 3.14、AzurPilot、OCR、前端静态资源、PRoot 依赖以及宿主与 Runtime 的职责边界。",
+      "parent": "系统架构与运行链路（Architecture & Runtime Flow）",
+      "page_notes": [
+        {
+          "content": "强调 Runtime 是构建期准备好的可部署产物，Android 首启不做 uv sync、npm install 或本地编译。"
+        }
+      ]
+    },
+    {
+      "title": "Rootfs 部署与原子更新（Rootfs Provisioning）",
+      "purpose": "详细说明 provision/RootfsProvisioner.kt 的首次安装、完整 APK 与轻量 APK 差异、rootfs.tar.xz/BUILD_MANIFEST、版本检测、下载、大小与 SHA-256 校验、原子替换、失败回退和用户数据保留。",
+      "parent": "Runtime 总览（PRoot Runtime Overview）",
+      "page_notes": [
+        {
+          "content": "把“首次部署”和“后续 Runtime 更新”分开描述，并说明为什么更新必须发生在 PRoot/AzurPilot 启动前。"
+        }
+      ]
+    },
+    {
+      "title": "PRoot Host 与进程生命周期（PRoot Host Lifecycle）",
+      "purpose": "深入说明 proot/ProotHost.kt、ProotState.kt、AzurPilotRunController.kt 的进程启动参数、环境准备、单实例管理、存活检测、停止、进程组清场与异常恢复。",
+      "parent": "Runtime 总览（PRoot Runtime Overview）",
+      "page_notes": [
+        {
+          "content": "明确 AzurPilot 的 ProcessManager 负责内部任务/工具子进程，Android 宿主只维护 PRoot/WebUI 生命周期和最终清场。"
+        }
+      ]
+    },
+    {
+      "title": "AzurPilot 控制 API 与宿主网关（Control API & Gateway）",
+      "purpose": "说明 proot/AzurPilotApi.kt、AzurPilotGateway.kt、AndroidControlAuth.kt 与 Runtime 内 /android 控制路由如何协作，包括请求类型、状态查询、任务启停、认证 token、错误处理与回环网络边界。",
+      "parent": "Runtime 总览（PRoot Runtime Overview）",
+      "page_notes": [
+        {
+          "content": "说明 25548 WebUI/控制入口与 22301 虚拟屏桥的用途；控制接口仅监听 loopback，认证 token 为每次安装独立值。"
+        }
+      ]
+    },
+    {
+      "title": "Android Runtime 兼容层与实例种子（Overlays & Seeds）",
+      "purpose": "覆盖 rootfs/overlays/android_host.py、android_process_compat.py、sitecustomize.py 与 rootfs/seeds/deploy-azurpilot.yaml、seed_azurpilot.py，解释 Android 专用兼容层、进程枚举修正、sitecustomize 注入和默认实例配置。",
+      "parent": "Runtime 总览（PRoot Runtime Overview）",
+      "page_notes": [
+        {
+          "content": "强调这些文件是宿主自有兼容层，不应修改 AzurPilot 上游跟踪源码；说明为何通过 overlay/sitecustomize 实现适配。"
+        }
+      ]
+    },
+    {
+      "title": "AzurPilot WebUI 与 Custom Tab（Web Console Integration）",
+      "purpose": "说明 ui/azurpilot/AzurPilotScreen.kt、宿主启动逻辑与本机 127.0.0.1:25548 WebUI 的集成方式，解释从旧 WebView 方案切换到浏览器 Custom Tab 后的职责变化、返回行为和服务就绪检查。",
+      "parent": "Runtime 总览（PRoot Runtime Overview）",
+      "page_notes": [
+        {
+          "content": "当前方案不是内嵌 WebView。只把历史 WebView UA/CSS 注入作为迁移背景，不应描述为现行功能。"
+        }
+      ]
+    },
+    {
+      "title": "App 更新机制（App Update）",
+      "purpose": "说明 update/AppUpdateManager.kt 的宿主版本检查、latest.json/Release 元数据读取、轻量 APK 下载、SHA-256 校验、系统安装器覆盖安装和失败处理，并与 Runtime 更新机制对比。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "明确 App 版本判断与 AzurPilot 上游提交无关；日常 App 更新不应重复打包/覆盖已有 Runtime。"
+        }
+      ]
+    },
+    {
+      "title": "Gradle 工程与构建约定（Gradle Build System）",
+      "purpose": "说明 app/settings.gradle.kts、根 build.gradle.kts、app/app/build.gradle.kts、gradle/libs.versions.toml、build-logic/convention、ABI/minSdk/namespace、CMake/native/prootLibs、资源与打包校验的整体 Gradle 架构。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "列出 :app、:hidden-api、:annotation-api、:ksp-processor 的职责，并解释 build-logic includeBuild 提供的 azurpilot.* convention plugins。"
+        }
+      ]
+    },
+    {
+      "title": "Rootfs 构建流水线（Runtime Build Pipeline）",
+      "purpose": "围绕 rootfs/build/build-azurpilot.sh 描述 ARM64 Ubuntu Runtime 的构建过程：依赖准备、固定 Python 版本与 uv.lock、AzurPilot 源码/提交、Python 环境、OCR 验证、React WebUI 预构建、许可证收集、清单与压缩包产出。",
+      "parent": "Gradle 工程与构建约定（Gradle Build System）",
+      "page_notes": [
+        {
+          "content": "如果构建脚本目录在索引中存在，优先逐段引用真实脚本；不要根据 README 猜测未出现的命令。"
+        }
+      ]
+    },
+    {
+      "title": "CI、签名与发布（CI/CD & Release）",
+      "purpose": "详细解释 .github/workflows/rootfs.yml 的触发条件、ARM64 rootfs job、APK 构建、Runtime 资产验证、正式/调试签名、Actions Secrets、Latest release 更新、构建产物与发布条件。",
+      "parent": "Gradle 工程与构建约定（Gradle Build System）",
+      "page_notes": [
+        {
+          "content": "区分 push main、定时构建和手动触发；说明签名 Secrets 缺失时为何只保留 debug APK artifact。"
+        }
+      ]
+    },
+    {
+      "title": "测试与验证策略（Testing & Validation）",
+      "purpose": "总结当前可用的编译、rootfs 测试、Python 兼容回归、OCR CPU 推理、真机验证和 CI 门禁；覆盖 rootfs/tests、Android 编译命令、已知 :app:testDebugUnitTest 孤儿测试问题，以及 UI/虚拟显示需真机走查的范围。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "不要把当前失效的上游遗留单元测试写成正常 CI 保障；以 development.md 与 debug.md 的当前结论为准。"
+        }
+      ]
+    },
+    {
+      "title": "安全边界、端口与权限（Security Boundaries）",
+      "purpose": "集中说明应用私有目录、Shizuku/Root 权限边界、远程特权进程、AIDL/IPC、loopback-only 控制接口、安装 token、WebUI 25548、Bridge 22301、日志/导出数据、APK/Runtime SHA-256 与更新信任边界。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "将安全事实与历史兼容信息分开；旧端口 22267/22300/22400 仅用于迁移识别，不是当前暴露面。"
+        }
+      ]
+    },
+    {
+      "title": "开源来源、许可证与上游关系（Licensing & Upstreams）",
+      "purpose": "基于 README.md、LICENSE* 和构建说明解释 ALAS-AOS、MaaFwApp、AzurPilot 三者的来源与授权关系，宿主 AGPL-3.0、AzurPilot GPL-3.0、Runtime 第三方许可证收集，以及哪些代码是本仓维护、哪些来自上游或构建时钉定。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "不要把许可证列表简单复制一遍；重点解释代码来源、分发边界和维护者需要注意的派生/打包关系。"
+        }
+      ]
+    },
+    {
+      "title": "开发者工作流与维护约束（Developer Workflow）",
+      "purpose": "综合 AGENTS.md、development.md、devlog.md、debug.md、handoff/latest.md 与 tools/，说明仓库的开发入口、常用验证、真机实验清场、临时文件约定、问题记录、交接方式和禁止事项。",
+      "parent": "项目总览（Project Overview）",
+      "page_notes": [
+        {
+          "content": "devlog/debug/handoff 是维护资料而非运行源码；从中提炼当前有效约束，并清楚标注历史或已解决问题。"
+        }
+      ]
+    }
+  ]
+}
