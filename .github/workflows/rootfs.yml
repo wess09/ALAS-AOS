@@ -24,14 +24,14 @@ on:
         default: false
         type: boolean
       apk_runner:
-        description: Runner for the APK job (macos-26 is the default; drop to macos-15 / ubuntu-24.04 if it misbehaves)
+        description: Runner for the APK job (ubuntu-24.04 measured ~2x faster than macos-26)
         required: false
-        default: macos-26
+        default: ubuntu-24.04
         type: choice
         options:
+          - ubuntu-24.04
           - macos-26
           - macos-15
-          - ubuntu-24.04
 
 permissions:
   actions: read
@@ -190,10 +190,11 @@ jobs:
       version_code: ${{ steps.version.outputs.version_code }}
       version_name: ${{ steps.version.outputs.version_name }}
     if: ${{ always() && needs.resolve.outputs.build_apk == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
-    # APK 编译走 macOS arm64（M1，3 核 / 7GB）；compile 部分是单核密集，M1 单核比 ubuntu 的 Xeon 快。
-    # 需要回落时改上面的 apk_runner 输入即可，不必动文件。
-    # 注意 rootfs job 仍必须在 Linux arm64 上跑（debootstrap + uv + npm）。
-    runs-on: ${{ inputs.apk_runner || 'macos-26' }}
+    # APK 编译走 x64 Linux。实测 macos-26（虚拟化 M1，3 核 / 7168MB，单核基准 7.2 Miter/s）
+    # 第一次全量构建 11m34s，ubuntu-24.04 同一步约 4 分钟，慢一倍多，故默认仍是 ubuntu；
+    # macos-26 / macos-15 留在 dispatch 输入里，需要时随时切。
+    # rootfs job 必须留在 Linux arm64（chroot + apt + uv 执行 arm64 用户态）。
+    runs-on: ${{ inputs.apk_runner || 'ubuntu-24.04' }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -246,10 +247,14 @@ jobs:
           cd app
           chmod +x gradlew
           mkdir -p ../dist
-          # M1 runner 只有 3 核 7GB，默认的 -Xmx4096m 与 Kotlin/KSP 守护进程会互相挤爆
+          # 编译期 Kotlin/KSP/Compose 吃内存：给足堆，Kotlin 守护进程单独定额
           gradle_args=(--console=plain --stacktrace)
           if [ "$RUNNER_OS" = "macOS" ]; then
-            gradle_args+=("-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1g")
+            # 7GB 的 M1 runner：默认 4GB 堆加 Kotlin 守护进程会互相挤爆
+            gradle_args+=("-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1g" "-Pkotlin.daemon.jvmargs=-Xmx1536m")
+          else
+            # x64 runner 有 16GB：gradle.properties 里的 4096m 偏保守
+            gradle_args+=("-Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g" "-Pkotlin.daemon.jvmargs=-Xmx3g")
           fi
           if [[ "$SIGNING_READY" == true ]]; then
             ./gradlew :app:assembleRelease "${gradle_args[@]}"

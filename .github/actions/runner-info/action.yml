@@ -18,7 +18,11 @@ runs:
           echo "perf levels  : P=$(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || echo -) E=$(sysctl -n hw.perflevel1.physicalcpu 2>/dev/null || echo -)"
           echo "memory       : $(( $(sysctl -n hw.memsize) / 1048576 )) MB"
         else
-          echo "cpu          : $(grep -m1 -E 'model name|Hardware|CPU part' /proc/cpuinfo || echo unknown)"
+          # arm64 的 /proc/cpuinfo 没有 model name（只有 CPU part 那种原始 part 号），
+          # lscpu 会把它翻成型号名；取不到再退回 x86 的 model name
+          cpu="$(lscpu 2>/dev/null | awk -F': +' '/^Model name:/ {name=$2} END {print name}')"
+          [ -n "$cpu" ] || cpu="$(awk -F': ' '/^model name/ {print $2; exit}' /proc/cpuinfo 2>/dev/null)"
+          echo "cpu          : ${cpu:-unknown}"
           echo "cores        : $(nproc)"
           echo "memory       : $(awk '/^MemTotal:/ {printf "%.0f MB", $2 / 1024}' /proc/meminfo)"
         fi
