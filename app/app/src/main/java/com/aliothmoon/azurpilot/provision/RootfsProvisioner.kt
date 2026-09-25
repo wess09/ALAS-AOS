@@ -161,7 +161,7 @@ class RootfsProvisioner(
         val url = info.getString("rootfsUrl")
         val sha = info.getString("rootfsSha256")
         val size = info.getLong("rootfsSize")
-        require(url.startsWith("https://github.com/wess09/AzurPilot-AOS/releases/download/azurpilot-android-dev/"))
+        require(url.startsWith(RELEASE_BASE))
         require(sha.matches(Regex("[0-9a-f]{64}")) && size > 0)
         checkDisk()
         val archive = File(app.filesDir, "rootfs-update.tar.xz")
@@ -338,7 +338,13 @@ class RootfsProvisioner(
         const val PYTHON_REL = "opt/azurpilot/.venv/bin/python"
         const val MARKER_NAME = ".provisioned"
         const val SOURCE_CODE_NAME = ".source-version-code"
-        const val INDEX_URL = "https://github.com/wess09/AzurPilot-AOS/releases/download/azurpilot-android-dev/latest.json"
+        /**
+         * 发布通道根地址。仓库名必须与 CI 的 `${{ github.repository }}` 一致——
+         * 写成别的名字会让索引 404、整个 rootfs 更新链静默失效（异常在 runCatching 里被吞）。
+         * 白名单与索引地址共用这一个常量，杜绝两处漂移。
+         */
+        const val RELEASE_BASE = "https://github.com/wess09/ALAS-AOS/releases/download/azurpilot-android-dev/"
+        const val INDEX_URL = RELEASE_BASE + "latest.json"
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024
         val VERSION_KEY = Regex(""""rootfs_version"\s*:\s*"([^"]+)"""")

@@ -30,6 +30,12 @@
 - **根本原因**：Windows 不允许重命名仍被进程持有句柄的目录——当时 shell 的工作目录（以及 IDE 的索引）正落在该目录里。
 - **解决方案**：先把 shell 的 cwd 切到仓库根再执行 `mv`，或对该目录单独重试（句柄随上一条命令退出而释放）：`for i in 1 2 3; do mv ... && break; sleep 2; done`。批量脚本里不要用 `set -e` 掩盖成「部分成功」——失败后先 `ls` 确认真实状态再补做，避免漏改。
 
+## [2026-09-25] 发布通道 URL 写错仓库名：异常被 runCatching 吞掉，整个 rootfs 自动更新静默失效
+
+- **现象**：rootfs 自动更新链路一切"正常"——不报错、不崩、界面无异常，但永远不更新。日志里只有一行 `rootfs update skipped`。
+- **根本原因**：App 侧把发布通道写成 `https://github.com/wess09/AzurPilot-AOS/...`，而 CI 用 `${{ github.repository }}` 生成的是 `https://github.com/wess09/ALAS-AOS/...`。仓库名错一个字，索引地址就是 404；而 `updateFromRelease()` 外层包着 `runCatching { ... }.onFailure { Timber.w("rootfs update skipped") }`，**把 404 与"没有新版本"归成了同一条静默路径**。同一份常量还被复制成两份（索引地址 + 下载 URL 白名单），给了漂移第二次机会。
+- **解决方案**：两处合并为同一个 `RELEASE_BASE` 常量，白名单直接用 `url.startsWith(RELEASE_BASE)`；注释里写明「仓库名必须与 CI 的 `${{ github.repository }}` 一致」。**判据：凡是"失败即静默降级"的功能，其配置项（URL、仓库名、路径）必须能自证——要么合成一个常量，要么在降级日志里带上被拒的实际值，否则错了也看不出来。**
+
 ## [2026-09-25] 裸调 `/android/*` 会 400：上游实例解析有一个必然落空的硬编码回落
 
 - **现象**：App 里「停止挂机」点了没反应、工具任务（半自动点击/活动剧情）点了没反应；调度器没跑时整个控制面板还显示「环境未就绪」。同一个后端，用浏览器打开 WebUI 一切正常。
