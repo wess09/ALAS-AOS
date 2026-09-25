@@ -6,6 +6,6 @@
         path="." />
     <!-- 运行日志与截图产物；导出日志时用 -->
     <external-files-path
-        name="maa_files"
+        name="azurpilot_files"
         path="." />
 </paths>

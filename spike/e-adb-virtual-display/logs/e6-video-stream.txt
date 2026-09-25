@@ -1,9 +1,0 @@
-# E6 scrcpy video stream sanity (from keep-alive client dumps)
-
-all three runs: codec=h264, 1280x720, first packet = IDR(31+208+SPS/PPS 39186B), then P-frames ~116B (static screen)
-
-run1 (VD id=9, device Dozing, black):  296817 bytes / 227 packets / payload 294012 B
-run2 (VD id=10, device Awake, rendered):553026 bytes / 839 packets / payload 542877 B
-run3 (VD id=11, repro, rendered):       747988 bytes / 337 packets / payload 743863 B
-
-raw dumps kept out of repo (binary); parsing script inline in REPORT.md appendix

@@ -1,4 +1,0 @@
-$ settings delete global settings_enable_monitor_phantom_procs
-exit=0 out=[Deleted 1 rows]
-$ device_config put activity_manager max_phantom_processes 2147483647
-exit=0 out=[]

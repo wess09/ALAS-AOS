@@ -1,9 +1,0 @@
-# captured 2026-09-15T20:18:25+08:00
-PPG-AN00
-HONOR
-16
-36
-2026-06-01
-arm64-v8a
-4096
-Enforcing

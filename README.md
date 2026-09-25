@@ -1,6 +1,6 @@
 # AzurPilot Android
 
-本仓库正在将原 ALAS-AOS 改造为独立的 AzurPilot Android App。新包名为 `io.github.shinarin.azurpilotandroid`，使用独立私有数据目录，可与旧版 ALAS-AOS 并存；旧配置不会自动迁移。ARM64 rootfs 与 debug APK 已通过 CI，完整真机后台挂机仍待验收。
+本仓库正在把原有宿主改造为独立的 AzurPilot Android App。新包名为 `io.github.shinarin.azurpilotandroid`，使用独立私有数据目录，可与旧版并存；旧配置不会自动迁移。ARM64 rootfs 与 debug APK 已通过 CI，完整真机后台挂机仍待验收。
 
 ## 目标功能
 
@@ -20,7 +20,7 @@ AzurPilot WebUI + RuntimeService + ProcessManager（单进程任务管理）
 Shizuku 特权进程（虚拟屏 / 截图 / 点击 / 滑动 / 应用控制）
 ```
 
-AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `1841cb1941751a81ab70668b4d2383c369c4506e`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧 ALAS rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
+AzurPilot 源码基线是 `wess09/AzurPilot` 的 `dev` commit `1841cb1941751a81ab70668b4d2383c369c4506e`。Android 设备后端、控制 API 和 Android 更新器分流均已作为 AzurPilot 正式源码提交，AOS 构建只检出该 commit，不再覆盖 AzurPilot 源文件。React WebUI 由手机浏览器的 Custom Tab 渲染，避免 System WebView 的设备相关合成故障。旧版 rootfs 补丁和 `wrapper/runner` 已从新构建链移除。
 
 ## 构建与验证
 

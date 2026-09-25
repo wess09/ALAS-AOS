@@ -1,6 +1,0 @@
-# 21:54:36
-device_config max_phantom_processes = null
-settings_enable_monitor_phantom_procs = null
-legacy settings_config_disable_monitor_phantom_procs = true
-legacy phantom_process_killer_enable = false
-effective dumpsys:   max_phantom_processes=32

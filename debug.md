@@ -1,8 +1,64 @@
 # Debug · 坑点记录
 
 > 本文件记录新阶段踩过的坑（现象 / 根本原因 / 解决方案）。
+> 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
+>
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
-> WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜MaaFW PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜MaaFW 截图 BGR↔ALAS RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
+> WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜AzurPilot PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜AzurPilot 截图 BGR↔AzurPilot RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
+
+## [2026-09-25] 包名重命名漏改 native JNI 类名与 R8 keep 规则：编译通过但 release 静默失效
+
+- **现象**：把 `com.aliothmoon.azurpilot` 全量改成 `com.aliothmoon.azurpilot` 后 `compileDebugKotlin`/`compileDebugAidl` 全绿，看起来万事大吉。
+- **根本原因**：有两处包名不是 Kotlin 引用，grep `.kt/.java` 抓不到——① `app/src/main/native/bridge.cpp` 里 `static constexpr char kNativeBridgeClass[] = "com/aliothmoon/azurpilot/bridge/NativeBridgeLib"` 这种 JNI `FindClass` 用的斜杠路径字符串；② `app/proguard-rules.pro` 里 12 条 `-keep class com.aliothmoon.azurpilot.**` 与 `IRunnerCallback` 的 keep 规则。漏改后 debug 构建照样能跑（不混淆、JNI 类名错则桥整体不可用），release 下 R8 会把桥与特权服务剪掉。
+- **解决方案**：重命名包名时固定做一次「非源码扩展名」扫描：`grep -rn "<旧包名>" --include=*.cpp --include=*.h --include=*.pro --include=*.xml --include=*.aidl --include=*.json .`，其中 native 侧记得用斜杠形式 `com/<旧包名>/` 再扫一遍。**判据：凡是被 `FindClass`/反射/混淆规则按字符串引用的类名，都不受编译器保护。**
+
+## [2026-09-25] 从上游 fork 继承下来的根配置是死配置：`.prettierrc.mjs` 在本仓根本跑不起来
+
+- **现象**：仓库根有 `.prettierrc.mjs` + `.prettierignore`（还入库了），但本仓**没有 `package.json`**，也没有 `node_modules`——那两个文件里 `import` 的 `prettier-plugin-multiline-arrays` 与 `@nekosu/prettier-plugin-azurpilot-sort` 无从安装，配置里的 `pipelinePatterns` / `interfacePatterns` 也无处生效。
+- **根本原因**：这两份配置是 fork 上游仓库根目录的遗产，服务于上游的 PI/pipeline JSON 与前端格式化流程；本仓「做减法」时删掉了 JS 工具链，配置却留了下来。`.prettierignore` 里列的 `上游公共资源目录/`、`resource/base/model/ocr/`、`tools/schema/*.schema.json`、`.create-azurpilot-project/` 在本仓**一个都不存在**，是判断它已死的直接证据。
+- **解决方案**：直接删除这两个文件。**判据：拿到一份继承来的配置文件，先把里面每条路径与每个依赖在本仓实际验证一遍——路径全不存在、依赖装不上，就是死配置，该删而不是该改。**
+
+## [2026-09-25] 机械重命名的两个坑：前缀组合名与二次替换
+
+- **现象**：用词边界正则批量替换旧标识符时，**带前缀的组合名**（`Light`/`Dark` 这类前缀 + 被替换名）一个都没匹配上；而第一轮已经改好的路由常量，在第二轮「注释里产品名改新名」时又被改了一次，与调用点引用的大小写形式对不上，编译才报 `Unresolved reference`。
+- **根本原因**：`` 词边界要求前一个字符是非单词字符，`LightPalette` 里 `AppPalette` 前面是字母 `t`，所以匹配不上；而分轮次替换时，后一轮的规则会命中前一轮刚生成的名字。
+- **解决方案**：机械重命名分两轮做且每轮只用**词内不含歧义**的模式——第一轮替换全名（含 `Light`/`Dark` 这类组合前缀）；第二轮改注释与产品名时先跑一遍「当前残留清单」（`grep -rhoE` 出所有含目标词的标识符再决定），并对已确定的常量名做精确串替换而不是词边界替换。改完必须编译一次，别信 grep 结果。
+
+## [2026-09-25] Windows 下 `mv` 目录报 "Device or resource busy"
+
+- **现象**：迁移源码目录 `com/aliothmoon/azurpilot` → `com/aliothmoon/azurpilot` 时 `mv` 失败，报 `Device or resource busy`，同一批其它目录却都成功。
+- **根本原因**：Windows 不允许重命名仍被进程持有句柄的目录——当时 shell 的工作目录（以及 IDE 的索引）正落在该目录里。
+- **解决方案**：先把 shell 的 cwd 切到仓库根再执行 `mv`，或对该目录单独重试（句柄随上一条命令退出而释放）：`for i in 1 2 3; do mv ... && break; sleep 2; done`。批量脚本里不要用 `set -e` 掩盖成「部分成功」——失败后先 `ls` 确认真实状态再补做，避免漏改。
+
+## [2026-09-25] seed 把「模块名」当成「实例名」：首启播种的配置名整个是错的
+
+- **现象**：首启播种出的实例配置文件名、上游默认实例名、App 侧默认选中项，三者互不相同，谁都不是上游认的那一个。
+- **根本原因**：上游 config 工具模块里有两个极易混淆的名字。`filepath_config(filename, mod_name=...)` 的 `mod_name` 是**模块名**（基础模块与附加模块之分，附加模块会拼进文件名的后缀里），而**实例名**是同一模块里另一个独立常量，由 `filepath_config()` 拼成 `./config/<实例名>.json`。原脚本照着函数默认参数里那个模块名去拼文件名，于是实例名从一开始就是错的。危害很隐性：枚举实例的函数会把 `config/` 下任何不带模块后缀的 `*.json` 都当成实例，所以错名字照样被列出来、照样能跑，只是与部署约定不一致，且 App 的默认选中项指向一个并不存在的实例，靠 `/configs` 列表兜底选中第一个才自愈。
+- **解决方案**：播种用的文件名改为上游默认实例名对应的值，App 侧默认选中项同步对齐；顺带把原先写死的「全局段」名改为按结构定位（含 `Emulator` + `Optimization` 的段在上游 schema 里唯一，带断言，上游改结构会当场退出报错而不是静默写错）。**判据：同一个函数签名里的 `mod_name` 与实例名是两回事——拼文件名前先确认用的是哪一个常量，别照着函数默认参数抄。**
+
+## [2026-09-25] material3 1.4.0 的 `MotionScheme` 是 internal：主题里取不到 `MaterialTheme.motionScheme`
+
+- **现象**：按 M3 官方写法给 `MaterialTheme(..., motionScheme = MotionScheme.standard())` 传参，编译报 `Cannot access 'interface MotionScheme': it is internal in file`；`MaterialTheme.motionScheme` 同样不可访问。
+- **根本原因**：`javap` 看得到 `MotionScheme` / `MotionScheme$Companion.standard$material3()`，但 `$material3` 后缀就是 Kotlin 的 internal 名字改写——该 API 在 1.4.0 尚未对库外开放，只有 `MaterialExpressiveTheme` 内部在用。
+- **解决方案**：不要在应用主题里显式传 `motionScheme`。`MaterialTheme` 的默认值已经是 standard 动效方案，写不写都一样；组件里需要动效时用 `AnimatedVisibility` / `animate*AsState` 的默认 spec，别去取 `MaterialTheme.motionScheme`。**判断某个 M3 API 能不能用，直接看 javap 名字里有没有 `$<模块名>` 后缀，别只看文档。**
+
+## [2026-09-25] `:app:compileDebugKotlin` 被 rootfs 校验任务挡住
+
+- **现象**：只想编译 Kotlin 验证改动，却在 `:app:verifyBundledAzurPilotRuntime` 上失败：`缺少 AzurPilot ARM64 rootfs.tar.xz`。
+- **根本原因**：`app/build.gradle.kts` 用 `tasks.matching { it.name.startsWith("package") || it.name.startsWith("assemble") }` 挂依赖，而 AGP 的资源任务 `packageDebugResources` 正好以 `package` 开头，于是它连同 `compileDebugKotlin` 一并被拖进依赖图。
+- **解决方案**：本地纯编译验证加 `-x verifyBundledAzurPilotRuntime`：`./gradlew :app:compileDebugKotlin --offline -x verifyBundledAzurPilotRuntime`（`JAVA_HOME` 指向 Android Studio 的 jbr）。发布/打包不受影响，缺资产仍会被门禁拦下。
+
+## [2026-09-25] `gradlew ... | tail` 会把构建失败伪装成成功
+
+- **现象**：`./gradlew :app:compileDebugKotlin -q 2>&1 | tail -30` 退出码 0、无输出，据此判定“基线编译通过”，随后才发现那次构建其实根本没验证到东西。
+- **根本原因**：管道的退出码取的是最后一个命令（`tail`）的，gradle 的非零码被吞掉；`-q` 又同时压掉了 lifecycle 日志，看起来就像“静默成功”。
+- **解决方案**：要拿真实结果就重定向到文件再自取退出码——`./gradlew ... > .tmp/xxx.log 2>&1; echo "EXIT=$?"`，然后 grep 日志里的 `^e: ` / `BUILD FAILED`。**任何“构建通过”的结论都要能看到 gradle 自己的退出码。**
+
+## [2026-09-25] `app/src/test` 大量孤儿测试：自 上游 fork 做减法起就没再编译过
+
+- **现象**：`./gradlew :app:testDebugUnitTest` 在编译测试源集阶段就失败，报 `Unresolved reference 'NativeVersion'` / `provider` / `ansiAnnotated` / `ResolutionPreference` 等一大批符号不存在。
+- **根本原因**：`project/`、`runner/`、`session/`、`schedule/`、`telemetry/`、`notification/`、`azurpilot/`、`remote/` 下的测试与 `FakeAppSettingsGateway` 是 上游 fork 时期的产物，对应的主源码在阶段二「复活做减法」时已被整包删除；CI 只跑 `:app:assembleRelease/Debug`，从不编译测试，所以一直没有暴露。
+- **解决方案**：本次 MD3 改造未新增破坏（`FakeAppSettingsGateway` 原本就编不过，`ButtonPrimitiveBoundaryTest` 已随自定义按钮体系一并删除）。**这些孤儿测试尚未清理**——要么按当前主源码重写，要么整体删除，改动前需用户确认。在此之前不要用 `testDebugUnitTest` 作为门禁，UI 改动只能靠 `compileDebugKotlin` 与真机走查验证。
 
 ## [2026-09-24] 同机 Chrome 正常但 System WebView 抽屉异常：改用浏览器 Custom Tab
 
@@ -26,7 +82,7 @@
 
 - **现象**：手机热更新连续 5 次 `FAILED fetch`，每次白烧 240s 超时（开机链 4 分钟）；但 ping git.lyoko.io 正常（24~48ms），ls-remote（小包）也能成。
 - **根本原因**：git.lyoko.io 只有 git:// 协议（9418 端口裸 TCP，实测无 443/HTTPS 服务）；运营商对非常用端口的 QoS/限速让大传输（depth-50 浅树几十 MB）永远跑不完，小包（ls-remote、ICMP）却不受影响——**「ping 通」「小包通」都不能推断「大传输通」**。PC 侧同网络复现同款（git clone 被 reset/超时），且 GitHub 也是小包通大包断。
-- **解决方案**：更新通道改走上游自带的 CDN pack（`deploy/git_over_cdn`：443 HTTPS，`latest.json`(3s) → `{latest}/{current}.zip` 增量 pack 仅 ~400KB，超时都是秒级），git:// 仅作兜底；两通道皆败记日期当日退避。**教训：给 ALAS 类大陆分发场景设计网络链路，优先复用上游已验证的 CDN 通道，别假设 git 协议端口在任何网络下都可用。**
+- **解决方案**：更新通道改走上游自带的 CDN pack（`deploy/git_over_cdn`：443 HTTPS，`latest.json`(3s) → `{latest}/{current}.zip` 增量 pack 仅 ~400KB，超时都是秒级），git:// 仅作兜底；两通道皆败记日期当日退避。**教训：给 AzurPilot 类大陆分发场景设计网络链路，优先复用上游已验证的 CDN 通道，别假设 git 协议端口在任何网络下都可用。**
 
 ## [2026-09-18] 「App 死了」先三分支再立案：release 启动链有数分钟全静默 PREPARING，ps 查无进程≠代码崩溃
 
@@ -42,27 +98,27 @@
 
 ## [2026-09-18] 上游模板是为模拟器锐化滤镜调的手机渲染相似度跌破阈值：开关识别静默 'unknown' 引发连锁崩溃
 
-- **现象**：手机刷活动图 D3 崩溃循环（MapDetectionError×伏击战），桌面端同版本 ALAS 同图却能正常刷——排除 ALAS 代码与图机制差异。
-- **根本原因**：ALAS 的 `CLEAR_MODE_TITLE`/`AUTO_SEARCH_TITLE` 模板是为 MuMu 等桌面模拟器的锐化渲染调校的；同画面在手机 GPU 渲染下抗锯齿/字体描边不同，TM_CCOEFF_NORMED 仅 0.829/0.783，**恰好跌破 0.85 阈值**。模板匹配失败不会报错，而是 `SwitchClearMode.get` 静默返回 'unknown' → 周回模式状态丢失 → MAP_HAS_AMBUSH=True → 手动模式踩进图潜艇伏击 → map_init 死等 → MapDetectionError。连锁极深：表象（伏击战崩溃）离根因（模板相似度）隔了 4 层因果，且"未 3 星"的表象会误导归因（旧结论就误判成"上游缺陷×图状态，环境层无解"）。**教训：桌面能用手机不能用时，优先怀疑识别层（模板/OCR/颜色阈值）的渲染差异，不要怀疑游戏逻辑；"静默 unknown"类失败要在链路每一环打印实际识别值。**
-- **解决方案**：用**本机实拍帧**自制模板（整帧 1280x720 与上游同约定），走 assets 补丁机制铺到 `assets/cn/handler/`（不改 ALAS 代码）。验证法：离线对新帧求 sim（应 ≈1.0）+ 对旧模板复测（应稳定 <0.85，确认确定性失败而非噪声）；在线证据=日志 `Map_info` 行出现 `clear_mode` 字样 + `Clear_Mode on`。
+- **现象**：手机刷活动图 D3 崩溃循环（MapDetectionError×伏击战），桌面端同版本 AzurPilot 同图却能正常刷——排除 AzurPilot 代码与图机制差异。
+- **根本原因**：AzurPilot 的 `CLEAR_MODE_TITLE`/`AUTO_SEARCH_TITLE` 模板是为 MuMu 等桌面模拟器的锐化渲染调校的；同画面在手机 GPU 渲染下抗锯齿/字体描边不同，TM_CCOEFF_NORMED 仅 0.829/0.783，**恰好跌破 0.85 阈值**。模板匹配失败不会报错，而是 `SwitchClearMode.get` 静默返回 'unknown' → 周回模式状态丢失 → MAP_HAS_AMBUSH=True → 手动模式踩进图潜艇伏击 → map_init 死等 → MapDetectionError。连锁极深：表象（伏击战崩溃）离根因（模板相似度）隔了 4 层因果，且"未 3 星"的表象会误导归因（旧结论就误判成"上游缺陷×图状态，环境层无解"）。**教训：桌面能用手机不能用时，优先怀疑识别层（模板/OCR/颜色阈值）的渲染差异，不要怀疑游戏逻辑；"静默 unknown"类失败要在链路每一环打印实际识别值。**
+- **解决方案**：用**本机实拍帧**自制模板（整帧 1280x720 与上游同约定），走 assets 补丁机制铺到 `assets/cn/handler/`（不改 AzurPilot 代码）。验证法：离线对新帧求 sim（应 ≈1.0）+ 对旧模板复测（应稳定 <0.85，确认确定性失败而非噪声）；在线证据=日志 `Map_info` 行出现 `clear_mode` 字样 + `Clear_Mode on`。
 
 ## [2026-09-18] 通用 PP-OCR 读不了游戏字体：名字区糊字 OCR 出 '01' 毒害章节识别（chapter '0' → CampaignNameError）
 
 - **现象**：runner 进活动图前死于 `ScriptEnd: Campaign name error`，连图都进不去；ensure_campaign_ui 循环 20 次全挂。
-- **根本原因**：选关徽章名字区 OCR 读出 `['01','D3','B2']`——D1 未通关时是 0% 红签小字样式，其名字图的 **D 字形经 extract_letters 二值化后糊成实心团**（内孔消失），ALAS-AOS 手机端换用的通用 PP-OCR 模型把它读成 '01' → 后处理变 '0-1' → chapter='0' → Counter 平票取首见 → `campaign_chapter=='0'` 触发 raise。**桌面 ALAS 不犯此错是因为它用 azur_lane 专用 cnocr 模型（AL 字体微调，charset 仅 39 字符）**——对同一手机帧同一名字区实测读出 `['D1','D3-','B2']`，像素无罪，纯模型差距。通用候选全灭：v5_ch_mobile 读 'ս'、v4_ch_mobile 'սս'、v4_en_mobile 空串、v5_en_mobile 字典维度不匹配。**教训：游戏专用字体（尤其小字号+描边+二值化后糊掉的字形）不要指望通用 OCR；上游用什么模型就用什么模型。排查 OCR 错误先拿上游模型对同一输入对质，立刻区分"像素问题"还是"模型问题"。**
+- **根本原因**：选关徽章名字区 OCR 读出 `['01','D3','B2']`——D1 未通关时是 0% 红签小字样式，其名字图的 **D 字形经 extract_letters 二值化后糊成实心团**（内孔消失），AzurPilot 手机端换用的通用 PP-OCR 模型把它读成 '01' → 后处理变 '0-1' → chapter='0' → Counter 平票取首见 → `campaign_chapter=='0'` 触发 raise。**桌面 AzurPilot 不犯此错是因为它用 azur_lane 专用 cnocr 模型（AL 字体微调，charset 仅 39 字符）**——对同一手机帧同一名字区实测读出 `['D1','D3-','B2']`，像素无罪，纯模型差距。通用候选全灭：v5_ch_mobile 读 'ս'、v4_ch_mobile 'սս'、v4_en_mobile 空串、v5_en_mobile 字典维度不匹配。**教训：游戏专用字体（尤其小字号+描边+二值化后糊掉的字形）不要指望通用 OCR；上游用什么模型就用什么模型。排查 OCR 错误先拿上游模型对同一输入对质，立刻区分"像素问题"还是"模型问题"。**
 - **解决方案**：本次走"消除输入"绕法——把 D1 手动通关，徽标变 Clear! 大签样式（大字号白字，字母内孔清晰），名字 OCR 恢复正常。通用修法（后续项）：azur_lane cnocr 模型（MXNet）转 ONNX 上机，或纯 numpy 手写 densenet-lite-gru 前向，集成进 rpc.py 按 lang='azur_lane' 路由+39 字符 keys。注意 OCR 后处理的平票逻辑会放大单次误读（Counter 取首见），一个糊字足以全盘皆输。
 
-## [2026-09-17] adb forward 直接占 127.0.0.1:22267 与桌面版 ALAS WebUI 撞车：桌面打开显示的是手机内容
+## [2026-09-17] adb forward 直接占 127.0.0.1:22267 与桌面版 AzurPilot WebUI 撞车：桌面打开显示的是手机内容
 
-- **现象**：用户打开桌面版 ALAS，浏览器里显示的却是项目（手机/ALAS-AOS）的 ALAS WebUI 内容。
-- **根本原因**：调试时 `adb forward tcp:22267 tcp:22267` 把手机 WebUI 绑到 PC 的 127.0.0.1:22267 且**调完没拆**；桌面版 ALAS WebUI 默认也用 22267（其 deploy.yaml 未自定义 WebuiPort）。后果：①桌面 webui 启动 bind 失败（端口被 adb.exe 占，netstat 实锤 PID 3828）；②浏览器访问 127.0.0.1:22267 实际连到 adb 转发 → 手机内容。撞车窗口期在该页面改的配置**全部写进了手机端**（桌面 `config/alas.json` mtime 停在 9-12，未被写入——可用 mtime 自证）。
+- **现象**：用户打开桌面版 AzurPilot，浏览器里显示的却是项目（手机/AzurPilot）的 AzurPilot WebUI 内容。
+- **根本原因**：调试时 `adb forward tcp:22267 tcp:22267` 把手机 WebUI 绑到 PC 的 127.0.0.1:22267 且**调完没拆**；桌面版 AzurPilot WebUI 默认也用 22267（其 deploy.yaml 未自定义 WebuiPort）。后果：①桌面 webui 启动 bind 失败（端口被 adb.exe 占，netstat 实锤 PID 3828）；②浏览器访问 127.0.0.1:22267 实际连到 adb 转发 → 手机内容。撞车窗口期在该页面改的配置**全部写进了手机端**（桌面 上游配置文件 mtime 停在 9-12，未被写入——可用 mtime 自证）。
 - **解决方案**：**PC 侧转发端口永远不与设备服务端口同号**——手机 WebUI 固定转发 `adb forward tcp:32267 tcp:22267`，PC 浏览器用 127.0.0.1:32267；调试结束顺手 `adb forward --remove tcp:32267`。排查"显示内容不对"先 `adb forward --list` + `netstat -ano | grep <port>` 看端口在谁手里（adb.exe=转发，python=本地服务）。
 
 ## [2026-09-17] 进图伏击战 × map_init 死等：未 3 星活动图手动模式必崩 MapDetectionError（上游缺陷）
 
 - **现象**：活动图（event_20260908_cn D3）每进一张新图必崩一次——loading 9% 时 `WARNING | Entered map with is_combat_loading appeared`，随后 `Image to detect is not in_map` 刷 11~28 条，~18s 后 `MapDetectionError` 穿透顶层 `Saving error`；调度器显示"运行中"但在报错循环，连崩后进程退出、wrapper 重拉时 `CRITICAL | Game page unknown`。
 - **根本原因**：**图机制 × 上游缺陷 × 用户图状态三重叠加**。①D3 进图必发潜艇伏击战（spawn_data battle 0 双 siren + `MOVABLE_ENEMY_TURN=(2,)`，伏击在 loading 未完即排队）；②上游 `campaign_base.run()` 在 enter_map 的 is_combat_loading 出口后**直接 map_init，无伏击战处理**，而 map_init 容错仅 ~18s（`error_confirm=Timer(5,count=10)`）< 伏击战时长 40-90s；③用户图**未 3 星**（日志 `Map_info 99%, star_1, star_2, 100_percent_clear`，无 star_3/clear_mode → MAP_PREPARATION `No auto search option.`）→ 只能手动模式 → 必踩伏击窗口。有自律寻敌（3 星图）时进图直接索敌不触发伏击遭遇战，故 3 星图不崩。上游 issue #5969/#5970（2026-09-11，同活动 B3，**桌面雷电模拟器同款**——可排除 proot 环境）；修复 commit 46fe341 只加 AUTO_SEARCH_TITLE2（自律开关 JP 模板），**不覆盖手动模式进图伏击**。
-- **解决方案**：环境层无解（红线：不改 ALAS）。用户侧：换已 3 星的图挂（B3/C3 等）或先手动把图打到 3 星再挂。ALAS-AOS 层可缓解（未做，候选）：检测 `MapDetectionError+is_combat_loading` 崩溃签名 → 延长退避 + UI 明示"该图未 3 星，手动模式与进图伏击冲突"。治本需上游在 map_init 前等伏击战结束。**加重坑：崩溃重拉时 `Already in map, retreating` 会撤退重进，对"进图必发伏击"的图=再踩一次伏击，重拉≠安全，构成死循环**——看到 MapDetectionError + retreating 组合要想到这层。
+- **解决方案**：环境层无解（红线：不改 AzurPilot）。用户侧：换已 3 星的图挂（B3/C3 等）或先手动把图打到 3 星再挂。AzurPilot 层可缓解（未做，候选）：检测 `MapDetectionError+is_combat_loading` 崩溃签名 → 延长退避 + UI 明示"该图未 3 星，手动模式与进图伏击冲突"。治本需上游在 map_init 前等伏击战结束。**加重坑：崩溃重拉时 `Already in map, retreating` 会撤退重进，对"进图必发伏击"的图=再踩一次伏击，重拉≠安全，构成死循环**——看到 MapDetectionError + retreating 组合要想到这层。
 
 ## [2026-09-17] 验证修复前先核对设备实际装机版本：HEAD ≠ 装机版（env_fix 60s/300s 事故）
 
@@ -70,11 +126,11 @@
 - **根本原因**：设备上跑的是 T2 验证时装的 0.1.1-alpha.1 (46)，其 `ENV_FIX_TIMEOUT_MS` 实为 60s——300s 版是后来改的源码，**从没装进机**。proot 下 pip 慢一个量级，60s 永远跑不完 → pip 中途被杀 → imageio 半装 → 后续 runner 全崩。
 - **解决方案**：装机/重启后先 `dumpsys package <pkg> | grep versionCode` 或 app.log Startup 行确认设备版本与预期一致，再谈"修复没生效"的排查。排查 release 包日志时记住 FileLogTree 只落 W+——关键失败输出必须走 Timber.w（本轮 ProotHost.kt 已把 env_fix 失败输出改 W 级落盘）。另：adb forward 跨装机/重启会断，curl 空响应先重建 forward 再下结论。
 
-## [2026-09-17] imageio 2.35+ 把 P 模式 GIF 解码成 RGB：ALAS 选关 OCR 全盘崩溃，根因是 rootfs 没按上游钉版
+## [2026-09-17] imageio 2.35+ 把 P 模式 GIF 解码成 RGB：AzurPilot 选关 OCR 全盘崩溃，根因是 rootfs 没按上游钉版
 
-- **现象**：GemsFarming/活动图到选关步骤即崩——`cv2.error: OpenCV(4.x) ... (depth == CV_8U || depth == CV_32F) && type == _templ.type()`，崩点在 `campaign_ocr.py:266 cv2.matchTemplate`，任务退出挂机状态。桌面端同版本 ALAS 却正常。
-- **根本原因**：rootfs 烘焙时 `build-rootfs.sh` 装的是**不钉版** imageio（当时 2.37.x），而 ALAS 上游 `requirements.txt` 钉死 `imageio==2.27.0`。imageio 2.35 起改了 GIF 解码：P 模式（调色板）GIF 首帧从 2D 调色板索引变成 RGB 3 通道。ALAS 的 `assets/cn/template/TEMPLATE_STAGE_CLEAR_20240725.gif` 等模板被读成 3 通道，与灰度截图 matchTemplate 时通道数不一致即断言。**桌面端正常是因为桌面部署走了上游钉版。教训：为 ALAS 筑环境，pip 依赖必须与上游 requirements.txt 逐条对齐钉版，"装最新"就是埋雷。**
-- **解决方案**：①`build-rootfs.sh` 钉 `imageio==2.27.0`（新烘焙根治）；②存量设备靠 `seeds/env_fix.sh` 每次启动自检钉回（pip + aliyun 镜像，断网不阻塞）。验证法：PC 建两 venv（2.37 / 2.27）对照解码 `template.shape`（3 通道 vs (20,30) 2D）+ matchTemplate 实测——不必上机即可定性。另：同类问题优先查"环境与上游钉版差异"，不要先改 ALAS 代码（用户红线）。
+- **现象**：GemsFarming/活动图到选关步骤即崩——`cv2.error: OpenCV(4.x) ... (depth == CV_8U || depth == CV_32F) && type == _templ.type()`，崩点在 `campaign_ocr.py:266 cv2.matchTemplate`，任务退出挂机状态。桌面端同版本 AzurPilot 却正常。
+- **根本原因**：rootfs 烘焙时 `build-rootfs.sh` 装的是**不钉版** imageio（当时 2.37.x），而 AzurPilot 上游 `requirements.txt` 钉死 `imageio==2.27.0`。imageio 2.35 起改了 GIF 解码：P 模式（调色板）GIF 首帧从 2D 调色板索引变成 RGB 3 通道。AzurPilot 的 `assets/cn/template/TEMPLATE_STAGE_CLEAR_20240725.gif` 等模板被读成 3 通道，与灰度截图 matchTemplate 时通道数不一致即断言。**桌面端正常是因为桌面部署走了上游钉版。教训：为 AzurPilot 筑环境，pip 依赖必须与上游 requirements.txt 逐条对齐钉版，"装最新"就是埋雷。**
+- **解决方案**：①`build-rootfs.sh` 钉 `imageio==2.27.0`（新烘焙根治）；②存量设备靠 `seeds/env_fix.sh` 每次启动自检钉回（pip + aliyun 镜像，断网不阻塞）。验证法：PC 建两 venv（2.37 / 2.27）对照解码 `template.shape`（3 通道 vs (20,30) 2D）+ matchTemplate 实测——不必上机即可定性。另：同类问题优先查"环境与上游钉版差异"，不要先改 AzurPilot 代码（用户红线）。
 
 ## [2026-09-17] proot 里跑 pip 比原生慢一个量级：一次性执行的超时预算按 300s 起
 
@@ -85,13 +141,13 @@
 ## [2026-09-17] release 包排障双盲区：Timber 只落 W+ 且无 logcat plant；wrapper /logs 只服务 mtime 最新的一个 txt
 
 - **现象**：想读 seeds 脚本（env_fix.sh）的 stdout 验证行为——app.log 没有（release 版 Timber FileLogTree 只落 WARN+，且无 logcat plant）；curl `/logs` 也拿不到（env_fix.txt 写完后 gui.txt 立即变 mtime 最新，/logs 只服务最新那一个文件）。
-- **解决方案**：绕开 stdout 验证，改用**行为级证据**——imageio 钉版是否生效，直接跑 GemsFarming 看选关 OCR 是否还崩（2.37 下第一次模板匹配必崩，点中 d3 即证明 2.27 在岗）；文件还原是否发生，查 `git -C <alas> diff --stat` 或文件 hash。要让某 txt 可被 /logs 读到：短启 runner 4 秒再 /stop 让 alas.txt 变最新（只对 runner 系有效）。长期改进候选：wrapper /logs 支持 `?file=` 参数。
+- **解决方案**：绕开 stdout 验证，改用**行为级证据**——imageio 钉版是否生效，直接跑 GemsFarming 看选关 OCR 是否还崩（2.37 下第一次模板匹配必崩，点中 d3 即证明 2.27 在岗）；文件还原是否发生，查 `git -C <azurpilot> diff --stat` 或文件 hash。要让某 txt 可被 /logs 读到：短启 runner 4 秒再 /stop 让 azurpilot.txt 变最新（只对 runner 系有效）。长期改进候选：wrapper /logs 支持 `?file=` 参数。
 
-## [2026-09-17] ALAS 工具任务不都自己拉游戏：daemon 只盯屏，event_story 才自带 app_start
+## [2026-09-17] AzurPilot 工具任务不都自己拉游戏：daemon 只盯屏，event_story 才自带 app_start
 
 - **现象**：半自动点击（daemon）起来后对纯黑帧空转（每 0.3s 一条 WARNING 刷屏），游戏不被拉起；活动剧情（event_story）却能正常拉起游戏。
 - **根本原因**：上游设计分工——`AzurLaneDaemon.run()` 直接 `while 1: screenshot()` 盯当前屏（桌面版官方用法=用户自己先开游戏）；`EventStory.run()` 内部有 `self.app_start()`（eventstory.py:214）；调度器路径另有 GameNotRunningError→`task_call('Restart')` 兜底。**三个入口三种拉游戏责任，给 `/tool/*` 白名单加新任务时必须逐个确认。**
-- **解决方案**：runner.py 在 `task=='daemon'` 时先 `alas.run('start')`（LoginHandler.app_start+handle_app_login）再进 daemon 循环；游戏已在跑时该调用无害（置前台+收登录弹窗）；start 失败则不裸进盯屏循环（exit 1 留墓碑）。
+- **解决方案**：runner.py 在 `task=='daemon'` 时先 `azurpilot.run('start')`（LoginHandler.app_start+handle_app_login）再进 daemon 循环；游戏已在跑时该调用无害（置前台+收登录弹窗）；start 失败则不裸进盯屏循环（exit 1 留墓碑）。
 
 ## [2026-09-17] M3 按钮最小高度是两层：关 Local 只撤外层，内层 `defaultMinSize(40dp)` 照常在
 
@@ -113,24 +169,24 @@
 
 ## [2026-09-16] FileLogTree 只记 WARN+：热更新 UNCHANGED 在 app.log 无行，别误判"没跑"
 
-- **现象**：真机验证热更新恢复路径，`app.log` 里只有 FAILED（W 级）行，UNCHANGED 会话一条 AlasUpdater 记录都没有，一度怀疑启动链没走到更新步。
-- **根本原因**：`FileLogTree`（`log/LogTrees.kt`）过滤级别 WARN+，Timber.i/d 只进 logcat（tag=类名，如 `AlasUpdater`）；且 HONOR 系统日志极吵，logcat 缓冲几分钟就被冲掉。
-- **解决方案**：判 INFO 级事件的旁证——热更新看 `.alasaos_alas_commit` 的 mtime（UNCHANGED 也会重写）与 `.git/FETCH_HEAD` 是否变化；会话级判定看 ps 进程树。长期可考虑给 FileLogTree 开 INFO（评估噪音后定）。
+- **现象**：真机验证热更新恢复路径，`app.log` 里只有 FAILED（W 级）行，UNCHANGED 会话一条 AzurPilotUpdater 记录都没有，一度怀疑启动链没走到更新步。
+- **根本原因**：`FileLogTree`（`log/LogTrees.kt`）过滤级别 WARN+，Timber.i/d 只进 logcat（tag=类名，如 `AzurPilotUpdater`）；且 HONOR 系统日志极吵，logcat 缓冲几分钟就被冲掉。
+- **解决方案**：判 INFO 级事件的旁证——热更新看 `.azurpilot_commit` 的 mtime（UNCHANGED 也会重写）与 `.git/FETCH_HEAD` 是否变化；会话级判定看 ps 进程树。长期可考虑给 FileLogTree 开 INFO（评估噪音后定）。
 
 ## [2026-09-16] 真机测桥回环延迟：toybox `nc` 可用，stat 轮询地板 ~28ms
 
 - **现象**：要测桥 screencap 真机耗时，run-as 禁 socket（见 2026-09-15 条目）；`/system/bin/sh`（mksh）无 `/dev/tcp`；响应帧 2.76MB 且连接是长连协议，nc 不知道什么时候算"收完"。
-- **解决方案**：shell 域 `/system/bin/nc` 直打 127.0.0.1:22300（shell 域 AF_INET 通）；后台 `(printf 请求; sleep 4) | nc > 文件`，前台 `stat -c %s` 轮询文件长到 期望值（header 行长 + `"length"` 字段，校准轮先跑一次拿）即记录 `date +%s%N` 差值，kill 掉 nc 进入下一轮。**坑**：ping 响应只有 ~48B，期望值按 200B 等会每轮吃满 10s 超时保护；轮询每圈派生 stat ≈28ms 是测量地板，真值比测得值更小。脚本与结果见 devlog 2026-09-16 阶段五-4 条目（screencap p50=30ms，对照 ALAS >1s 不可用线富余 33 倍）。
+- **解决方案**：shell 域 `/system/bin/nc` 直打 127.0.0.1:22300（shell 域 AF_INET 通）；后台 `(printf 请求; sleep 4) | nc > 文件`，前台 `stat -c %s` 轮询文件长到 期望值（header 行长 + `"length"` 字段，校准轮先跑一次拿）即记录 `date +%s%N` 差值，kill 掉 nc 进入下一轮。**坑**：ping 响应只有 ~48B，期望值按 200B 等会每轮吃满 10s 超时保护；轮询每圈派生 stat ≈28ms 是测量地板，真值比测得值更小。脚本与结果见 devlog 2026-09-16 阶段五-4 条目（screencap p50=30ms，对照 AzurPilot >1s 不可用线富余 33 倍）。
 
 ## [2026-09-16] wrapper /status 时间戳是 guest 本地时（proot 无 TZ=UTC）——比设备 CST 慢 8h，别误判"旧会话复活"
 
 - **现象**：重装包装机后 1 分钟 curl `/status`，`gui_started_at=2026-09-15T20:08:59`（昨天！），第一反应"旧 proot 会话逃过 install -r 的杀进程，划卡归零结论要翻案"。
-- **根本原因**：proot 会话环境只设 `LANG=C.UTF-8` 无 `TZ`，guest 内 `datetime.fromtimestamp()` 按 UTC 格式化；设备是 CST(UTC+8)，所以"昨天 20:08"其实就是"刚才 04:08 CST"。ALAS 日志行时间戳同理全慢 8h。
+- **根本原因**：proot 会话环境只设 `LANG=C.UTF-8` 无 `TZ`，guest 内 `datetime.fromtimestamp()` 按 UTC 格式化；设备是 CST(UTC+8)，所以"昨天 20:08"其实就是"刚才 04:08 CST"。AzurPilot 日志行时间戳同理全慢 8h。
 - **解决方案**：读 guest 侧时间先换算 UTC；判会话新旧看 **ps 进程树**（proot 的父 pid = 当前 app pid 即新会话），别看绝对时间。生产无副作用（内部逻辑全部用单调时钟/时间戳差值），纯排障心智陷阱。
 
 ## [2026-09-15] run-as（runas_app 域）禁止 socket——真机 harness 要用 shell 域，不是 run-as
 
-- **现象**：`run-as com.maaal.spikea` 起的 shell 里，proot 客户机进程 `socket()` 直接 `PermissionError [Errno 1]`（TCP/UDP/UNIX 全灭）；但 `id` 明明显示带 `3003(inet)` 组。
+- **现象**：`run-as com.azurpilot.spikea` 起的 shell 里，proot 客户机进程 `socket()` 直接 `PermissionError [Errno 1]`（TCP/UDP/UNIX 全灭）；但 `id` 明明显示带 `3003(inet)` 组。
 - **根本原因**：run-as 切的是 `runas_app` SELinux 域（调试域），socket 类被策略整体拒绝——gid 有 inet 也没用，LSM 检查在 capability 检查之后。对比：`shell` 域 AF_INET/abstract AF_UNIX 通、路径式 AF_UNIX 拒（shell_data_file 上建 socket 文件）；`untrusted_app`（App 自身进程树，zygote 孵化）全通——m0 Termux 与 Spike A 走的就是这条。
 - **解决方案**：要网络的真机 harness 用 **shell 域**（`/data/local/tmp` 放 proot 可执行 + rootfs，shell 可执行该区域文件）；不要在 run-as 里跑任何带 socket 的东西。另外两个配套坑：run-as 下 mksh heredoc 会在 /data/local 建临时文件失败（用 `python3 -c` 替代）；proot 客户机内要显式 `export PATH=/usr/local/sbin:...:/bin`（继承的 Android PATH 无 /usr/bin）。
 
@@ -142,7 +198,7 @@
 
 ## [2026-09-15] `libbusybox.so` 直接调用报 "applet not found"——多合一二进制认 basename(argv[0])
 
-- **现象**：`run-as com.maaal.spikea` 里直接执行 `$NLD/libbusybox.so tar …` → `libbusybox.so: applet not found`，连 `--list`/`--help` 都一样。
+- **现象**：`run-as com.azurpilot.spikea` 里直接执行 `$NLD/libbusybox.so tar …` → `libbusybox.so: applet not found`，连 `--list`/`--help` 都一样。
 - **根本原因**：busybox 多合一二进制按 `basename(argv[0])` 查 applet 表；`libbusybox.so` 不在表里（只有裸名 `busybox` 才走"$1 当 applet 名"的分派分支）。Android jniLibs 强制 `lib*.so` 命名，故直接调永远踩这个。
 - **解决方案**：在可写目录建软链 `ln -sf $NLD/libbusybox.so files/bin/busybox`，经**裸名软链**调用（`./bin/busybox xzcat … | ./bin/busybox tar -x …`）。设备端解 xz 包、跑 proot harness 都靠这一手。
 
@@ -297,23 +353,23 @@
 - **根本原因**：本机到 dl.google.com 链路被 SNI 干扰；暖缓存（拷自 shizku-m/build-env）只有 bundletool 1.18.0（m0 时代 AGP 依赖），帮不上 AGP 9.2.1。
 - **解决方案**：`app/settings.gradle.kts` 的 `pluginManagement` 与 `dependencyResolutionManagement` 各加 `https://maven.aliyun.com/repository/google` 与 `.../central`（官方源、jitpack 留兜底）。google 块保持 content 过滤（com.android/com.google/androidx），镜像块同样过滤防误伤插件门户解析。
 
-## [2026-09-17] ALAS 全量补丁冻结漂移：cp 整文件覆盖会把文件冻在补丁年代
+## [2026-09-17] AzurPilot 全量补丁冻结漂移：cp 整文件覆盖会把文件冻在补丁年代
 
-- **现象**：挂机中 ALAS 重启游戏后登录流程炸 `TypeError: ModuleBase.image_color_button() got an unexpected keyword argument 'threshold'`，runner 死、任务断连。
-- **根本原因**：补丁施加机制是 `cp -rf patches/module/. → /opt/alas/module/`（build-rootfs.sh:175）**整文件覆盖**。`patches/module/base/base.py` 是 m0 时代全量拷贝（自有改动仅 early_ocr_import 的 ALAS-AOS 预热块 9 行），热更新把 ALAS 推到上游 master 后，base.py 被补丁冻回旧版（`color_threshold`），而同树 login.py 已是新版（`threshold`），API 撞车。排查锚点：设备 login.py 与上游 master 逐字节 diff 为空 → 设备跟踪 master → 补丁按 master 重打即收敛。
-- **解决方案**：全量补丁**重打** = 上游 master 原样 + ALAS-AOS 块（脚本锚点替换，diff 应只剩自有改动）；直写设备活文件 + diff 校验。长期教训：① 补丁文件里的自有改动必须压缩到最小并 BEGIN/END 标记（本次正是靠标记确认只有 9 行）；② ALAS 热更新后任意 API 型 TypeError，先怀疑补丁漂移，diff 设备文件与上游 master 即现形；③ 理想终态是差分补丁（git apply）替代整文件覆盖。
+- **现象**：挂机中 AzurPilot 重启游戏后登录流程炸 `TypeError: ModuleBase.image_color_button() got an unexpected keyword argument 'threshold'`，runner 死、任务断连。
+- **根本原因**：补丁施加机制是 `cp -rf patches/module/. → /opt/azurpilot/module/`（build-rootfs.sh:175）**整文件覆盖**。`patches/module/base/base.py` 是 m0 时代全量拷贝（自有改动仅 early_ocr_import 的 AzurPilot 预热块 9 行），热更新把 AzurPilot 推到上游 master 后，base.py 被补丁冻回旧版（`color_threshold`），而同树 login.py 已是新版（`threshold`），API 撞车。排查锚点：设备 login.py 与上游 master 逐字节 diff 为空 → 设备跟踪 master → 补丁按 master 重打即收敛。
+- **解决方案**：全量补丁**重打** = 上游 master 原样 + AzurPilot 块（脚本锚点替换，diff 应只剩自有改动）；直写设备活文件 + diff 校验。长期教训：① 补丁文件里的自有改动必须压缩到最小并 BEGIN/END 标记（本次正是靠标记确认只有 9 行）；② AzurPilot 热更新后任意 API 型 TypeError，先怀疑补丁漂移，diff 设备文件与上游 master 即现形；③ 理想终态是差分补丁（git apply）替代整文件覆盖。
 
 ## [2026-09-17] 补丁冻结第二案：args.json 整文件补丁把活动列表冻在补丁年代（幽影迷城不可见）
 
-- **现象**：桌面版 ALAS 已是「幽影迷城」（event_20260908_cn），手机端 WebUI 活动下拉仍停在「沉溺于星光之城」（event_20260813_cn）；但设备 ALAS commit 与上游 master HEAD 逐字一致（92c07aa），`campaign/event_20260908_cn/` 地图资源、i18n 译名全部到位——只有活动**选项列表**旧。
-- **根本原因**：与 base.py 案同源——`patches/module/config/argument/{args.json,argument.yaml}` 是整文件覆盖补丁，每次启动 AlasOverlay 重放把 args.json 冻回补丁年代。args.json 是 WebUI 活动选项的唯一来源（`campaign/Readme.md` → config_updater.py 生成链 → args.json），上游 git 跟踪它、热更新本可带新，补丁重放又打回。全量 diff（补丁版 vs 上游 92c07aa 版）：16 项差异里 ALAS-AOS 真定制只有 2 行（ScreenshotMethod/ControlMethod 各追加 `maaal` 选项），其余全是冻结漂移。
-- **解决方案**：**生成产物不补丁化，现场再生**——① 删双源 args.json/argument.yaml 补丁（共 4 文件）；② 新增 `seeds/regen_args.py`：跑 ALAS 完整生成链（活动列表随 `campaign/Readme.md` 走），再后处理补 `maaal` 选项与 zh-CN 显示名（全幂等）；③ ProotHost 启动链热更新后无条件跑（失败降级警告不阻塞）。**坑中坑**：生成器必须用 `python -m module.config.config_updater` 模块方式跑——直传脚本路径时 `sys.path[0]=module/config/`，`from deploy.utils import` 直接 ModuleNotFoundError；且 ProotHost 对 runGuest 失败只 Timber.w（logcat 被 HONOR 噪音分钟级冲掉），首装静默失败一轮，靠「args.json mtime 停在装机前 + 内容与补丁版逐字节等大」才现形。验证锚点：args.json mtime 刷新 + `Event.Campaign.Event.option` 含 `event_20260908_cn` + `maaal` 选项仍在。
+- **现象**：桌面版 AzurPilot 已是「幽影迷城」（event_20260908_cn），手机端 WebUI 活动下拉仍停在「沉溺于星光之城」（event_20260813_cn）；但设备 AzurPilot commit 与上游 master HEAD 逐字一致（92c07aa），`campaign/event_20260908_cn/` 地图资源、i18n 译名全部到位——只有活动**选项列表**旧。
+- **根本原因**：与 base.py 案同源——`patches/module/config/argument/{args.json,argument.yaml}` 是整文件覆盖补丁，每次启动 AzurPilotOverlay 重放把 args.json 冻回补丁年代。args.json 是 WebUI 活动选项的唯一来源（`campaign/Readme.md` → config_updater.py 生成链 → args.json），上游 git 跟踪它、热更新本可带新，补丁重放又打回。全量 diff（补丁版 vs 上游 92c07aa 版）：16 项差异里 AzurPilot 真定制只有 2 行（ScreenshotMethod/ControlMethod 各追加 `azurpilot` 选项），其余全是冻结漂移。
+- **解决方案**：**生成产物不补丁化，现场再生**——① 删双源 args.json/argument.yaml 补丁（共 4 文件）；② 新增 `seeds/regen_args.py`：跑 AzurPilot 完整生成链（活动列表随 `campaign/Readme.md` 走），再后处理补 `azurpilot` 选项与 zh-CN 显示名（全幂等）；③ ProotHost 启动链热更新后无条件跑（失败降级警告不阻塞）。**坑中坑**：生成器必须用 `python -m module.config.config_updater` 模块方式跑——直传脚本路径时 `sys.path[0]=module/config/`，`from deploy.utils import` 直接 ModuleNotFoundError；且 ProotHost 对 runGuest 失败只 Timber.w（logcat 被 HONOR 噪音分钟级冲掉），首装静默失败一轮，靠「args.json mtime 停在装机前 + 内容与补丁版逐字节等大」才现形。验证锚点：args.json mtime 刷新 + `Event.Campaign.Event.option` 含 `event_20260908_cn` + `azurpilot` 选项仍在。
 
 ## [2026-09-17] WebUI「闲置」状态环转圈 + 神秘方框——pywebio `.style()` 打在 wrapper 上，fill 定制全程没碰到 spinner
 
-- **现象**：手机端 WebUI 任务状态「Alas □ ◎ 闲置」：圆环不停旋转（像一直在加载）+ 环旁一个粗边空心方框（静止）；桌面 gooey 客户端同状态是静止圆。首版修复（往 `alas.css` fill 规则补 `animation:none`）真机两帧对比翻车——缺口弧帧间移动，环照转。
-- **根本原因**：CDP（`webview_devtools_remote_<pid>`，DEBUG 包已开 `setWebContentsDebuggingEnabled`）直查活 DOM 计算样式一锤定音：`--loading-border-fill--` 标记元素**真实存在**且 `markerIsSpinner=false / markerIsSpinnerParent=true`——pywebio 的 `.style()` 由 webiojs `getWidgetElement` 以 `attr({style: n+";"+style})` 写在 **put_html 外包装 div**（spinner 父级）上；`setAttribute` 原样保留字符串，属性选择器命中的是 wrapper。于是 `alas.css` 的 fill 规则（1.5rem + 四边 `.2em solid currentColor`，**无圆角**）把 wrapper 画成静态方框（= 神秘方框本体，`borderTopColor=rgb(33,37,41)`+`borderRadius=0`），而内层真正的 `.spinner-border.text-secondary` 完全没被定制，保持 Bootstrap 默认：`animName=spinner-border` 0.75s 旋转 + `borderRight=transparent` 缺口。首版 `animation:none` 补在 fill 规则里 = 打在 wrapper 上，对 spinner 天然无效——**推断修复必须验证，且要验证到真正的目标元素上**。
-- **解决方案**：用户约束「不动 ALAS 代码」（补丁会被热更新 `git reset --hard` 冲掉）→ WebView 层注入（`AlasScreen.kt` `IDLE_SPINNER_FIX_JS`，`onPageFinished` 幂等注入 `<style>`，`!important` 碾压不在意加载序）：① `.spinner-border.text-secondary{animation:none !important;border-right-color:currentColor !important}`——按**类名**直打真 spinner，停转+补缺成完整圆；仅 secondary 命中（闲置/UpToDate/RemoteNotRunning 三个 fill 态），Running(success)/Warning 等动态态照常旋转。② `div[style*="--loading-border-fill--"]{border:none !important;width:auto !important;height:auto !important}`——剥掉 wrapper 方框 artifact。设备 alas.css 还原上游 pristine（exec-out 拉回 diff=空），仓内双源补丁 git rm。**方法资产**：① 验证 CSS 修复用 CDP 读**计算样式**（`animName/borderRightColor/borderTopStyle`），比截图判读快且不留辩经空间——注意 `border-style:none` 时 `border-*-color` 仍算出 currentColor，判「画没画」要看 `borderTopStyle`；② 两帧对比（间隔 ~1.2s 同区域 crop diff）判「动没动」，像素级零差异=静止；③ 桌面端正常 ≠ WebUI 正常——gooey 与 WebUI 是两个前端。
+- **现象**：手机端 WebUI 任务状态「AzurPilot □ ◎ 闲置」：圆环不停旋转（像一直在加载）+ 环旁一个粗边空心方框（静止）；桌面 gooey 客户端同状态是静止圆。首版修复（往 `azurpilot.css` fill 规则补 `animation:none`）真机两帧对比翻车——缺口弧帧间移动，环照转。
+- **根本原因**：CDP（`webview_devtools_remote_<pid>`，DEBUG 包已开 `setWebContentsDebuggingEnabled`）直查活 DOM 计算样式一锤定音：`--loading-border-fill--` 标记元素**真实存在**且 `markerIsSpinner=false / markerIsSpinnerParent=true`——pywebio 的 `.style()` 由 webiojs `getWidgetElement` 以 `attr({style: n+";"+style})` 写在 **put_html 外包装 div**（spinner 父级）上；`setAttribute` 原样保留字符串，属性选择器命中的是 wrapper。于是 `azurpilot.css` 的 fill 规则（1.5rem + 四边 `.2em solid currentColor`，**无圆角**）把 wrapper 画成静态方框（= 神秘方框本体，`borderTopColor=rgb(33,37,41)`+`borderRadius=0`），而内层真正的 `.spinner-border.text-secondary` 完全没被定制，保持 Bootstrap 默认：`animName=spinner-border` 0.75s 旋转 + `borderRight=transparent` 缺口。首版 `animation:none` 补在 fill 规则里 = 打在 wrapper 上，对 spinner 天然无效——**推断修复必须验证，且要验证到真正的目标元素上**。
+- **解决方案**：用户约束「不动 AzurPilot 代码」（补丁会被热更新 `git reset --hard` 冲掉）→ WebView 层注入（`AzurPilotScreen.kt` `IDLE_SPINNER_FIX_JS`，`onPageFinished` 幂等注入 `<style>`，`!important` 碾压不在意加载序）：① `.spinner-border.text-secondary{animation:none !important;border-right-color:currentColor !important}`——按**类名**直打真 spinner，停转+补缺成完整圆；仅 secondary 命中（闲置/UpToDate/RemoteNotRunning 三个 fill 态），Running(success)/Warning 等动态态照常旋转。② `div[style*="--loading-border-fill--"]{border:none !important;width:auto !important;height:auto !important}`——剥掉 wrapper 方框 artifact。设备 azurpilot.css 还原上游 pristine（exec-out 拉回 diff=空），仓内双源补丁 git rm。**方法资产**：① 验证 CSS 修复用 CDP 读**计算样式**（`animName/borderRightColor/borderTopStyle`），比截图判读快且不留辩经空间——注意 `border-style:none` 时 `border-*-color` 仍算出 currentColor，判「画没画」要看 `borderTopStyle`；② 两帧对比（间隔 ~1.2s 同区域 crop diff）判「动没动」，像素级零差异=静止；③ 桌面端正常 ≠ WebUI 正常——gooey 与 WebUI 是两个前端。
 
 ## [2026-09-17] adb exec-out 不递 stdin EOF——设备写文件用 base64 分块法
 
@@ -337,7 +393,7 @@
 - **现象**：桥 CLICK/SWIPE 端点在新建空 VD 上回 `touch down failed`，疑似注入链路坏。
 - **根本原因**：`InputControlUtils`（同 `input -d <id> tap`）走 WAIT_FOR_FINISH 模式；**无窗口消费触摸的屏**上 framework natively 返 false（`input -d 2 tap` 同样静默 false 但 exit=0）。VD 上 `am start` 任意窗口后，同链路 CLICK/SWIPE 全 `ok:true`。
 - **解决方案**：判故障时先给 VD 放个窗口再注入；生产语义本就正确（游戏常驻 VD，必有消费者）。
-- **[2026-09-17 升级] 窗注册竞态**：窗"可见"≠"可点"——`am start --display N` 把游戏拉上 VD 后 SurfaceFlinger 先出帧（screencap/OCR 已能识别），但 input 窗注册滞后 **~1s**，此间注入照样 false。实测：am start 后首次轮询 click 100% 败，~1s 后恢复。ALAS 链路（am start→识别→立即点）首击必踩。已在桥侧修：`BridgeServer.downWithRetry()` 3s 预算/200ms 间隔重试 down，handleClick/handleSwipe 共用；耗尽后报错带诊断 `touch down failed (no touchable window on display N within 3000ms)`——裸 failed=竞态，带"no touchable window"=真空 VD（游戏没起/崩了）。
+- **[2026-09-17 升级] 窗注册竞态**：窗"可见"≠"可点"——`am start --display N` 把游戏拉上 VD 后 SurfaceFlinger 先出帧（screencap/OCR 已能识别），但 input 窗注册滞后 **~1s**，此间注入照样 false。实测：am start 后首次轮询 click 100% 败，~1s 后恢复。AzurPilot 链路（am start→识别→立即点）首击必踩。已在桥侧修：`BridgeServer.downWithRetry()` 3s 预算/200ms 间隔重试 down，handleClick/handleSwipe 共用；耗尽后报错带诊断 `touch down failed (no touchable window on display N within 3000ms)`——裸 failed=竞态，带"no touchable window"=真空 VD（游戏没起/崩了）。
 
 ## [2026-09-16] values-en 字符串带裸撇号炸 aapt（`app's` → `app\'s`）
 
@@ -359,20 +415,20 @@
 
 ## [2026-09-16] 「服务就绪」判据必须打到真实服务端口：wrapper 活着 ≠ WebUI 能服务
 
-- **现象**：M3-b 首版 ProotHost 以 wrapper(22400) 可达即置 RUNNING → AlasScreen 自动重载 WebView → 卡进错误页；彼时 gui.py 进程虽在但 uvicorn 还在 import（需数秒），22267 connection refused。
+- **现象**：M3-b 首版 ProotHost 以 wrapper(22400) 可达即置 RUNNING → AzurPilotScreen 自动重载 WebView → 卡进错误页；彼时 gui.py 进程虽在但 uvicorn 还在 import（需数秒），22267 connection refused。
 - **根本原因**：wrapper 先于 gui 就绪；`gui_alive=true` 只表示子进程活着，不代表端口在听。
 - **解决方案**：RUNNING 语义改为 **wrapper /status 与 WebUI 首页双 200**（`awaitServices` 双探）；状态机里的"就绪"永远锚定最终用户打的那个端口。同类教训通用：任何"依赖服务就绪"判定，探针必须打到最后一环。
 
 ## [2026-09-16] git.lyoko.io 慢网实测 83KB/s：深度 shallow fetch 不能当启动阻塞，快进路径必须零下载
 
 - **现象**：M3-b 首跑热更新 `git fetch --depth 50`（9675 objects）在设备 WiFi 下 ~83KB/s，撞 240s 超时被杀；浅克隆 fetch **不可续传**，每次重试从零开始——慢网下永远更新不完。
-- **根本原因**：ALAS 树大（资产多），depth 50 首包百 MB 级；阻塞式热更新在弱网退化成"每次启动白等 4 分钟"。
-- **解决方案**：`maaal_update.sh` 加 **ls-remote 快进路径**——先 `git ls-remote`（秒级）比对远端 HEAD 与本地 commit（state 文件/BUILD_MANIFEST 钉版），一致直接 UNCHANGED 零下载（真机二启 5s 到 wrapper 就绪）；首次真更新降级 `--depth 1` 单提交树，后续 fetch 按需加深。断网/超时照旧降级不阻塞。弱网大更新续传/后台化留阶段五容灾课题。
+- **根本原因**：AzurPilot 树大（资产多），depth 50 首包百 MB 级；阻塞式热更新在弱网退化成"每次启动白等 4 分钟"。
+- **解决方案**：`update.sh` 加 **ls-remote 快进路径**——先 `git ls-remote`（秒级）比对远端 HEAD 与本地 commit（state 文件/BUILD_MANIFEST 钉版），一致直接 UNCHANGED 零下载（真机二启 5s 到 wrapper 就绪）；首次真更新降级 `--depth 1` 单提交树，后续 fetch 按需加深。断网/超时照旧降级不阻塞。弱网大更新续传/后台化留阶段五容灾课题。
 
 ## [2026-09-16] app/.gitignore 的 jniLibs 排除会误伤自建 native 库：proot 件移 prootLibs + srcDir
 
 - **现象**：proot 九件套拷入 `app/src/main/jniLibs/` 后 git 完全看不到（`git check-ignore` 命中 `app/.gitignore:41`）。
-- **根本原因**：该规则为 MaaFramework 拉取件（`scripts/setup_maa_framework.py` 产物）而设，按目录整棵排除；目录级排除无法用 `!` 反向包含其子项。
+- **根本原因**：该规则为 运行框架 拉取件（`scripts/setup_framework.py` 产物）而设，按目录整棵排除；目录级排除无法用 `!` 反向包含其子项。
 - **解决方案**：自建钉版产物移 `app/app/src/main/prootLibs/`，`build.gradle.kts` 加 `jniLibs.srcDir("src/main/prootLibs")` 并入打包（APK 内 `lib/arm64-v8a/libproot.so` 已核）；规则边界=拉取件 jniLibs 不入库、构建输入 prootLibs 必入库。
 
 ## [2026-09-16] adb 安装链两坑：管道退出码被 tail 吞掉 + adb 不吃 MSYS 路径
@@ -391,6 +447,6 @@
 - **解决方案**：统一封装进程身份读取。正常平台继续用 psutil 创建时间；遇到 `AccessDenied` 时解析 `/proc/<pid>/stat` 第 22 字段，以负的启动 tick 保存，既稳定又不会与 Unix 时间戳混淆。所有身份比较和子进程登记复用该接口；负身份在 POSIX 清场时通过已验证 PID 直接发 `SIGKILL`，避免 psutil 发信号前再次读取 `/proc/stat`。加入含括号进程名的 stat 解析测试及权限拒绝回退测试。
 # [2026-09-24] Android 空虚拟屏无首帧导致 Restart 在启动游戏前死锁
 
-- **现象与实证**：Redmi K60 Ultra 的 MaaFwVirtualDisplay 已正常创建为 display 16（1280×720、Surface 已绑定），但游戏尚未真正渲染时，SurfaceFlinger 对该虚拟显示直接 `screencap -d` 得到纯黑图，AOS bridge 同时返回 `no frame available`。将 `com.bilibili.azurlane/com.manjuu.azurlane.MainActivity` 启动到 display 16 并等待真实内容提交后，SurfaceFlinger 截图立刻恢复为多色有效画面，bridge 同时成功返回 1280×720×3 的非黑帧。因此 ImageReader/plane/BGR 传输链在有真实内容时可正常工作，先前对 Mali/CPU usage 的推断不成立。
+- **现象与实证**：Redmi K60 Ultra 的 AzurPilotVirtualDisplay 已正常创建为 display 16（1280×720、Surface 已绑定），但游戏尚未真正渲染时，SurfaceFlinger 对该虚拟显示直接 `screencap -d` 得到纯黑图，AOS bridge 同时返回 `no frame available`。将 `com.bilibili.azurlane/com.manjuu.azurlane.MainActivity` 启动到 display 16 并等待真实内容提交后，SurfaceFlinger 截图立刻恢复为多色有效画面，bridge 同时成功返回 1280×720×3 的非黑帧。因此 ImageReader/plane/BGR 传输链在有真实内容时可正常工作，先前对 Mali/CPU usage 的推断不成立。
 - **根本原因**：AzurPilot `run()` 对所有任务都会先执行 `device.screenshot()`，而 `Restart` 的真正启动逻辑 `restart() -> LoginHandler.app_restart()` 在它之后。普通模拟器的主显示即使游戏未运行也总有系统画面可截；Android 独立版的 OWN_CONTENT_ONLY 虚拟屏在游戏首帧前可能没有可读内容，于是 Restart 先截图失败、被再次调度 Restart，永远执行不到启动游戏。
 - **解决方案**：AP `1841cb194` 让 `Restart` 跳过任务前置截图，先进入 `app_restart()`；其它任务仍保留原有前置截图。新增回归测试保证 Restart 在无首帧场景不会调用 screenshot。AOS 保留 reader/callback/acquire/write/plane 诊断并把状态附加到 ping/no-frame 错误，后续若再出现首帧问题可直接从日志判断失败阶段，不再返回初始化伪黑帧。

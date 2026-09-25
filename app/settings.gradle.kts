@@ -1,5 +1,5 @@
 pluginManagement {
-    // 构建约定插件（maafw.*）在这个独立构建里，模块脚本只按 id 应用
+    // 构建约定插件（azurpilot.*）在这个独立构建里，模块脚本只按 id 应用
     includeBuild("build-logic")
     repositories {
         mavenLocal()
@@ -48,11 +48,9 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MaaFwApp"
+rootProject.name = "AzurPilotApp"
 include(":app")
 include(":hidden-api")
 // Preferences DataStore 的 schema 代码生成（@PrefSchema / @PrefKey）
 include(":annotation-api")
 include(":ksp-processor")
-// Semi Design 图标（vector drawable + SemiIconRes）
-include(":semi-icons")

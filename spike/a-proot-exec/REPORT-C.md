@@ -33,7 +33,7 @@
 | Android / SDK | 16 / 36 | `getprop ro.build.version.release/sdk` |
 | 内核 / 页大小 | `6.6.89-android15-8-…-4k` / 4096 | `uname -a` / `getconf PAGE_SIZE` |
 | SELinux | Enforcing | `getenforce` |
-| App | `com.maaal.spikea` uid **10301** (`u0_a301`)，targetSdk 35，debuggable | `cmd package list packages -U` |
+| App | `com.azurpilot.spikea` uid **10301** (`u0_a301`)，targetSdk 35，debuggable | `cmd package list packages -U` |
 | cgroup | v2；app 组 `/sys/fs/cgroup/apps/uid_10301/pid_<appPid>/cgroup.procs` | 设备实测 |
 
 ### 1.2 进入实验时的原始设置值（本报告记录，供回滚/对照）
@@ -42,7 +42,7 @@
 |---|---|---|
 | `device_config activity_manager max_phantom_processes` | `null`（=默认 32） | 未被 m0 时代改过 |
 | `settings global settings_enable_monitor_phantom_procs` | `null`（=默认 true，监控开） | 未被 m0 时代改过 |
-| `settings global settings_config_disable_monitor_phantom_procs` | **`true`** | **m0 时代残留**（MaaFwApp `PermissionGrantHelper` 写入的 Android 12 Beta 旧键） |
+| `settings global settings_config_disable_monitor_phantom_procs` | **`true`** | **m0 时代残留**（上游 fork `PermissionGrantHelper` 写入的 Android 12 Beta 旧键） |
 | `settings global phantom_process_killer_enable` | **`false`** | 同上（旧键） |
 | `settings global settings_activity_manager_max_phantom_processes` | `null` | m0 `setup_env.sh` 注释里写的键名（AOSP 无此键，无效） |
 | `settings global stay_on_while_plugged_in` | 0 →（实验期间置 2 = USB 亮屏） | 仅为让 A/B 两轮屏幕状态一致 |
@@ -118,7 +118,7 @@
 
 **含义（对 v3 架构至关重要）**：进程算不算幻影，取决于 **fork 者的 cgroup**，与 uid 无关——
 - App（untrusted_app）自己 fork 的 proot 整树 → **全在 app cgroup → 全部计入配额**（本 spike 的场景）；
-- 由 Shizuku/shell 域进程 fork 的进程即使 uid 相同也落在别的 cgroup（设备实测 `memory:/` vs `memory:/apps/com.maaal.spikea`），不计入、`am force-stop` 也收不掉。
+- 由 Shizuku/shell 域进程 fork 的进程即使 uid 相同也落在别的 cgroup（设备实测 `memory:/` vs `memory:/apps/com.azurpilot.spikea`），不计入、`am force-stop` 也收不掉。
 
 另：`trimPhantomProcessesIfNecessary()` 里的 `mPhantomProcesses` 是**全系统**所有 app 的幻影合集，配额是**全局**的（不是每 App 32）——本机除本 App 外长期只有 0~2 个他 App 幻影，所以 32 实质上就是本 App 的预算。
 
@@ -291,7 +291,7 @@
 09-15 21:54:44.267  3125  3213 I am_kill : [0,10999,libproot.so,0,Trimming phantom processes,4404]
 ```
 
-**判定：这两个键在 Android 16 上对幻影查杀无效**（AOSP 16 里搜不到这两个键名，`FeatureFlagUtils` 只认 `settings_enable_monitor_phantom_procs`）。它们只是 m0 时代 MaaFwApp 的 `PermissionGrantHelper.disablePhantomProcessKiller()` 写入的历史遗留（`m0-archive/vendor/MaaFwApp/…/PermissionGrantHelper.kt:137-141`），在 Android 16 上已成空文。**生产只需两条现代命令**——顺带说明：实验结束时这两个旧键已被恢复成原值（见 §6 结束状态）。
+**判定：这两个键在 Android 16 上对幻影查杀无效**（AOSP 16 里搜不到这两个键名，`FeatureFlagUtils` 只认 `settings_enable_monitor_phantom_procs`）。它们只是 m0 时代 上游 fork 的 `PermissionGrantHelper.disablePhantomProcessKiller()` 写入的历史遗留（`m0-archive 里的 fork 基线/…/PermissionGrantHelper.kt:137-141`），在 Android 16 上已成空文。**生产只需两条现代命令**——顺带说明：实验结束时这两个旧键已被恢复成原值（见 §6 结束状态）。
 
 ---
 
@@ -325,7 +325,7 @@
 ```bash
 # 0) 构建（沿用 Spike A 的便携工具链与 gradle home）
 export JAVA_HOME=/d/VSCodeCache/shizku-m/build-env/jdk-21.0.2
-export GRADLE_USER_HOME="D:/VSCodeCache/maa-alas/.tmp/spike-a/gradle-home"
+export GRADLE_USER_HOME="D:/VSCodeCache/azurpilot-azurpilot/.tmp/spike-a/gradle-home"
 cd spike/a-proot-exec
 ./gradlew --no-daemon -Pspike.targetSdk=35 :app:assembleDebug
 cp app/build/outputs/apk/debug/app-debug.apk dist/spikea-phantom-target35-debug.apk
@@ -341,8 +341,8 @@ bash run-phantom-ab.sh L 420      # 只开 m0 旧键
 bash run-phantom-ab.sh final      # 结束状态：两条缓解命令保持开启
 
 # 2) 单轮手工复现（不跑脚本）
-adb shell "am start -n com.maaal.spikea/.MainActivity --es mode phantom --ei count 48 --ei durationSec 600"
-watch -n5 'adb shell "wc -l < /sys/fs/cgroup/apps/uid_10301/pid_\$(ps -A -o PID,NAME | awk \"\$2==\\\"com.maaal.spikea\\\"{print \$1}\")/cgroup.procs"'
+adb shell "am start -n com.azurpilot.spikea/.MainActivity --es mode phantom --ei count 48 --ei durationSec 600"
+watch -n5 'adb shell "wc -l < /sys/fs/cgroup/apps/uid_10301/pid_\$(ps -A -o PID,NAME | awk \"\$2==\\\"com.azurpilot.spikea\\\"{print \$1}\")/cgroup.procs"'
 adb logcat -b events -d | grep am_kill
 ```
 
@@ -355,7 +355,7 @@ adb logcat -b events -d | grep am_kill
 | `settings global settings_config_disable_monitor_phantom_procs` | `true` | 恢复为实验前原值（无效旧键，仅还原原状） |
 | `settings global phantom_process_killer_enable` | `false` | 同上 |
 | `settings global stay_on_while_plugged_in` | 0（实验期间为 2） | 实验期亮屏所需，已还原 |
-| 设备上临时物 | 删除 `/data/local/tmp/phantom-sampler.sh`；App 已 `am force-stop` | 保留 `com.maaal.spikea` 安装（后续可复用） |
+| 设备上临时物 | 删除 `/data/local/tmp/phantom-sampler.sh`；App 已 `am force-stop` | 保留 `com.azurpilot.spikea` 安装（后续可复用） |
 
 ---
 
@@ -365,7 +365,7 @@ adb logcat -b events -d | grep am_kill
 
 | 文件 | 内容 |
 |---|---|
-| `spike/a-proot-exec/app/src/main/java/com/maaal/spikea/MainActivity.kt` | 新增 PHANTOM 模式（`--es mode phantom --ei count N --ei durationSec S`） |
+| `spike/a-proot-exec/app/src/main/java/com/azurpilot/spikea/MainActivity.kt` | 新增 PHANTOM 模式（`--es mode phantom --ei count N --ei durationSec S`） |
 | `spike/a-proot-exec/run-phantom-ab.sh` | 逐轮编排：设置切换、清场、采样、证据落盘 |
 | `dist/spikea-phantom-target35-debug.apk` | 新版 APK（versionCode 2） |
 | `dist/logs/phantom-<round>-samples.csv` | 每轮采样表（cgroup/ps/自报/AMS 数） |

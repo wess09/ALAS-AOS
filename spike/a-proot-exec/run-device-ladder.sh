@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spike A on-device ladder runner (MaaAL, roadmap v3).
+# Spike A on-device ladder runner (AzurPilot, roadmap v3).
 #
 # Usage:  bash run-device-ladder.sh [device-serial]
 # Needs:  adb reachable device (USB-debug authorized), dist/*.apk already built.
@@ -11,7 +11,7 @@ export MSYS_NO_PATHCONV=1
 
 ADB="${ADB:-/c/Users/da270/AppData/Local/Android/Sdk/platform-tools/adb.exe}"
 SERIAL="${1:-AVAY025422002864}"
-PKG=com.maaal.spikea
+PKG=com.azurpilot.spikea
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 DIST="$ROOT/dist"

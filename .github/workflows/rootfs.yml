@@ -64,7 +64,7 @@ jobs:
             echo "version_name=signing-not-configured" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          current="$(curl -fsSL --retry 2 'https://github.com/wess09/ALAS-AOS/releases/download/azurpilot-android-dev/latest.json' 2>/dev/null | jq -r '.azurpilotCommit // empty' || true)"
+          current="$(curl -fsSL --retry 2 "https://github.com/${{ github.repository }}/releases/download/azurpilot-android-dev/latest.json" 2>/dev/null | jq -r '.azurpilotCommit // empty' || true)"
           should_build=true
           if [[ "$publish" == true && "$current" == "$ref" ]]; then should_build=false; fi
           base="$(git describe --tags --always)"

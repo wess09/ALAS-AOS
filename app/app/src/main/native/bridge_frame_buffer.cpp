@@ -432,7 +432,7 @@ jobject CreateFrameBufferBitmap(JNIEnv *env) {
         return nullptr;
     }
 
-    // 拷出 BGR 数据后立即解锁，把持锁时间压到一次 memcpy，避免和采集 / MAA core 抢缓冲区
+    // 拷出 BGR 数据后立即解锁，把持锁时间压到一次 memcpy，避免和采集 / 框架 core 抢缓冲区
     auto *bgrCopy = static_cast<uint8_t *>(malloc(frame.length));
     if (!bgrCopy) {
         UnlockPixels(frame);

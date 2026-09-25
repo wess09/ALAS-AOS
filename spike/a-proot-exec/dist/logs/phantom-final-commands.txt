@@ -1,4 +1,0 @@
-$ settings put global settings_enable_monitor_phantom_procs false
-exit=0 out=[]
-$ device_config put activity_manager max_phantom_processes 2147483647
-exit=0 out=[]

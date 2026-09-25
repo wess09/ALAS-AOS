@@ -1,8 +1,0 @@
-### 2026-09-15 22:19:43 E3b screencap with PHYSICAL display id (SF id of VD)
---- $ adb -s 192.168.50.190:5555 shell 'screencap -p -d 11529215049274064657 /data/local/tmp/vd.png; echo rc=$?'
-rc=0
---- $ adb -s 192.168.50.190:5555 shell 'screencap -p -a /data/local/tmp/all.png; echo rc=$?; ls -l /data/local/tmp/all*'
-rc=0
--rw-rw-r-- 1 shell shell 20536 2026-09-15 22:19 /data/local/tmp/all.png
---- $ adb -s 192.168.50.190:5555 shell 'ls -l /data/local/tmp/vd.png'
--rw-rw-r-- 1 shell shell 5336 2026-09-15 22:19 /data/local/tmp/vd.png

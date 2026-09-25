@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spike C on-device runner: Phantom Process Killer A/B/A' round driver (MaaAL, roadmap v3).
+# Spike C on-device runner: Phantom Process Killer A/B/A' round driver (AzurPilot, roadmap v3).
 #
 # Usage:  bash run-phantom-ab.sh <round> [windowSec]
 #   rounds: A   = mitigation OFF  (true defaults: monitor unset, cap unset=32, legacy keys cleared)
@@ -24,7 +24,7 @@ SERIAL="${SERIAL:-AVAY025422002864}"
 ROUND="${1:?round required: A|B|A2|B1|B2|final}"
 WINDOW="${2:-}"
 
-PKG=com.maaal.spikea
+PKG=com.azurpilot.spikea
 UID_NUM="${UID_NUM:-10301}"
 COUNT="${COUNT:-48}"
 
@@ -40,7 +40,7 @@ now() { date +%s; }
 # ---------------------------------------------------------------- device-side sampler
 cat > "$SCRATCH/phantom-sampler.sh" <<'EOF'
 #!/system/bin/sh
-APP=$(ps -A -o PID,NAME | awk '$2=="com.maaal.spikea"{print $1; exit}')
+APP=$(ps -A -o PID,NAME | awk '$2=="com.azurpilot.spikea"{print $1; exit}')
 PSN=$(ps -A -o USER,NAME | awk '$1=="u0_a301"' | wc -l | tr -d ' ')
 PROOT=none; CGN=-1
 if [ -n "$APP" ]; then
@@ -111,7 +111,7 @@ round_env() {
       run_cmd "device_config put cap=INT_MAX" "device_config put activity_manager max_phantom_processes 2147483647"
       ;;
     L)
-      # m0-era artefacts: keys written by MaaFwApp's disablePhantomProcessKiller().
+      # m0-era artefacts: keys written by 上游 fork's disablePhantomProcessKiller().
       run_cmd "settings delete monitor flag" "settings delete global settings_enable_monitor_phantom_procs"
       run_cmd "device_config delete cap"     "device_config delete activity_manager max_phantom_processes"
       run_cmd "legacy disable_monitor=true"  "settings put global settings_config_disable_monitor_phantom_procs true"

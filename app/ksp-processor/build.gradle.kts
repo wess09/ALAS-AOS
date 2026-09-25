@@ -1,5 +1,5 @@
 plugins {
-    id("maafw.kotlin.jvm")
+    id("azurpilot.kotlin.jvm")
 }
 
 dependencies {

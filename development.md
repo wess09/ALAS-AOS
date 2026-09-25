@@ -2,11 +2,12 @@
 
 ## 当前阶段
 
-正在将 ALAS-AOS 转为独立的 AzurPilot Android App。ARM64 rootfs 和 debug APK 已完成首次构建，当前依据真机日志修复运行时兼容问题，完整后台挂机尚未验收。旧版 v0.1.4 与其历史路线图保存在 Git 历史、`docs/roadmap-v3.md` 和 `m0-archive/`，不作为新构建链的运行源码。
+正在将本仓库转为独立的 AzurPilot Android App。ARM64 rootfs 和 debug APK 已完成首次构建，当前依据真机日志修复运行时兼容问题，完整后台挂机尚未验收。旧版 v0.1.4 与其历史路线图保存在 Git 历史、`docs/roadmap-v3.md` 和 `m0-archive/`，不作为新构建链的运行源码。
 
 ## 仓库结构
 
-- `app/`：Kotlin/Compose Android 宿主。`provision/RootfsProvisioner.kt` 解包内置 Ubuntu rootfs；`proot/ProotHost.kt` 管理单个 AzurPilot WebUI 进程及最终清场；`remote/internal/BridgeServer.kt` 连接虚拟屏截图、触控、应用控制。React WebUI 由浏览器 Custom Tab 打开，挂机页和悬浮窗继续使用回环控制接口。
+- `app/`：Kotlin/Compose Android 宿主，根包 `com.aliothmoon.azurpilot`（namespace 同名；applicationId 另由构建配方给）。`provision/RootfsProvisioner.kt` 解包内置 Ubuntu rootfs；`proot/ProotHost.kt` 管理单个 AzurPilot WebUI 进程及最终清场；`remote/internal/BridgeServer.kt` 连接虚拟屏截图、触控、应用控制。React WebUI 由浏览器 Custom Tab 打开，挂机页和悬浮窗继续使用回环控制接口。
+- 宿主 UI 为**标准 Material 3**：色板取系统动态色（Android 12+）/M3 基线色板（其余），形状、字阶、动效一律用 `MaterialTheme` 默认 token，组件直接用 M3 现成件（`NavigationBar`、`Card`、`Button`、`Switch`、`FilterChip`、`ModalBottomSheet`、`ListItem`、`ExposedDropdownMenuBox` 等）。改 UI 时**不要再引入自绘控件或自定义圆角/字阶体系**；`theme/Theme.kt` 是全 App 唯一主题入口，`theme/DesignTokens.kt` 只放 M3 之外的间距/图标尺寸。
 - `rootfs/build/build-azurpilot.sh`：原生 ARM64 Ubuntu 24.04 构建；锁定 Python 3.14.6、`uv.lock`，预构建 React，验证 OCR CPU 推理，输出随 APK 发布的 rootfs 与构建清单。
 - `.github/workflows/rootfs.yml`：由 AOS 每 15 分钟轮询 AzurPilot `dev`；新 commit 通过门禁后构建固定签名 APK，更新 `azurpilot-android-dev` release 和 App 更新清单。
 - `update/AppUpdateManager.kt`：App 启动时检查 APK 更新清单，下载并校验 SHA-256，随后调用系统安装器覆盖安装。
@@ -17,7 +18,7 @@
 
 ## 运行关系
 
-AzurPilot 的 `ProcessManager` 是调度和工具任务的唯一进程管理者。React WebUI 和仅回环可访问的 `/android` 控制路由处于同一 Python 进程。Android 宿主仅维护 proot/WebUI 存活和进程组清场。控制 API 使用每次安装独立的 token，`25548` 为新 WebUI 端口；虚拟屏桥使用 `22301`。旧版 ALAS-AOS 的端口为 `22267/22300/22400`。启动任务前检查旧版是否正在控制同一游戏。
+AzurPilot 的 `ProcessManager` 是调度和工具任务的唯一进程管理者。React WebUI 和仅回环可访问的 `/android` 控制路由处于同一 Python 进程。Android 宿主仅维护 proot/WebUI 存活和进程组清场。控制 API 使用每次安装独立的 token，`25548` 为新 WebUI 端口；虚拟屏桥使用 `22301`。旧版宿主的端口为 `22267/22300/22400`。启动任务前检查旧版是否正在控制同一游戏。
 
 ## 构建与测试
 
@@ -25,8 +26,16 @@ AzurPilot 的 `ProcessManager` 是调度和工具任务的唯一进程管理者�
 
 本地 AzurPilot Python 单测使用其 `dev` 工作区现成 Python 3.14 虚拟环境执行；测试输出置于本仓 `.tmp/`。目前通过控制 API、设备桥、Android `/proc` 兼容回归及本地 OCR CPU 推理。GitHub Actions 已通过 ARM64 rootfs 和 APK 构建门禁；仍需真机完整后台挂机验证。
 
+宿主 UI 只改 Kotlin 时可跳过 rootfs 门禁做纯编译验证（`verifyBundledAzurPilotRuntime` 会被 `packageDebugResources` 拖进依赖图）：
+
+```
+JAVA_HOME="<Android Studio>/jbr" ./gradlew :app:compileDebugKotlin --offline -x verifyBundledAzurPilotRuntime
+```
+
+`:app:testDebugUnitTest` **当前不可用**：`app/src/test` 下仍留有上游 fork 时期的孤儿测试（`project/`、`runner/`、`session/`、`schedule/`、`telemetry/`、`notification/` 等），对应主源码已在阶段二删除，编译测试源集必然失败，详见 `debug.md`。UI 改动靠上述编译 + 真机走查验收。
+
 ## 重要约束
 
 - AzurPilot Android 适配作为其 `dev` 分支正式源码维护；AOS 只钉 commit 和打包运行环境。
-- 不修改历史 ALAS 上游源码或归档。新包不得访问或迁移旧版应用私有目录。
+- 不修改历史上游源码或归档。新包不得访问或迁移旧版应用私有目录。
 - 不擅自执行 push、release。真机虚拟屏实验必须按 `AGENTS.md` 完成前后手势窗口归属检查与清场；屏幕状态实验需用户确认。

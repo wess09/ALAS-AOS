@@ -6,7 +6,7 @@
 
    With `--exec <path> [args...]` it execve()s the child instead of printing,
    which probes whether a *guest-initiated* execve inside the proot rootfs works
-   (the ALAS-spawns-python-subprocess case).
+   (the AzurPilot-spawns-python-subprocess case).
 */
 #include <stdio.h>
 #include <string.h>

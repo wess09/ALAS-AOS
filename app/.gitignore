@@ -37,13 +37,9 @@ versioncode.txt
 # 上游 PI 项目的本地参考副本，仅供人工比对，不是构建输入
 /sample/
 
-# MaaFramework 的 Android 产物：与 PI 同理不进仓库，由 scripts/setup_maa_framework.py 拉取
+# 上游框架的 Android 产物：与 PI 同理不进仓库
 /app/src/main/jniLibs/
-/.maa-cache/
-/.maafwversion
 
-# build_agent_bundle.py 的工作目录：下载的 agent 内核、解包结果与 pip 缓存
-/.maafw/
 # 出内核用的下载缓存；内核脚本不在本仓库，这条只为本机残留的目录留着
 .agent-runtime-cache/
 

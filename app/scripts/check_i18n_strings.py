@@ -2,9 +2,9 @@
 """
 i18n strings.xml 一致性校验与冗余清理工具。
 
-项目的多语言结构(由 translate_maa_strings.py 的工作流决定):
+项目的多语言结构(由上游翻译脚本的工作流决定):
   - res/values/strings.xml      默认资源 = 中文源(source of truth)
-  - res/values-en/strings.xml   英文翻译(由 translate_maa_strings.py 生成)
+  - res/values-en/strings.xml   英文翻译(由上游翻译脚本生成)
   - res/values-zh/strings.xml   历史遗留的中文冗余副本,应删除
                                 (中文 locale "zh" 会自动 fallback 到默认 values)
 
@@ -43,7 +43,7 @@ PLACEHOLDER_RE = re.compile(r"%\d+\$[-#+ 0-9.]*[a-zA-Z]")
 # CJK 统一表意文字 + 常见中日韩标点/全角符号(用于检测英文里残留的中文)
 CJK_RE = re.compile(r"[㐀-䶿一-鿿　-〿！-｠]")
 # 英文文案里合法含中文的 key:语言自名、专有名词等,不计入“疑似漏翻”
-# 引自 MaaMeow 的同名脚本;白名单按本项目实际增补(如语言选择项用语言自身名字显示)
+# 引自参考实现的同名脚本;白名单按本项目实际增补(如语言选择项用语言自身名字显示)
 CJK_ALLOWED: set[str] = set()
 
 

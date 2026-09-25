@@ -1,6 +1,3 @@
-# BEGIN create-maa-project
-# END create-maa-project
-.create-maa-project/
 .tmp/
 .uv-cache/
 .venv/
@@ -9,10 +6,10 @@ __pycache__/
 debug/
 dist/
 node_modules/
-maafw.log
+azurpilot.log
 *.log
 
-# v3 阶段：本地归档（MaaFwApp fork + ALAS 副本，留本地不进公开仓）
+# v3 阶段：本地归档（上游 fork 与桌面副本，留本地不进公开仓）
 m0-archive/
 
 # Android/Gradle 构建产物（可重建）

@@ -1,7 +1,0 @@
-09-15 21:49:26.604  3125  3215 I ActivityManager: Process PhantomProcessRecord {63fde9 22255:21982:cmd/u0a158} died
-09-15 21:49:26.605  3125  3215 I ActivityManager: Process PhantomProcessRecord {d264a6e 22254:21982:sh/u0a158} died
-09-15 21:49:26.605  3125  3215 I ActivityManager: Process PhantomProcessRecord {30f650f 22253:21982:sh/u0a158} died
-09-15 21:49:54.116  3125  3215 I ActivityManager: Process PhantomProcessRecord {468f7fd 24517:32612:busybox/u0a301} died
-09-15 21:50:48.872  3125  3646 I ActivityManager: Killing 13987:com.hihonor.baidu.browser/u0a195 (adj 999): empty #81
-09-15 21:51:30.469  3125  3215 I ActivityManager: Process PhantomProcessRecord {69b7570 8703:32612:busybox/u0a301} died
-09-15 21:51:30.470  3125  3215 I ActivityManager: Process PhantomProcessRecord {4a51e43 32717:32612:busybox/u0a301} died

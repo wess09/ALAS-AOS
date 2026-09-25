@@ -3,7 +3,7 @@
 ## 已完成
 
 - Android 适配已直接进入 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev` 分支。基础适配提交为 `b8f91d885`；移动端侧边栏修复和 Android 更新器分流已进入当前基线 `51d6a60f89e46fe5933e4e31dd0c75f8bab69f23`，均已推送到 `origin/dev`。
-- Android 桥设备、配置生成、同进程控制 API、宿主运行链、独立端口/包名、构建脚本、更新和回滚脚本已实现。旧 ALAS 覆盖层与双进程监管已从新构建链删除。
+- Android 桥设备、配置生成、同进程控制 API、宿主运行链、独立端口/包名、构建脚本、更新和回滚脚本已实现。旧 AzurPilot 覆盖层与双进程监管已从新构建链删除。
 - GitHub Actions ARM64 rootfs run `35948884651` 成功；复用该产物的 APK run `35950995233` 成功。验证分支 `codex/azurpilot-android-verify` 已推送，未做 release。
 - 真机已完成安装、首启部署、热更新和 WebUI 拉起。首轮日志发现 `/proc/stat` 权限故障；适配层已用 `/proc/<pid>/stat` starttime tick 完成进程身份后备，并覆盖进程登记和清场链。针对性测试与原设备/API/OCR 测试共 87 项通过。
 - 新增 `tools/watch-android-logs.ps1` 实时查看 App logcat 或 proot session 日志。对只提供 x86_64 原生 ABI、依赖 ARM 转译的模拟器给出明确失败原因。
@@ -18,7 +18,7 @@
 2. 从“游戏未运行/虚拟屏无首帧”状态触发 Restart，确认能先启动游戏、等待首帧后正常截图；随后复测颜色、前台检查、WebUI、调度任务和停止清场。通过后再处理验证分支合入。
 3. 完成虚拟屏、截图、触控、挂机和工具任务真机验收。虚拟屏实验前后检查 `GestureNav|GestureSilde|NavigationBar` 均在 display 0；结束杀虚拟屏属主并确认仅剩 display 0。实际游戏任务和屏幕状态实验遵守用户现场授权边界。
 4. 多架构支持仍需分别构建 Python、原生依赖、OCR 和 rootfs，并按 ABI 打包选择；当前成品链是计划基线规定的 ARM64，x86_64 模拟器转译不能作为真机替代。
-5. 自动发布需要在 `wess09/ALAS-AOS` 配置四个稳定签名 secrets。检测与构建完全由 AOS workflow 负责，不需要 AP 仓库 token。
+5. 自动发布需要在 `wess09/AzurPilot` 配置四个稳定签名 secrets。检测与构建完全由 AOS workflow 负责，不需要 AP 仓库 token。
 
 ## 注意
 

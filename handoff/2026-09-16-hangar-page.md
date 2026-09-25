@@ -4,17 +4,17 @@
 
 ## 干了什么
 
-用户想法落地：**应用内「挂机」页 = 虚拟屏实时画面（上）+ 运行配置下拉（中）+ ALAS 控制面板（下）**，成为 App 第一主 tab（默认首页）；悬浮窗面板保留不动。用户明确：配置区只显示 config 文件里的**配置名称**下拉框，不显示具体内容。
+用户想法落地：**应用内「挂机」页 = 虚拟屏实时画面（上）+ 运行配置下拉（中）+ AzurPilot 控制面板（下）**，成为 App 第一主 tab（默认首页）；悬浮窗面板保留不动。用户明确：配置区只显示 config 文件里的**配置名称**下拉框，不显示具体内容。
 
 ## 改动清单（均已装机实证）
 
-- `rootfs/overlays/wrapper.py`（+ `app/app/src/main/assets/alas/overlay/wrapper.py` 同源同步，diff 校验过）：
-  - `GET /configs` → config/*.json 去 template* 的实例名列表（'alas' 排最前）
+- `rootfs/overlays/wrapper.py`（+ `app/app/src/main/assets/azurpilot/overlay/wrapper.py` 同源同步，diff 校验过）：
+  - `GET /configs` → config/*.json 去 template* 的实例名列表（'azurpilot' 排最前）
   - `POST /start?config=N` → 实例名白名单校验后透传 runner argv[1]（runner.py 本就支持）
   - `/status` 新增 `config` 字段（在跑实例名，没在跑为 null）
-- `proot/AlasRunController.kt`：configs/selectedConfig/runningConfig 三态；选择存 SharedPreferences(`maaal_alas`)；startAlas() 带 `?config=`；选择失效自愈回列表首项。
+- `proot/AzurPilotRunController.kt`：configs/selectedConfig/runningConfig 三态；选择存 SharedPreferences(`azurpilot`)；startRunner() 带 `?config=`；选择失效自愈回列表首项。
 - `service/HostState.kt`：`attachPreviewSurface/detachPreviewSurface` → AIDL `setMonitorSurface`（失败静默，页面显示占位）。
-- `ui/components/AlasControlPanel.kt`（新）：状态行+日志板+调度器启停，悬浮窗与挂机页共享。
+- `ui/components/AzurPilotControlPanel.kt`（新）：状态行+日志板+调度器启停，悬浮窗与挂机页共享。
 - `overlay/OverlayPanel.kt`：重构为壳（标题/锁定/回App/环境启停）+ 共享面板。
 - `ui/hangar/HangarScreen.kt`（新）：16:9 SurfaceView 预览（setFixedSize 1280×720 延50ms，active 才挂面，surfaceChanged 不重发时靠 attachedSurface 重挂）+ 配置卡（runnerAlive 时锁选择）+ 面板。
 - `ui/AppRoot.kt`/`ui/navigation/Routes.kt`：TopDestination 加 Hangar（首位），NavHost startDestination=HANGAR，mainTabs 同步。
@@ -23,9 +23,9 @@
 
 ## 真机验证证据（HONOR PPG-AN00，versionCode 22）
 
-- `GET /configs` → `{"configs": ["alas"]}` ✅；`/status` 含 `"config": null` ✅（runner 未跑）
-- 页面全渲染：标题/预览框/运行配置卡(alas+切换)/状态行/日志板/开始挂机/底栏三 tab ✅（`.tmp/hangar-1.png`）
-- 下拉点开列出 alas ✅（`.tmp/hangar-3.png`）
+- `GET /configs` → `{"configs": ["azurpilot"]}` ✅；`/status` 含 `"config": null` ✅（runner 未跑）
+- 页面全渲染：标题/预览框/运行配置卡(azurpilot+切换)/状态行/日志板/开始挂机/底栏三 tab ✅（`.tmp/hangar-1.png`）
+- 下拉点开列出 azurpilot ✅（`.tmp/hangar-3.png`）
 - **预览通道像素级实证**：VD 空载 → 桥帧全零 & app 预览同黑；`am start --display 22 com.android.settings/.Settings` 后 → 桥帧白+左黑条（`.tmp/vd-frame2.png`）& app 预览同构图（`.tmp/hangar-2.png` 裁区一致）✅。Settings 事后已 force-stop，临时图已清。
 - **未按「开始挂机」**（纪律：`/start?config=` 的真跑验证留给用户在场演示）。
 

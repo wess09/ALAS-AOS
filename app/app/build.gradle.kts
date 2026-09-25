@@ -1,17 +1,17 @@
 plugins {
-    id("maafw.android.application")
-    id("maafw.android.compose")
+    id("azurpilot.android.application")
+    id("azurpilot.android.compose")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.aliothmoon.maafw"
+    namespace = "com.aliothmoon.azurpilot"
 
     sourceSets {
         named("main") {
             // proot 九件套（libproot/libproot-loader/libtalloc/busybox/shim 等，Spike A 钉版产物）；
-            // 与 src/main/jniLibs/（MaaFramework 拉取件，gitignore）分开放，本目录是构建输入要入库
+            // 与 src/main/jniLibs/（上游框架的拉取件，gitignore）分开放，本目录是构建输入要入库
             jniLibs.srcDir("src/main/prootLibs")
         }
     }
@@ -64,7 +64,6 @@ dependencies {
 
     implementation(project(":annotation-api"))
     ksp(project(":ksp-processor"))
-    implementation(project(":semi-icons"))
 
     // MIUI 上系统权限页的跳转差异大，自己拼 Intent 覆盖不全
     implementation(libs.xx.permissions)

@@ -1,15 +1,15 @@
 # 上游 Issue #6000 跟进执行手册（交接其他会话窗口）
 
-> 创建：2026-09-20 · 创建人：MaaAL 主会话
-> 用途：ALAS 上游 issue [LmeSzinc/AzurLaneAutoScript#6000](https://github.com/LmeSzinc/AzurLaneAutoScript/issues/6000) 的后续跟进。本文档自包含，接管会话无需其他上下文。
+> 创建：2026-09-20 · 创建人：AzurPilot 主会话
+> 用途：AzurPilot 上游 issue [LmeSzinc/AzurLaneAutoScript#6000](https://github.com/LmeSzinc/AzurLaneAutoScript/issues/6000) 的后续跟进。本文档自包含，接管会话无需其他上下文。
 > **状态（2026-09-20 12:04 UTC）：证据已上传并回复（详见 devlog 同条目），进入「盯上游回应」阶段。**
-> ~~原状态：本 issue 已移交其他会话窗口处理，MaaAL 主会话不再跟踪。~~（本窗口已按本手册完成回复）
+> ~~原状态：本 issue 已移交其他会话窗口处理，AzurPilot 主会话不再跟踪。~~（本窗口已按本手册完成回复）
 
 ---
 
 ## 1. TL;DR（30 秒版）
 
-- 我们于 2026-09-19 向 ALAS 上游提交了 issue #6000：**国服仓库材料页 UI 改版打废 `MATERIAL_CHECK` 模板，E 科研拆解/仓库开箱链卡死**。
+- 我们于 2026-09-19 向 AzurPilot 上游提交了 issue #6000：**国服仓库材料页 UI 改版打废 `MATERIAL_CHECK` 模板，E 科研拆解/仓库开箱链卡死**。
 - **上游 LmeSzinc 已于 2026-09-20 02:53 (UTC) 回复：「上传log和截图」**。
 - **唯一待办：整理日志 + 截图证据，上传到 issue 并回复。**
 - 证据素材大部分已在本地 `.tmp/` 备好（见 §4），缺的可从真机补拍（见 §5）。
@@ -60,8 +60,8 @@ curl http://127.0.0.1:22400/logs         # 拉日志（注意：只给最新 txt
                                          # 拉 runner 日志需先 POST /start 解锁）
 ```
 
-- 工作目录（MaaAL 仓库）：`D:\VSCodeCache\maa-alas`；临时文件一律放 `.tmp/`（已 gitignore）。
-- **红线：不改 ALAS 上游源码**；桌面端 `C:\other\AzurLaneAutoScript` **只读**（唯一例外：§6 的临时救场拷贝，用户已知情）。
+- 工作目录（AzurPilot 仓库）：`D:\VSCodeCache\azurpilot-azurpilot`；临时文件一律放 `.tmp/`（已 gitignore）。
+- **红线：不改 AzurPilot 上游源码**；桌面端 `C:\other\AzurLaneAutoScript` **只读**（唯一例外：§6 的临时救场拷贝，用户已知情）。
 - 账册规则：有重大进展就更新根目录 `devlog.md`（倒序）+ `handoff/` 新文件；push 需用户授权。
 
 ---
@@ -70,7 +70,7 @@ curl http://127.0.0.1:22400/logs         # 拉日志（注意：只给最新 txt
 
 | 文件 | 内容 | 建议用途 |
 |---|---|---|
-| `.tmp/alas-log-0919.txt` (261KB) | **卡死期完整 runner 日志**：`_storage_enter_material` 循环空点 → `GameTooManyClickError` → runner exit/respawn（session 累计 87 次） | **主日志证据**，截取循环段直接上传 |
+| `.tmp/azurpilot-log-0919.txt` (261KB) | **卡死期完整 runner 日志**：`_storage_enter_material` 循环空点 → `GameTooManyClickError` → runner exit/respawn（session 累计 87 次） | **主日志证据**，截取循环段直接上传 |
 | `.tmp/live-material-check.png` (376×184) | 新版材料页左下角实拍放大图 | 展示"2022 模板锚点在新 UI 中的实际样子" |
 | `.tmp/live-material-enter.png` | 新版材料页实拍（MATERIAL_ENTER 区域） | 新 UI 布局佐证 |
 | `.tmp/upstream-material-check.png` (1280×720) | **上游 2022 版模板本体**（黑底 + 左下「素材」标记） | 与实拍对比，直观说明锚点失效 |
@@ -80,21 +80,21 @@ curl http://127.0.0.1:22400/logs         # 拉日志（注意：只给最新 txt
 
 **注意**：
 - `.tmp/tpl-material-check.png` 是我们重制的新模板工作图（10240×5760 异常分辨率，是取证脚本的缩放产物），**不要上传**，避免混淆。
-- 用户最初提供的手机截图 `Screenshot_20260917_214942_com_aliothmoon_maafw_MainActivity.jpg` 在桌面已找不到；如需"用户视角截图"，用 §5 流程从真机补拍。
+- 用户最初提供的手机截图 `Screenshot_20260917_214942_MainActivity.jpg` 在桌面已找不到；如需"用户视角截图"，用 §5 流程从真机补拍。
 - 上传图片用 GitHub 网页拖拽最稳；`gh issue comment` 不直接支持附件，可把图先传到 issue 评论编辑框或引用已上传的 URL。
 
 ## 5. 缺证据时的真机补拍流程
 
-1. 手机连 adb，App（MaaAzurLane）内点「开始挂机」让 wrapper/gui/runner 在岗。
-2. 复现路径：让 ALAS 跑到 E 科研拆解（或手动进游戏仓库→材料页）。
+1. 手机连 adb，App（更早的旧名）内点「开始挂机」让 wrapper/gui/runner 在岗。
+2. 复现路径：让 AzurPilot 跑到 E 科研拆解（或手动进游戏仓库→材料页）。
 3. 截虚拟屏画面：`adb forward tcp:22300 tcp:22300` 后用 `.tmp/vd_probe.py`（行 JSON 协议）截屏/点击；或直接在 App 悬浮窗/投屏界面系统截图。
 4. 拉日志：`POST http://127.0.0.1:22400/start` 后 `GET /logs`。
 5. 细节参考根目录 `devlog.md` 2026-09-19 条目的排查段。
 
 ## 6. 我方修复现状（回复上游时可引用的"已验证临时修复"细节）
 
-- 补丁资产：`rootfs/patches/assets/cn/storage/MATERIAL_CHECK.png` 与 `app/app/src/main/assets/alas/patches/assets/cn/storage/`（双源镜像，cmp 已验证一致；这是第 8 个真机校准资产，走 patches 通道不动上游源码）。
-- 已随 **MaaAzurLane v0.1.2** 发版（2026-09-19，GitHub Release: Shinarin/MaaAL）。
+- 补丁资产：`rootfs/patches/assets/cn/storage/MATERIAL_CHECK.png` 与 `app/app/src/main/assets/azurpilot/patches/assets/cn/storage/`（双源镜像，cmp 已验证一致；这是第 8 个真机校准资产，走 patches 通道不动上游源码）。
+- 已随 **更早的旧名 v0.1.2** 发版（2026-09-19，GitHub Release: Shinarin/AzurPilot）。
 - 验证数据：新材料页 ccoeff=1.0；装备/设计/拆解页 ≤0.27；色差 6.4 < 30（免改 assets.py）；拆解链 `0/15 → 15/15` 九秒跑通。
 - **局限（对上游要诚实）**：我们的模板是整屏实帧（含格子内容），仅本账号验证；账号迁移稳健性未验证——这正是建议 PR 用黑底+锚点版的原因。
 - 桌面端救场：把补丁 png 拷到 `C:\other\AzurLaneAutoScript\assets\cn\storage\`（热更新会冲掉，上游修复落地后删）。
@@ -119,7 +119,7 @@ curl http://127.0.0.1:22400/logs         # 拉日志（注意：只给最新 txt
 
 - Issue：https://github.com/LmeSzinc/AzurLaneAutoScript/issues/6000
 - 相关：#4276（JP 已修）/ #4815 / #4934
-- MaaAL v0.1.2：https://github.com/Shinarin/MaaAL/releases/tag/v0.1.2
+- AzurPilot v0.1.2：https://github.com/Shinarin/AzurPilot/releases/tag/v0.1.2
 - 本地权威记录：`devlog.md` 2026-09-19 两条（修复全案 + 发版）、`handoff/2026-09-19-release-v012.md`
 
 ---

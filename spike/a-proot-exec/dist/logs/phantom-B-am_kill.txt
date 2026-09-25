@@ -1,5 +1,0 @@
-09-15 20:56:48.869  3125  4236 I am_kill : [0,27351,com.hihonor.magichome:widget,999,empty #81,112312]
-09-15 21:00:11.569  3125  4236 I am_kill : [0,27644,com.hihonor.imedia.sws,999,empty #81,104136]
-09-15 21:00:48.896  3125  8412 I am_kill : [0,31020,com.google.android.projection.gearhead:shared,999,empty #81,105804]
-09-15 21:09:17.149  3125  5865 I am_kill : [0,31103,com.google.android.projection.gearhead:car,999,empty #81,100884]
-09-15 21:12:48.920  3125  3646 I am_kill : [0,24538,com.android.se,999,empty #81,60372]

@@ -98,12 +98,9 @@
     <string name="settings_section_schedule">Scheduled tasks</string>
     <string name="settings_section_other">Other</string>
     <string name="settings_theme">Theme</string>
-    <string name="settings_theme_style">Theme style</string>
     <string name="settings_follow_system">System default</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
-    <string name="settings_theme_style_default">Default</string>
-    <string name="settings_theme_style_semi">Semi Design</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_hint">Switching language reloads the project; unavailable while running</string>
     <string name="settings_run_mode">Run mode</string>
@@ -153,17 +150,17 @@
     <string name="overlay_host_privileged">Privileged process: %1$s</string>
     <string name="overlay_host_bridge">Bridge: %1$s</string>
     <string name="overlay_host_display">Virtual display: %1$s</string>
-    <string name="overlay_alas_status">AzurPilot scheduler: %1$s</string>
-    <string name="overlay_alas_running">Running · pid %1$d</string>
-    <string name="overlay_alas_stopped">Stopped</string>
-    <string name="overlay_alas_unreachable">Environment not ready</string>
-    <string name="overlay_alas_preparing">Preparing environment · %1$s</string>
-    <string name="overlay_alas_preparing_generic">Preparing environment…</string>
-    <string name="overlay_alas_start_failed">Start failed: %1$s</string>
-    <string name="overlay_alas_start">Start AzurPilot</string>
-    <string name="overlay_alas_stop">Stop AzurPilot</string>
-    <string name="overlay_alas_log_empty">No logs yet</string>
-    <string name="overlay_alas_hint">Frequent actions live here; full configuration is in the in-app AzurPilot console</string>
+    <string name="overlay_azurpilot_status">AzurPilot scheduler: %1$s</string>
+    <string name="overlay_azurpilot_running">Running · pid %1$d</string>
+    <string name="overlay_azurpilot_stopped">Stopped</string>
+    <string name="overlay_azurpilot_unreachable">Environment not ready</string>
+    <string name="overlay_azurpilot_preparing">Preparing environment · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">Preparing environment…</string>
+    <string name="overlay_azurpilot_start_failed">Start failed: %1$s</string>
+    <string name="overlay_azurpilot_start">Start AzurPilot</string>
+    <string name="overlay_azurpilot_stop">Stop AzurPilot</string>
+    <string name="overlay_azurpilot_log_empty">No logs yet</string>
+    <string name="overlay_azurpilot_hint">Frequent actions live here; full configuration is in the in-app AzurPilot console</string>
     <string name="host_state_connected">connected</string>
     <string name="host_state_disconnected">disconnected</string>
     <string name="host_state_ok">OK</string>
@@ -269,7 +266,7 @@
     <string name="schedule_result_failed_service">Service failed to start</string>
 
     <!-- Navigation & dialogs -->
-    <string name="nav_alas">AzurPilot</string>
+    <string name="nav_azurpilot">AzurPilot</string>
     <string name="nav_home">Home</string>
     <string name="nav_tasks">Tasks</string>
     <string name="nav_schedule">Schedule</string>
@@ -278,9 +275,9 @@
     <string name="dialog_ok">OK</string>
 
     <!-- AzurPilot tab: WebUI container -->
-    <string name="alas_webui_not_running">AzurPilot is served by the app\'s built-in environment. The first launch needs initialization; if it stays down, check the runtime environment and retry</string>
-    <string name="alas_webui_retry">Retry connection</string>
-    <string name="alas_webui_loading">Loading console…</string>
+    <string name="azurpilot_webui_not_running">AzurPilot is served by the app\'s built-in environment. The first launch needs initialization; if it stays down, check the runtime environment and retry</string>
+    <string name="azurpilot_webui_retry">Retry connection</string>
+    <string name="azurpilot_webui_loading">Loading console…</string>
     <string name="proot_phase_preparing">Preparing runtime environment…</string>
     <string name="proot_phase_updating">Hot-updating AzurPilot…</string>
     <string name="proot_phase_starting">Starting AzurPilot service…</string>
@@ -425,11 +422,11 @@
     <string name="app_log_clear_message">Deletes only the app.log rolling files; session.log and crash records are kept. This cannot be undone.</string>
 
     <!-- AzurPilot logs (rootfs/opt/azurpilot/log): error captures + daily logs -->
-    <string name="alas_log_title">AzurPilot logs</string>
-    <string name="alas_log_empty">No AzurPilot logs yet</string>
-    <string name="alas_log_section_errors">Error records</string>
-    <string name="alas_log_section_daily">Daily logs</string>
-    <string name="alas_log_error_meta">%1$d files</string>
+    <string name="azurpilot_log_title">AzurPilot logs</string>
+    <string name="azurpilot_log_empty">No AzurPilot logs yet</string>
+    <string name="azurpilot_log_section_errors">Error records</string>
+    <string name="azurpilot_log_section_daily">Daily logs</string>
+    <string name="azurpilot_log_error_meta">%1$d files</string>
 
     <!-- Log viewer (tail loading) -->
     <string name="log_tail_load_earlier">Load earlier</string>
@@ -437,7 +434,7 @@
     <string name="log_tail_missing">The file no longer exists</string>
 
     <!-- Export -->
-    <string name="log_export_alas_title">Export AzurPilot logs</string>
+    <string name="log_export_azurpilot_title">Export AzurPilot logs</string>
     <string name="log_export_launcher_title">Export launcher logs</string>
     <string name="log_export_share">Share</string>
     <string name="log_export_save">Save to device</string>
@@ -449,8 +446,8 @@
     <!-- Settings "Logs" group entries -->
     <string name="settings_section_log">Logs</string>
     <string name="settings_log_launcher_desc">View launcher run logs and crash records</string>
-    <string name="settings_log_alas_desc">View AzurPilot daily logs and error captures</string>
-    <string name="settings_log_export_alas_desc">Pack the last 7 days of AzurPilot logs and error records</string>
+    <string name="settings_log_azurpilot_desc">View AzurPilot daily logs and error captures</string>
+    <string name="settings_log_export_azurpilot_desc">Pack the last 7 days of AzurPilot logs and error records</string>
     <string name="settings_log_export_launcher_desc">Pack all launcher logs with device properties</string>
     <string name="settings_auto_clean_logs">Auto-clean logs</string>
     <string name="settings_auto_clean_logs_desc">On cold start, deletes AzurPilot logs older than 7 days and truncates stale session logs</string>

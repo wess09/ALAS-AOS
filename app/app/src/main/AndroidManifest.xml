@@ -25,7 +25,7 @@
     -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <!-- 存储访问：与上面两项一样由特权进程代授，对齐 MaaMeow -->
+    <!-- 存储访问：与上面两项一样由特权进程代授，对齐 参考实现 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission
@@ -37,7 +37,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <application
-        android:name=".MaaFwApp"
+        android:name=".AzurPilotApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -46,11 +46,11 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="${appRoundIcon}"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MaaFwApp"
+        android:theme="@style/Theme.AzurPilotApp"
         android:localeConfig="@xml/locales_config"
         tools:targetApi="33">
 
-        <!-- 只有启动 Activity 挂启动主题；application 那层保持 Theme.MaaFwApp，
+        <!-- 只有启动 Activity 挂启动主题；application 那层保持 Theme.AzurPilotApp，
              否则别的窗口也会顶着首屏底色起来 -->
         <activity
             android:name=".MainActivity"
@@ -58,7 +58,7 @@
             android:exported="true"
             android:label="${appLabel}"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.MaaFwApp.Starting"
+            android:theme="@style/Theme.AzurPilotApp.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

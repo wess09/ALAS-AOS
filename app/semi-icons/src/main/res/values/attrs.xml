@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- 图标 android:tint="?attr/colorControlNormal" 运行时由使用方主题（:app 的 appcompat）解析；
-         本模块不依赖 appcompat，本地按 appcompat 同 format 声明符号，使 release 的
-         verifyReleaseResources 独立链接能找到该 attr（app 打包时同 format 合并无冲突） -->
-    <attr name="colorControlNormal" format="color" />
-</resources>

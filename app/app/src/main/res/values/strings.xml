@@ -87,19 +87,16 @@
         <item quantity="other">诊断：%1$d 条（%2$d 条错误）</item>
     </plurals>
 
-    <!-- 设置页；分组命名沿用上游 MaaFwApp 系的 settings_section_* 约定 -->
+    <!-- 设置页；分组命名沿用上游 AzurPilotApp 系的 settings_section_* 约定 -->
     <string name="settings_section_global_option">任务设置</string>
     <string name="settings_section_resource_option">资源设置</string>
     <string name="settings_section_display">显示设置</string>
     <string name="settings_section_schedule">定时任务设置</string>
     <string name="settings_section_other">其他设置</string>
     <string name="settings_theme">主题</string>
-    <string name="settings_theme_style">主题风格</string>
     <string name="settings_follow_system">跟随系统</string>
     <string name="settings_theme_light">浅色</string>
     <string name="settings_theme_dark">深色</string>
-    <string name="settings_theme_style_default">默认</string>
-    <string name="settings_theme_style_semi">Semi Design</string>
     <string name="settings_language">语言</string>
     <string name="settings_language_hint">切换语言会重新加载项目，运行期间不可切换</string>
     <string name="settings_run_mode">运行模式</string>
@@ -149,17 +146,17 @@
     <string name="overlay_host_privileged">特权进程：%1$s</string>
     <string name="overlay_host_bridge">桥服务：%1$s</string>
     <string name="overlay_host_display">虚拟屏：%1$s</string>
-    <string name="overlay_alas_status">AzurPilot 调度器：%1$s</string>
-    <string name="overlay_alas_running">运行中 · pid %1$d</string>
-    <string name="overlay_alas_stopped">已停止</string>
-    <string name="overlay_alas_unreachable">环境未就绪</string>
-    <string name="overlay_alas_preparing">环境准备中 · %1$s</string>
-    <string name="overlay_alas_preparing_generic">环境准备中…</string>
-    <string name="overlay_alas_start_failed">启动失败：%1$s</string>
-    <string name="overlay_alas_start">开始挂机</string>
-    <string name="overlay_alas_stop">停止挂机</string>
-    <string name="overlay_alas_log_empty">暂无日志</string>
-    <string name="overlay_alas_hint">高频操作在此面板；完整配置请回应用内的 AzurPilot 控制台</string>
+    <string name="overlay_azurpilot_status">AzurPilot 调度器：%1$s</string>
+    <string name="overlay_azurpilot_running">运行中 · pid %1$d</string>
+    <string name="overlay_azurpilot_stopped">已停止</string>
+    <string name="overlay_azurpilot_unreachable">环境未就绪</string>
+    <string name="overlay_azurpilot_preparing">环境准备中 · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">环境准备中…</string>
+    <string name="overlay_azurpilot_start_failed">启动失败：%1$s</string>
+    <string name="overlay_azurpilot_start">开始挂机</string>
+    <string name="overlay_azurpilot_stop">停止挂机</string>
+    <string name="overlay_azurpilot_log_empty">暂无日志</string>
+    <string name="overlay_azurpilot_hint">高频操作在此面板；完整配置请回应用内的 AzurPilot 控制台</string>
     <string name="host_state_connected">已连接</string>
     <string name="host_state_disconnected">未连接</string>
     <string name="host_state_ok">正常</string>
@@ -265,7 +262,7 @@
     <string name="schedule_result_failed_service">服务启动失败</string>
 
     <!-- 导航与对话框 -->
-    <string name="nav_alas">AzurPilot</string>
+    <string name="nav_azurpilot">AzurPilot</string>
     <string name="nav_home">首页</string>
     <string name="nav_tasks">任务</string>
     <string name="nav_schedule">定时</string>
@@ -274,9 +271,9 @@
     <string name="dialog_ok">知道了</string>
 
     <!-- AzurPilot tab：WebUI 容器 -->
-    <string name="alas_webui_not_running">AzurPilot 服务由 App 内置环境提供，首次启动需完成初始化；若长时间未恢复，请检查运行环境后重试</string>
-    <string name="alas_webui_retry">重试连接</string>
-    <string name="alas_webui_loading">正在载入控制台…</string>
+    <string name="azurpilot_webui_not_running">AzurPilot 服务由 App 内置环境提供，首次启动需完成初始化；若长时间未恢复，请检查运行环境后重试</string>
+    <string name="azurpilot_webui_retry">重试连接</string>
+    <string name="azurpilot_webui_loading">正在载入控制台…</string>
     <string name="proot_phase_preparing">正在准备运行环境…</string>
     <string name="proot_phase_updating">正在热更新 AzurPilot…</string>
     <string name="proot_phase_starting">正在启动 AzurPilot 服务…</string>
@@ -421,11 +418,11 @@
     <string name="app_log_clear_message">仅删除 app.log 系列滚动文件；session.log 与崩溃记录会保留。此操作无法撤销。</string>
 
     <!-- AzurPilot 日志（rootfs/opt/azurpilot/log）：错误现场 + 按天日志 -->
-    <string name="alas_log_title">AzurPilot日志</string>
-    <string name="alas_log_empty">还没有 AzurPilot 日志</string>
-    <string name="alas_log_section_errors">错误记录</string>
-    <string name="alas_log_section_daily">按天日志</string>
-    <string name="alas_log_error_meta">%1$d 个文件</string>
+    <string name="azurpilot_log_title">AzurPilot日志</string>
+    <string name="azurpilot_log_empty">还没有 AzurPilot 日志</string>
+    <string name="azurpilot_log_section_errors">错误记录</string>
+    <string name="azurpilot_log_section_daily">按天日志</string>
+    <string name="azurpilot_log_error_meta">%1$d 个文件</string>
 
     <!-- 日志查看器（尾部加载） -->
     <string name="log_tail_load_earlier">加载更早</string>
@@ -433,7 +430,7 @@
     <string name="log_tail_missing">文件不存在或已被清理</string>
 
     <!-- 导出 -->
-    <string name="log_export_alas_title">导出AzurPilot日志</string>
+    <string name="log_export_azurpilot_title">导出AzurPilot日志</string>
     <string name="log_export_launcher_title">导出启动器日志</string>
     <string name="log_export_share">分享</string>
     <string name="log_export_save">保存到设备</string>
@@ -445,8 +442,8 @@
     <!-- 设置页「日志」分组入口 -->
     <string name="settings_section_log">日志</string>
     <string name="settings_log_launcher_desc">查看启动器运行日志与崩溃记录</string>
-    <string name="settings_log_alas_desc">查看 AzurPilot 按天日志与错误现场</string>
-    <string name="settings_log_export_alas_desc">打包近 7 天的 AzurPilot 日志与错误现场</string>
+    <string name="settings_log_azurpilot_desc">查看 AzurPilot 按天日志与错误现场</string>
+    <string name="settings_log_export_azurpilot_desc">打包近 7 天的 AzurPilot 日志与错误现场</string>
     <string name="settings_log_export_launcher_desc">打包启动器全部日志与设备属性</string>
     <string name="settings_auto_clean_logs">自动清理日志</string>
     <string name="settings_auto_clean_logs_desc">冷启动时自动删除 7 天前的 AzurPilot 日志，并截断过期的会话日志</string>

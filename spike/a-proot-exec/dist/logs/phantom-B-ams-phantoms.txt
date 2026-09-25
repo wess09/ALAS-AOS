@@ -1,3 +1,0 @@
-    proc #0: PhantomProcessRecord {5bb5584 13684:13641:com.hypergryph.skland/u0a158}
-      user #0 uid=10158 pid=13684 ppid=13641 knownSince=-38m6s396ms killed=false
-      lastCpuTime=0 oom adj=0 seq=1872

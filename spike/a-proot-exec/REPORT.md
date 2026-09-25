@@ -12,7 +12,7 @@ targetSdk 28 变体同样全绿，可作为备选保留。
 三条事实构成结论：
 
 1. **nativeLibraryDir exec 可用**：`libproot.so`、`libbusybox.so`、`libproot-loader.so`、静态 shim 全部能从 `nativeLibraryDir` 直接 `execve`（含 debuggable=false 的 release 构建）。proot 的 ptrace 引擎正常驱动真进程（`PROOT_PTRACE_OK`）。
-2. **客户机载荷在 app 私有目录可运行**：`proot -r <filesDir>/rootfs` 能运行 rootfs 内的 busybox（多合一，动态链接）、自定义静态 ELF、自定义动态 ELF，**包括客户机进程自己再 `execve` 子进程**（即 ALAS → python 子进程场景的同构探针）——在 targetSdk 35 下全部 PASS。
+2. **客户机载荷在 app 私有目录可运行**：`proot -r <filesDir>/rootfs` 能运行 rootfs 内的 busybox（多合一，动态链接）、自定义静态 ELF、自定义动态 ELF，**包括客户机进程自己再 `execve` 子进程**（即 AzurPilot → python 子进程场景的同构探针）——在 targetSdk 35 下全部 PASS。
 3. **唯一被系统拦的是"app 进程直接 execve 私有目录文件"**：targetSdk 35 下 `execve(filesDir/...)` 报 `error=13, Permission denied`（targetSdk 28 下允许）。proot 之所以不受影响：其客户机执行走 loader/解释器映射路径，不需要 app 对私有目录文件做 `execve`。
 
 > 细节：探针里 `A1-busybox-exec`（直接 `libbusybox.so uname -m`）显示的 `exit=127 / applet not found` **不是** exec 被拦，而是 busybox 多合一程序按 `argv[0]` 选 applet、而文件名被改成 `libbusybox.so` 的用法性伪失败；用 argv0 shim 复跑（`A1c`）立即 PASS（输出 `aarch64`）。见 §3.4。
@@ -81,7 +81,7 @@ targetSdk 28 变体同样全绿，可作为备选保留。
 ### 3.1 A0：nativeLibraryDir 清单（targetSdk 35 debug）
 
 ```
-nativeLibraryDir=/data/app/~~-HVXnOUXmij9VHjQPfFZIw==/com.maaal.spikea-4-D7D-HMXpIfr3Mb2C4jLQ==/lib/arm64
+nativeLibraryDir=/data/app/~~-HVXnOUXmij9VHjQPfFZIw==/com.azurpilot.spikea-4-D7D-HMXpIfr3Mb2C4jLQ==/lib/arm64
 applicationFlags=0x30a83e46 debuggable=true extractNativeLibs=true
 pageSize=4096
 processSelinuxContext=u:r:untrusted_app:s0:c45,c257,c512,c768
@@ -116,7 +116,7 @@ aarch64
 ### 3.3 P1 系列：targetSdk 35 直接 exec 私有目录 = 被拦（预期行为）
 
 ```
-[CMD ] /data/user/0/com.maaal.spikea/files/rootfs/usr/bin/hello_static
+[CMD ] /data/user/0/com.azurpilot.spikea/files/rootfs/usr/bin/hello_static
 [EXCEPTION] java.io.IOException: Cannot run program ".../hello_static": error=13, Permission denied
 ```
 
@@ -225,7 +225,7 @@ Termux 1.38 的 `bin/busybox` 只有 **4320 字节**：它是个启动器 stub�
 ```bash
 # 0) 工具链（只读引用便携工具链；写目录全在仓内）
 export JAVA_HOME=/d/VSCodeCache/shizku-m/build-env/jdk-21.0.2
-export GRADLE_USER_HOME="D:/VSCodeCache/maa-alas/.tmp/spike-a/gradle-home"
+export GRADLE_USER_HOME="D:/VSCodeCache/azurpilot-azurpilot/.tmp/spike-a/gradle-home"
 
 # 1) 构建（两变体 + release 变体）
 cd spike/a-proot-exec

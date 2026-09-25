@@ -5,10 +5,10 @@
 ## 路线（用户拍板）与为什么
 
 - 搬权重不搬环境：mxnet 无 ARM64 wheel 且已进 Apache Attic，整条 2019 依赖链（cnocr 1.2.2 + mxnet 1.6.0）不可上机；`.params` 是 mxnet 私有格式，权重可搬格式不能搬 → PC 端转储 npz，手机端纯 numpy 手写前向。
-- 红线遵守：ALAS 上游代码零改动；`module/ocr/{rpc.py,al_numpy.py}`、patches、overlay 模型文件均为 MaaAL 自有资产，走 overlay 机制（每次启动幂等铺 /opt/alas，免重烘 rootfs）。
+- 红线遵守：AzurPilot 上游代码零改动；`module/ocr/{rpc.py,al_numpy.py}`、patches、overlay 模型文件均为 AzurPilot 自有资产，走 overlay 机制（每次启动幂等铺 /opt/azurpilot，免重烘 rootfs）。
 - 回滚锚点：commit `eb0f7cd`（任务前已 push）。
 
-## 交付物（全部双源：rootfs/overlays/ + app/app/src/main/assets/alas/overlay/，cmp 一致）
+## 交付物（全部双源：rootfs/overlays/ + app/app/src/main/assets/azurpilot/overlay/，cmp 一致）
 
 - `module/ocr/al_numpy.py`（新建）：densenet-lite（BN eps=1e-5、valid 池化、k(2,3) depthwise、末段 **k(2,1)** 池化——符号 json 实证，非文档 (2,2)）→ BiGRU（cuDNN 变体：gate 序 r/z/n，n=tanh(i2h_n+r·h2h_n)，h=(1-z)n+z·h_prev）→ FC(39)；预处理/补齐/0.5 置信门/width//4 截尾/CTC 解码/cand_alphabet 乘法掩码逐字复刻上游；零 module.* 依赖可独立 import。性能：im2col+sgemm 后 PC 单行 329ms→18ms。
 - `models/ocr/azur_lane/{weights.npz,label_cn.txt}`：桌面 toolkit python（PC 侧 mxnet，合规只读用法）转储，76 数组 3.3MB，epoch 15 精度 99.43%。
@@ -17,7 +17,7 @@
 
 ## 真机验证（2026-09-18 晨，0.1.1-alpha.7 (52)，release）
 
-1. **模型上机**：ALAS 日志 `MaaAL OCR: loading azur_lane numpy model from ./models/ocr/azur_lane` → `azur_lane numpy model loaded (39 classes)`（16ms，无 fallback 警告；proot numpy 兼容，`np.lib.stride_tricks.as_strided` 路径无坑）。
+1. **模型上机**：AzurPilot 日志 `AzurPilot OCR: loading azur_lane numpy model from ./models/ocr/azur_lane` → `azur_lane numpy model loaded (39 classes)`（16ms，无 fallback 警告；proot numpy 兼容，`np.lib.stride_tricks.as_strided` 路径无坑）。
 2. **酸试 1·活动图选关（原 'ai' 误读场景）**：`[campaign 0.013s] ['D3', 'D1', 'B2']`——**D1 读准**（PP-OCR 时代读 'ai'/'01'）；顺利进图，D3 连刷两轮（BATTLE_0~7 ×2），`[OCR_OIL 0.02~0.07s]` 读数 8930→8653→8618 合理递减——**「活动图只刷一遍就停」的油量误读同步消除**。全程 0 ERROR / 0 MapDetectionError / 0 CampaignNameError。
 3. **酸试 2·GemsFarming 'MRT' 崩溃**：未到 NextRun（昨日崩溃后 failure 延迟，当日日志窗口无调度记录）。OCR 栈与酸试 1 同源（dock 等级=同一 azur_lane 模型），留待自然调度复验——若再现 `ValueError: ... 'MRT'` 再立案。
 4. **耗时**：campaign 13ms/行、OIL 20~70ms/次，ARM 端与 PC（18ms/行）同量级，挂机节奏无感。
@@ -30,12 +30,12 @@
 
 ## 环境速查（本会话实测有效）
 
-- adb forwards：`tcp:22300` 桥 / `tcp:22400` wrapper / `tcp:32267→tcp:22267` WebUI（**22267 不挂 forward**，撞桌面版 ALAS 的教训）。
-- wrapper：`GET /status` `/logs?tail=N`（上限 2000）、`POST /start?config=alas` `/stop` `/tool/start?name=...`。
-- session.log：`/sdcard/Android/data/com.aliothmoon.maafw/files/log/proot/session.log`（proot 生命周期唯一可信流水）。
-- 线上包名 `com.aliothmoon.maafw`（release，run-as 不可用）；proot 进程判活：`ps -A | grep libproot`。
-- OCR 模型落盘位置（proot 内）：`/opt/alas/models/ocr/azur_lane/weights.npz`——overlay 铺的，删了重启 App 会再铺。
-- 构建：`cd app && JAVA_HOME='D:\VSCodeCache\shizku-m\build-env\jdk-17.0.2' GRADLE_USER_HOME='D:\VSCodeCache\maa-alas\.tmp\gradle-home' cmd //c 'gradlew.bat assembleRelease --console=plain'` → `app/app/build/outputs/apk/release/app-release.apk`，`adb install -r` 即可（overlay 资产随包走，免烘 rootfs）。
+- adb forwards：`tcp:22300` 桥 / `tcp:22400` wrapper / `tcp:32267→tcp:22267` WebUI（**22267 不挂 forward**，撞桌面版 AzurPilot 的教训）。
+- wrapper：`GET /status` `/logs?tail=N`（上限 2000）、`POST /start?config=azurpilot` `/stop` `/tool/start?name=...`。
+- session.log：`/sdcard/Android/data/com.aliothmoon.azurpilot/files/log/proot/session.log`（proot 生命周期唯一可信流水）。
+- 线上包名 `com.aliothmoon.azurpilot`（release，run-as 不可用）；proot 进程判活：`ps -A | grep libproot`。
+- OCR 模型落盘位置（proot 内）：`/opt/azurpilot/models/ocr/azur_lane/weights.npz`——overlay 铺的，删了重启 App 会再铺。
+- 构建：`cd app && JAVA_HOME='D:\VSCodeCache\shizku-m\build-env\jdk-17.0.2' GRADLE_USER_HOME='D:\VSCodeCache\azurpilot-azurpilot\.tmp\gradle-home' cmd //c 'gradlew.bat assembleRelease --console=plain'` → `app/app/build/outputs/apk/release/app-release.apk`，`adb install -r` 即可（overlay 资产随包走，免烘 rootfs）。
 
 ## 当前现场
 

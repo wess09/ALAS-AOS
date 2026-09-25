@@ -6,12 +6,12 @@ plugins {
 val spikeTargetSdk: Int = (findProperty("spike.targetSdk") as? String)?.toIntOrNull() ?: 35
 
 android {
-    namespace = "com.maaal.spikea"
+    namespace = "com.aos.spikea"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "com.maaal.spikea"
+        applicationId = "com.aos.spikea"
         minSdk = 26
         targetSdk = spikeTargetSdk
         versionCode = 2

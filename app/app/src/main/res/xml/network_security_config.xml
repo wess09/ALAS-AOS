@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 只对 127.0.0.1 / localhost 放行 cleartext HTTP：ALAS WebUI 跑在 Termux 的
+<!-- 只对 127.0.0.1 / localhost 放行 cleartext HTTP：AzurPilot WebUI 跑在 Termux 的
      pywebio（gui.py, 22267）上，其余域沿用系统默认（API 28+ 禁 cleartext） -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">

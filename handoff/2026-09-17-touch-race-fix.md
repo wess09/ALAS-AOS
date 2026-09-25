@@ -4,16 +4,16 @@
 
 ## 症状与根因
 
-- 用户按「开始挂机」→ 调度器正常识别任务（GET_SHIP）→ 首击 `Click` → `ScriptError: MaaAL proxy error: touch down failed` → CRITICAL 死。复现率：每次开始挂机必死。
-- 根因 = **input 窗注册竞态**：`am start --display N` 把游戏拉上 VD 后，SurfaceFlinger 先出帧（桥 screencap 已见游戏画面、OCR 能匹配），但 **input 窗注册滞后 ~1s**；`InputControlUtils` 走 WAIT_FOR_FINISH，此间注入框架原生返 false（debug.md 旧案「空 VD 返 false」的升级版——窗"可见"≠"可点"）。ALAS 链路 am start→识别→立即点，首击必踩；单击失败即抛 ScriptError 死调度器（上游行为，不动）。
+- 用户按「开始挂机」→ 调度器正常识别任务（GET_SHIP）→ 首击 `Click` → `ScriptError: AzurPilot proxy error: touch down failed` → CRITICAL 死。复现率：每次开始挂机必死。
+- 根因 = **input 窗注册竞态**：`am start --display N` 把游戏拉上 VD 后，SurfaceFlinger 先出帧（桥 screencap 已见游戏画面、OCR 能匹配），但 **input 窗注册滞后 ~1s**；`InputControlUtils` 走 WAIT_FOR_FINISH，此间注入框架原生返 false（debug.md 旧案「空 VD 返 false」的升级版——窗"可见"≠"可点"）。AzurPilot 链路 am start→识别→立即点，首击必踩；单击失败即抛 ScriptError 死调度器（上游行为，不动）。
 - 实验证据：空 VD click → false 复现；am start 后 0.4s 轮询 click 首拍必败、~1s 后恒 ok；游戏窗在且注册后 click/swipe 恒 ok。
 
 ## 修复（已装机真机回归）
 
-`app/app/src/main/java/com/aliothmoon/maafw/remote/internal/BridgeServer.kt`：
+`app/app/src/main/java/com/aliothmoon/azurpilot/remote/internal/BridgeServer.kt`：
 - 新增 `downWithRetry(x, y, displayId)`：down 失败后 **3s 预算 / 200ms 间隔**重试（失败事件未投递、无悬挂 DOWN，安全）；成功记 `Ln.w(race absorbed)`，耗尽记 `Ln.e`。
 - handleClick / handleSwipe 的 down 均改走它；最终报错带诊断：`touch down failed (no touchable window on display N within 3000ms)`——带这句 = 真空 VD（游戏未起/崩溃），区别于竞态。
-- 协议兼容：错误帧形状不变，ALAS 侧 maaal.py 只读 error 文本。
+- 协议兼容：错误帧形状不变，AzurPilot 侧 azurpilot.py 只读 error 文本。
 
 ## 真机回归（VD #23，HONOR PPG-AN00）
 

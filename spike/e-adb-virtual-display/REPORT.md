@@ -162,7 +162,7 @@ DisplayDeviceInfo{"scrcpy": uniqueId="virtual:com.android.shell,2000,scrcpy,7",
 ```
 
 - `displayId`（logical）= 9 / 10 / 11（每次重建都变）；SF physical id = `11529215049274064657` / `11529215049802775650` / `11529215047539119414`（也随重建变）。
-- **m0 对照（2026-09-15 深夜勘误，原"几乎一致"表述有误）**：m0 的 `MaaFwVirtualDisplay`（`VirtualDisplayManager.kt:178-202`）与 scrcpy 有**一处生死差异**：m0 源码显式 `VD_SYSTEM_DECORATIONS = false`（`:39` 定义、`:187-189` 分支不执行），**从不设** `SHOULD_SHOW_SYSTEM_DECORATIONS`，也不设 `ROTATES_WITH_CONTENT`；另多 `DEVICE_DISPLAY_GROUP` + `STEAL_TOP_FOCUS_DISABLED`。AOSP 对该 flag 的原文："virtual displays without this flag shouldn't show home, navigation bar or wallpaper"——它是本 spike 副作用事件（§10）的分水岭。「§41 失败与 flag 无关」仅对截屏/注入命名空间成立，**不能**推广到 SystemUI 行为。
+- **m0 对照（2026-09-15 深夜勘误，原"几乎一致"表述有误）**：m0 的 `AzurPilotVirtualDisplay`（`VirtualDisplayManager.kt:178-202`）与 scrcpy 有**一处生死差异**：m0 源码显式 `VD_SYSTEM_DECORATIONS = false`（`:39` 定义、`:187-189` 分支不执行），**从不设** `SHOULD_SHOW_SYSTEM_DECORATIONS`，也不设 `ROTATES_WITH_CONTENT`；另多 `DEVICE_DISPLAY_GROUP` + `STEAL_TOP_FOCUS_DISABLED`。AOSP 对该 flag 的原文："virtual displays without this flag shouldn't show home, navigation bar or wallpaper"——它是本 spike 副作用事件（§10）的分水岭。「§41 失败与 flag 无关」仅对截屏/注入命名空间成立，**不能**推广到 SystemUI 行为。
 
 ### 4.2 投 App 上去
 
@@ -222,7 +222,7 @@ Failed to take take screenshot. Display Id '10' is not valid.     # 反向：scr
 效果实证（两个独立证据）：
 
 1) **BACK 键改变 VD 任务栈**（`logs/e4-back-key-delivery.txt` 逐字转录）：
-   - 注入前：`Display #9` 顶部任务 = `com.maaal.spikea/.MainActivity`，`state=RESUMED, visible=true, visibleRequested=true`
+   - 注入前：`Display #9` 顶部任务 = `com.azurpilot.spikea/.MainActivity`，`state=RESUMED, visible=true, visibleRequested=true`
    - `adb shell 'input -d 9 keyevent 4'` → `rc=0`
    - 注入后：spikea 任务从 `Display #9` 消失，`com.hihonor.android.launcher/...SecondaryDisplayLauncher`（VD 的桌面）变为 `state=RESUMED`
 2) **滑动滚动了 VD 上的设置列表**（`logs/e4-swipe-scroll.txt` + 前后截图）：
@@ -287,7 +287,7 @@ m0 §41 的两句话与本次实测的对照：
    - 每次开机需 shizuku-m 激活 + `adb connect`（决策 #11 的 30 秒手动链，已有预期）；
    - rootfs 内置静态 aarch64 adb（路线图已列）+ 主 App 侧实现 `adb connect`/forward/保活客户端（约几十行）；
    - 手机侧常驻 `app_process` 需自愈监管（adb 断线 → 自动重连 → 重建 VD → 重投 App）；
-   - 延迟指标留阶段五实测（ALAS 对 >1s 不可用线；桥有 m0 p50=0.109s 兜底）。
+   - 延迟指标留阶段五实测（AzurPilot 对 >1s 不可用线；桥有 m0 p50=0.109s 兜底）。
 5. **建议**：控制面维持"桥为主"，本通路登记为**诊断/备用**；阶段五若要实测，按 §8 的复跑清单做。
 
 ---
@@ -356,6 +356,6 @@ m0 §41 的两句话与本次实测的对照：
 - **时间线**：22:15–22:33 实验窗口（三块 VD：id=9/10/11）；~22:35 用户报告主屏手势导航失效；22:41 主代理停掉实验子代理并 `kill 32246 32244`（scrcpy-server），VD 销毁；验证手势窗口回主屏、`get-displays` 只剩 0、无 scrcpy 进程；22:44 设备侧清场完成。
 - **现象**：主屏边缘侧滑/上滑手势完全无响应；`dumpsys window windows` 显示 `GestureNavAnim`（`mDisplayId=9`）、`GestureSildeOut`（`mDisplayId=9`）、`NavigationBar0`（`mDisplayId=9`）——SystemUI（u0a10081）把手势导航三窗口建到了虚拟屏上（物证：`logs/e3c-power-reset.txt:19-32`）。
 - **根因**：§3.2 配方建的 VD 带 `FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS`（scrcpy `--new-display` 默认行为，见 §4.1 flag 清单）。AOSP 原文："virtual displays without this flag shouldn't show home, navigation bar or wallpaper"。SystemUI 为带此 flag 的可信 VD 创建导航栏/手势窗口，MagicOS 10 的手势输入路由跟随这些窗口 → 主屏物理手势被投递到 1280×720 虚拟空间，表现为主屏手势"失灵"。
-- **m0 为何不踩坑（代码级证据）**：`m0-archive/vendor/MaaFwApp/.../VirtualDisplayManager.kt:39` `VD_SYSTEM_DECORATIONS = false`（`:187-189` 分支不执行）。**证据强度如实说明**：m0 项目此后长期暂停未用，"数月运行无事故"不成立；可信的是源码 flag 集与 AOSP 语义推导。
+- **m0 为何不踩坑（代码级证据）**：`m0-archive 里的 fork 基线/.../VirtualDisplayManager.kt:39` `VD_SYSTEM_DECORATIONS = false`（`:187-189` 分支不执行）。**证据强度如实说明**：m0 项目此后长期暂停未用，"数月运行无事故"不成立；可信的是源码 flag 集与 AOSP 语义推导。
 - **衍生约束（已落地）**：`debug.md` 同日 4 条坑点；`AGENTS.md`「虚拟屏实验纪律」（禁该 flag / 实验前后查手势窗口归属 / 清场标准）；`docs/roadmap-v3.md` 阶段二「VD flag 硬约束」+ 对 §41 证据措辞的修正。scrcpy 侧即使 `--no-vd-system-decorations` 也有被 ROM 忽略的公开记录（scrcpy#6684），不可作为兜底。
 - **对 §5/§7 结论的影响**：无方向性变化。adb 直控登记为诊断/备用通道的判定叠加本事件风险项后更不改"桥为主"。

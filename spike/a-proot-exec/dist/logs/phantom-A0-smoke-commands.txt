@@ -1,8 +1,0 @@
-$ settings delete global settings_enable_monitor_phantom_procs
-exit=0 out=[Deleted 0 rows]
-$ device_config delete activity_manager max_phantom_processes
-exit=0 out=[Failed to delete max_phantom_processes from activity_manager]
-$ settings delete global settings_config_disable_monitor_phantom_procs
-exit=0 out=[Deleted 1 rows]
-$ settings delete global phantom_process_killer_enable
-exit=0 out=[Deleted 1 rows]
