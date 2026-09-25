@@ -3,9 +3,16 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：运行时检查与关于页
+- 修复未选择实例时运行时提交显示“未知”：版本读取不再依赖实例，设置页也以已安装 rootfs 版本作为后备。
+- 设置页新增手动查询 GitHub Latest 运行时版本、当前版本和检查结果；运行时与 App 更新按钮分开，发现新版后提示重启应用以在服务启动前更新。
+- 关于页新增项目仓库、AGPL-3.0 许可链接、主要开源组件的许可与项目入口及 Android 依赖清单链接；同步更新 README。
+- 修复从挂机页动画切到设置页时途经 AzurPilot 页而自动弹出 WebUI：只在切页动画真正停在 AzurPilot 页后触发自动打开。
+
 ### 2026-09-25 · 未发版：正式签名与 CI 依赖修复
 - 创建独立的 Android 正式签名密钥并将四项签名参数写入新仓库的 GitHub Actions Secrets；密钥和本地加密口令保存在忽略目录 `keystore/`，未入库。
 - 首次正式版构建因阿里云 Maven 镜像返回 502 中断；调整依赖解析顺序，优先使用 Google Maven 与 Maven Central。
+- 正式 APK 发布前增加 `apksigner verify`，避免签名损坏的构建进入 Latest；应用内更新改用 SHA 命名的不可变 APK 文件，下载先写 `.part` 并校验后再交给安装器，防止重复点击时改写安装器仍在读取的文件。
 
 ### 2026-09-25 · 未发版：新仓库、身份与 Logo；Latest 自动构建
 - 仓库迁至 `wess09/AzurPilot-for-Android`，更新应用内 APK/rootfs 检查地址与本地 `origin`；App 显示名改为 AzurPilot，applicationId、namespace、源码/AIDL、JNI 和混淆规则统一为 `com.azurpilot.ghio`。

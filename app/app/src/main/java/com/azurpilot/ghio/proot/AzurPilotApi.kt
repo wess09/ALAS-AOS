@@ -115,14 +115,14 @@ class AzurPilotApi(
     }
 
     private suspend fun refreshLocked() {
-        val instance = _state.value.instance ?: return
         if (!gateway.connected.value) return
+        // 运行时版本与实例无关；尚未选择实例时也应能在设置页显示。
+        if (_state.value.runtimeCommit == null) loadRuntimeLocked()
+        val instance = _state.value.instance ?: return
         // 订阅可能因重连而丢失：每次刷新补一次 overview.get，事件只做增量
         gateway.request("overview.get", JSONObject().put("instance", instance))
             ?.let(::applyOverview)
         loadStartupLocked(instance)
-        // 运行时提交不会变，取到一次就够
-        if (_state.value.runtimeCommit == null) loadRuntimeLocked()
     }
 
     private suspend fun loadRuntimeLocked() {

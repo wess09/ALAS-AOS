@@ -6,6 +6,24 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜AzurPilot PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜AzurPilot 截图 BGR↔AzurPilot RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
+## [2026-09-25] 跨页切换动画短暂激活中间的 WebUI 页
+
+- **现象**：从挂机页点击设置，滑动动画经过中间的 AzurPilot 页时，浏览器会自动弹出 WebUI。
+- **根本原因**：自动打开使用 `HorizontalPager.currentPage` 判断活跃页；动画经过中间页时该值会短暂切换，触发 `LaunchedEffect(active, webUiReady)`。
+- **解决方案**：只以 `settledPage` 判断 WebUI 页是否真正被选中；动画途经时不执行打开逻辑。
+
+## [2026-09-25] 设置页运行时版本显示“未知”
+
+- **现象**：运行时已部署，但设置页的 AzurPilot 提交仍显示“未知”；原按钮只检查 App APK，不查询 rootfs。
+- **根本原因**：`AzurPilotApi.refreshLocked()` 在读取 `updater.status` 之前要求已选实例，因此无实例时不会获取提交；设置页只使用该接口的状态，没有读取本地 rootfs 版本。
+- **解决方案**：把与实例无关的运行时状态读取提前；以本地部署标记作为版本显示后备，并新增独立的 GitHub Latest 运行时检查。
+
+## [2026-09-25] 安装 APK 时报告 v2 内容摘要不匹配
+
+- **现象**：Android 安装器报 `INSTALL_PARSE_FAILED_NO_CERTIFICATES`，细节为 `APK Signature Scheme v2: SHA-256 digest of contents did not verify`。
+- **排查**：从 GitHub Latest 下载的正式 APK 与 `latest.json` SHA-256 一致，本地 `apksigner verify` 的 v2 签名通过；截图中的错误发生在设备读取 APK 阶段，无法仅凭截图判定具体是哪次传输或安装操作改动了文件。
+- **解决方案**：CI 发布前强制验证签名；应用内更新把下载写入 `.part`，校验后改为按 SHA 命名的安装文件，重复点击时复用该文件，不再删除或覆盖安装器可能正在读取的 APK。若外部浏览器下载的文件仍报错，需核对设备上的文件 SHA-256。
+
 ## [2026-09-25] GitHub Actions 正式构建在依赖解析时遇到阿里云镜像 502
 
 - **现象**：签名密钥已准备成功，但 `:app:mergeReleaseNativeLibs` 解析 `org.jetbrains.compose.ui:ui-unit:1.10.2` 时失败，镜像 POM 请求返回 HTTP 502。

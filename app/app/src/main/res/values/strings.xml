@@ -120,6 +120,8 @@
     <string name="settings_about_contact">联系方式</string>
     <string name="settings_about_license">开源许可</string>
     <string name="settings_about_repository">项目仓库</string>
+    <string name="settings_about_components">使用的开源组件与许可（点击查看项目）</string>
+    <string name="settings_about_all_dependencies">查看完整 Android 依赖清单</string>
     <string name="welcome_title">欢迎</string>
 
     <!-- 通知 -->
@@ -664,6 +666,12 @@
     <string name="settings_runtime">运行时</string>
     <string name="settings_runtime_commit">AzurPilot 提交</string>
     <string name="settings_runtime_unknown">未知</string>
-    <string name="settings_runtime_managed">启动时自动检查 GitHub 上的运行环境新版本；下载校验后直接更新，失败时继续使用当前版本。App 本身可单独更新。</string>
-    <string name="settings_runtime_check">检查 App 更新</string>
+    <string name="settings_runtime_installed">已安装运行时版本</string>
+    <string name="settings_runtime_managed">启动时自动检查 GitHub 上的运行环境新版本；下载校验后在启动服务前更新。手动检查可查看 Latest 状态，发现新版本后重启 App 应用更新。</string>
+    <string name="settings_runtime_check">检查运行时更新</string>
+    <string name="settings_runtime_checking">正在检查运行时…</string>
+    <string name="settings_runtime_current">运行时已是 Latest 版本</string>
+    <string name="settings_runtime_new_version">发现新版本 %1$s；重启 App 后自动更新</string>
+    <string name="settings_runtime_check_failed">检查失败：%1$s</string>
+    <string name="settings_app_check">检查 App 更新</string>
 </resources>

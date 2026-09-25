@@ -81,28 +81,37 @@ class AppUpdateManager(
         scope.launch(AppDispatchers.IO) {
             _state.update { it.copy(downloading = true, error = null) }
             runCatching {
-                val dir = File(context.cacheDir, "updates").apply { mkdirs() }
-                val target = File(dir, "azurpilot-update.apk")
-                target.delete()
-                val connection = URL(info.apkUrl).openConnection() as HttpURLConnection
-                try {
-                    connection.instanceFollowRedirects = true
-                    connection.connectTimeout = 20_000
-                    connection.readTimeout = 120_000
-                    require(connection.responseCode in 200..299) { "APK 下载失败（HTTP ${connection.responseCode}）" }
-                    val responseSize = connection.contentLengthLong
-                    require(responseSize <= 0 || responseSize == info.apkSize) { "APK 响应大小与更新清单不一致" }
-                    connection.inputStream.use { input -> target.outputStream().use(input::copyTo) }
-                } finally {
-                    connection.disconnect()
+                val dir = File(context.cacheDir, "updates").apply { check(mkdirs() || isDirectory) }
+                // 安装器可能在 startActivity 返回后才读取文件。按 SHA 命名并保持内容不变，
+                // 避免再次点击更新时覆盖它，导致安装阶段的 APK v2 内容摘要不匹配。
+                val target = File(dir, "${info.apkSha256}.apk")
+                if (target.length() != info.apkSize || sha256(target) != info.apkSha256) {
+                    val partial = File(dir, "${info.apkSha256}.apk.part")
+                    partial.delete()
+                    try {
+                        val connection = URL(info.apkUrl).openConnection() as HttpURLConnection
+                        try {
+                            connection.instanceFollowRedirects = true
+                            connection.connectTimeout = 20_000
+                            connection.readTimeout = 120_000
+                            require(connection.responseCode in 200..299) { "APK 下载失败（HTTP ${connection.responseCode}）" }
+                            val responseSize = connection.contentLengthLong
+                            require(responseSize <= 0 || responseSize == info.apkSize) { "APK 响应大小与更新清单不一致" }
+                            connection.inputStream.use { input -> partial.outputStream().use(input::copyTo) }
+                        } finally {
+                            connection.disconnect()
+                        }
+                        require(partial.length() == info.apkSize) { "APK 大小校验失败" }
+                        require(sha256(partial) == info.apkSha256) { "APK 校验失败" }
+                        require(partial.renameTo(target)) { "无法保存更新安装包" }
+                    } finally {
+                        partial.delete()
+                    }
                 }
-                require(target.length() == info.apkSize) { "APK 大小校验失败" }
-                require(sha256(target) == info.apkSha256) { "APK 校验失败" }
                 launchInstaller(target)
             }.onSuccess {
                 _state.update { it.copy(downloading = false) }
             }.onFailure { error ->
-                File(context.cacheDir, "updates/azurpilot-update.apk").delete()
                 Timber.w(error, "App update download failed")
                 _state.update { it.copy(downloading = false, error = error.message ?: "下载更新失败") }
             }

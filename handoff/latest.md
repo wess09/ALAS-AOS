@@ -1,5 +1,12 @@
 # 2026-09-25 · AzurPilot for Android
 
+## 最新进度
+
+- GitHub 正式签名 Secret 已配置；`main` 的 30be839 构建成功并向 Latest 发布了正式 APK。发布 APK 经本地下载校验：SHA-256 与 `latest.json` 一致，`apksigner` v2 验证通过。
+- 后续修复集包含：CI 发布前签名验证；应用内更新使用按 SHA 命名的不可变 APK；运行时版本显示与 Latest 手动检查；关于页项目、许可和组件链接；切页动画误弹 WebUI 修复。
+- 本地 `:app:compileReleaseKotlin`（只为代码编译排除需 rootfs 的打包验证任务）通过，中英字符串 580/580 对齐。完整正式 APK 构建需由推送后的 CI 验证。
+- 本机签名密钥保存在忽略目录 `keystore/azurpilot-release.p12`，口令以当前 Windows 用户 DPAPI 保存在 `keystore/password.dpapi`。两者都不能入库，须妥善备份。
+
 ## 已完成
 
 - 仓库地址与 App 更新地址迁至 `wess09/AzurPilot-for-Android`；本地 `origin` 已更新。

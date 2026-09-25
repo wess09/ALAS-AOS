@@ -278,8 +278,9 @@ fun AppRoot(
                     )
 
                     TopDestination.AzurPilot -> AzurPilotScreen(
-                        // 不在本页时（pager 预组合）不抢返回键
-                        active = pagerState.currentPage == TopDestination.AzurPilot.ordinal,
+                        // 从挂机直接动画切到设置时，currentPage 会短暂经过中间的 AzurPilot 页。
+                        // 只有动画真正停在该页后才允许自动弹 WebUI。
+                        active = pagerState.settledPage == TopDestination.AzurPilot.ordinal,
                         modifier = Modifier.fillMaxSize(),
                     )
 

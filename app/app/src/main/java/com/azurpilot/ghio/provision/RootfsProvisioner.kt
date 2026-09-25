@@ -45,6 +45,13 @@ sealed interface ProvisionState {
     data class Failed(val reason: String) : ProvisionState
 }
 
+data class RuntimeUpdateCheck(
+    val checking: Boolean = false,
+    val checked: Boolean = false,
+    val latestVersion: String? = null,
+    val error: String? = null,
+)
+
 /**
  * 首启解压流水线：assets 的 rootfs.tar.xz → 内部存储 files/rootfs
  *
@@ -63,6 +70,35 @@ class RootfsProvisioner(
 
     private val _state = MutableStateFlow<ProvisionState>(ProvisionState.Checking)
     val state: StateFlow<ProvisionState> = _state.asStateFlow()
+    private val _updateCheck = MutableStateFlow(RuntimeUpdateCheck())
+    val updateCheck: StateFlow<RuntimeUpdateCheck> = _updateCheck.asStateFlow()
+
+    /** 手动查询 Latest；实际替换仍在下次冷启动、proot 启动前进行。 */
+    fun checkForUpdates() {
+        if (_updateCheck.value.checking) return
+        _updateCheck.value = RuntimeUpdateCheck(checking = true)
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                val connection = URL("$INDEX_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+                try {
+                    connection.connectTimeout = 12_000
+                    connection.readTimeout = 12_000
+                    connection.setRequestProperty("Cache-Control", "no-cache")
+                    check(connection.responseCode == 200) { "HTTP ${connection.responseCode}" }
+                    val info = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                    val version = info.getString("rootfsVersion")
+                    require(version.isNotBlank()) { "运行时版本缺失" }
+                    version
+                } finally {
+                    connection.disconnect()
+                }
+            }.onSuccess { version ->
+                _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = version)
+            }.onFailure { error ->
+                _updateCheck.value = RuntimeUpdateCheck(checked = true, error = error.message ?: "检查失败")
+            }
+        }
+    }
 
     private val running = AtomicBoolean(false)
 

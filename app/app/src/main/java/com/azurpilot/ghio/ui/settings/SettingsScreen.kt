@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
@@ -36,6 +37,7 @@ import com.azurpilot.ghio.settings.SettingsUiState
 import com.azurpilot.ghio.theme.AppTokens
 import androidx.compose.material3.Button
 import com.azurpilot.ghio.proot.AzurPilotApi
+import com.azurpilot.ghio.provision.RootfsProvisioner
 import com.azurpilot.ghio.ui.components.AppCard
 import com.azurpilot.ghio.ui.components.AppFieldLabel
 import com.azurpilot.ghio.ui.components.AppInfoRow
@@ -234,9 +236,37 @@ private fun OtherCard(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit
 
 @Composable
 private fun AboutCard() {
+    val uriHandler = LocalUriHandler.current
     AppCard(title = stringResource(R.string.settings_about), collapsible = true) {
         AppInfoRow(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME)
         AppInfoRow(stringResource(R.string.settings_build), BuildConfig.VERSION_CODE.toString())
+        AppNavigationRow(
+            label = stringResource(R.string.settings_about_license),
+            description = "AGPL-3.0",
+            onClick = { uriHandler.openUri("https://github.com/wess09/AzurPilot-for-Android/blob/main/LICENSE") },
+        )
+        AppNavigationRow(
+            label = stringResource(R.string.settings_about_repository),
+            description = "github.com/wess09/AzurPilot-for-Android",
+            onClick = { uriHandler.openUri("https://github.com/wess09/AzurPilot-for-Android") },
+        )
+        AppFieldLabel(stringResource(R.string.settings_about_components))
+        val components = listOf(
+            Triple("AzurPilot", "GPL-3.0", "https://github.com/wess09/AzurPilot"),
+            Triple("PRoot", "GPL-2.0", "https://github.com/proot-me/proot"),
+            Triple("Shizuku", "Apache-2.0", "https://github.com/RikkaApps/Shizuku"),
+            Triple("libsu", "Apache-2.0", "https://github.com/topjohnwu/libsu"),
+            Triple("Koin", "Apache-2.0", "https://github.com/InsertKoinIO/koin"),
+            Triple("Timber", "Apache-2.0", "https://github.com/JakeWharton/timber"),
+            Triple("Apache Commons Compress", "Apache-2.0", "https://github.com/apache/commons-compress"),
+        )
+        components.forEach { (name, license, url) ->
+            AppNavigationRow(label = name, description = license, onClick = { uriHandler.openUri(url) })
+        }
+        AppNavigationRow(
+            label = stringResource(R.string.settings_about_all_dependencies),
+            onClick = { uriHandler.openUri("https://github.com/wess09/AzurPilot-for-Android/blob/main/app/gradle/libs.versions.toml") },
+        )
     }
 }
 
@@ -244,25 +274,53 @@ private fun AboutCard() {
  * 运行时卡：启动时由宿主更新完整 rootfs，上游 git 热更仍由 Android 关闭。
  */
 @Composable
-private fun RuntimeCard(api: AzurPilotApi = koinInject(), updateManager: AppUpdateManager = koinInject()) {
+private fun RuntimeCard(
+    api: AzurPilotApi = koinInject(),
+    provisioner: RootfsProvisioner = koinInject(),
+    updateManager: AppUpdateManager = koinInject(),
+) {
     val apiState by api.state.collectAsStateWithLifecycle()
+    val provisionState by provisioner.state.collectAsStateWithLifecycle()
+    val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
     val updateState by updateManager.state.collectAsStateWithLifecycle()
+    val installedVersion = provisioner.installedVersion()
     AppCard(title = stringResource(R.string.settings_runtime), collapsible = true) {
         AppInfoRow(
             stringResource(R.string.settings_runtime_commit),
-            apiState.runtimeCommit?.take(10) ?: stringResource(R.string.settings_runtime_unknown),
+            apiState.runtimeCommit?.take(12)
+                ?: installedVersion?.substringBefore('-')
+                ?: stringResource(R.string.settings_runtime_unknown),
         )
+        if (installedVersion != null) {
+            AppInfoRow(stringResource(R.string.settings_runtime_installed), installedVersion)
+        }
+        if (runtimeCheck.checked) {
+            val status = when {
+                runtimeCheck.error != null -> stringResource(R.string.settings_runtime_check_failed, runtimeCheck.error!!)
+                runtimeCheck.latestVersion == installedVersion -> stringResource(R.string.settings_runtime_current)
+                runtimeCheck.latestVersion != null -> stringResource(R.string.settings_runtime_new_version, runtimeCheck.latestVersion!!)
+                else -> stringResource(R.string.settings_runtime_unknown)
+            }
+            Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Text(
             text = stringResource(R.string.settings_runtime_managed),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(
+            onClick = provisioner::checkForUpdates,
+            enabled = !runtimeCheck.checking && provisionState is com.azurpilot.ghio.provision.ProvisionState.Ready,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(if (runtimeCheck.checking) R.string.settings_runtime_checking else R.string.settings_runtime_check))
+        }
+        Button(
             onClick = updateManager::check,
             enabled = !updateState.downloading,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.settings_runtime_check))
+            Text(stringResource(R.string.settings_app_check))
         }
     }
 }
