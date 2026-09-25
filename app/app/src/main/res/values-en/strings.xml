@@ -125,6 +125,7 @@
     <string name="settings_about_contact">Contact</string>
     <string name="settings_about_license">License</string>
     <string name="settings_about_repository">Repository</string>
+    <string name="settings_about_source_project">Source Project</string>
     <string name="settings_about_components">Open-source components and licenses (tap to view)</string>
     <string name="settings_about_all_dependencies">View all Android dependencies</string>
     <string name="welcome_title">Welcome</string>
@@ -160,8 +161,8 @@
     <string name="overlay_azurpilot_preparing">Preparing Runtime · %1$s</string>
     <string name="overlay_azurpilot_preparing_generic">Preparing Runtime…</string>
     <string name="overlay_azurpilot_start_failed">Start failed: %1$s</string>
-    <string name="overlay_azurpilot_start">Start AzurPilot</string>
-    <string name="overlay_azurpilot_stop">Stop AzurPilot</string>
+    <string name="overlay_azurpilot_start">Start</string>
+    <string name="overlay_azurpilot_stop">Stop</string>
     <string name="overlay_azurpilot_log_empty">No logs yet</string>
     <string name="overlay_azurpilot_hint">Frequent actions live here; full configuration is in the in-app AzurPilot console</string>
     <string name="host_state_connected">connected</string>
@@ -286,12 +287,11 @@
     <string name="proot_phase_starting">Starting AzurPilot service…</string>
     <string name="proot_phase_failed">Failed to start AzurPilot Runtime: %1$s</string>
 
-    <!-- Hangar tab: virtual display preview + run config + control panel -->
-    <string name="nav_hangar">Farming</string>
-    <string name="hangar_env_down">Runtime not started — no preview</string>
-    <string name="hangar_env_reconnecting">Restoring Runtime preview…</string>
-    <string name="hangar_env_start">Start Runtime</string>
-    <string name="hangar_preview_waiting">Connecting preview…</string>
+    <!-- Home tab: run config + control panel + run log -->
+    <string name="nav_hangar">Home</string>
+    <string name="nav_screen">Screen</string>
+    <string name="screen_waiting">Connecting to the display…</string>
+    <string name="screen_hint">Tap or swipe on the picture to drive the virtual display</string>
     <string name="hangar_config_label">Run config</string>
     <string name="hangar_config_switch">Switch</string>
     <string name="hangar_config_running_hint">Stop the scheduler to switch config</string>
@@ -300,8 +300,6 @@
     <string name="hangar_tool_event_story">Event Story</string>
     <string name="hangar_tool_running">%1$s running</string>
     <string name="hangar_tool_stop">Stop</string>
-    <string name="hangar_preview_moved">Preview is showing in fullscreen</string>
-    <string name="hangar_fullscreen_exit">Exit fullscreen</string>
 
     <!-- Option editor -->
     <string name="option_input_invalid">Invalid input</string>

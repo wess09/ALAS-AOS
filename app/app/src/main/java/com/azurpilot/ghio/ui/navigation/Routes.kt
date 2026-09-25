@@ -5,16 +5,17 @@ import android.net.Uri
 /**
  * 二级页面路由
  *
- * 主 tab（Hangar/AzurPilot/Settings）由 AppRoot 的 HorizontalPager 承载，
+ * 主 tab（Hangar/Screen/AzurPilot/Settings）由 AppRoot 的 HorizontalPager 承载，
  * 不进 NavHost；NavHost 只承载推入式子页面，主 tab 路由仅作空占位
  */
 object Routes {
     const val HANGAR = "hangar"
+    const val SCREEN = "screen"
     const val AZURPILOT = "azurpilot"
     const val SETTINGS = "settings"
 
     /** 主 tab 路由集合，用来判断当前是否停在主界面 */
-    val mainTabs: Set<String> = setOf(HANGAR, AZURPILOT, SETTINGS)
+    val mainTabs: Set<String> = setOf(HANGAR, SCREEN, AZURPILOT, SETTINGS)
 
     /** 启动器日志（`log/` 目录递归：app.log 系列 / session.log / crash） */
     const val APP_LOG = "app_log"

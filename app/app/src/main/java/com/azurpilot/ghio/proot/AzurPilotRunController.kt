@@ -238,7 +238,7 @@ class AzurPilotRunController(
         const val POLL_MS = 4_000L
         const val HTTP_TIMEOUT_MS = 1_500
         const val POST_READ_TIMEOUT_MS = 12_000
-        const val LOG_TAIL = 80
+        const val LOG_TAIL = 50
         const val PREFS_NAME = "azurpilot_android"
         const val KEY_SELECTED_CONFIG = "selected_config"
     }

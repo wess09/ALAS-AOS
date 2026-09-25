@@ -121,6 +121,7 @@
     <string name="settings_about_contact">联系方式</string>
     <string name="settings_about_license">开源许可</string>
     <string name="settings_about_repository">项目仓库</string>
+    <string name="settings_about_source_project">来源项目</string>
     <string name="settings_about_components">使用的开源组件与许可（点击查看项目）</string>
     <string name="settings_about_all_dependencies">查看完整 Android 依赖清单</string>
     <string name="welcome_title">欢迎</string>
@@ -156,8 +157,8 @@
     <string name="overlay_azurpilot_preparing">Runtime 准备中 · %1$s</string>
     <string name="overlay_azurpilot_preparing_generic">Runtime 准备中…</string>
     <string name="overlay_azurpilot_start_failed">启动失败：%1$s</string>
-    <string name="overlay_azurpilot_start">开始挂机</string>
-    <string name="overlay_azurpilot_stop">停止挂机</string>
+    <string name="overlay_azurpilot_start">开始</string>
+    <string name="overlay_azurpilot_stop">停止</string>
     <string name="overlay_azurpilot_log_empty">暂无日志</string>
     <string name="overlay_azurpilot_hint">高频操作在此面板；完整配置请回应用内的 AzurPilot 控制台</string>
     <string name="host_state_connected">已连接</string>
@@ -282,12 +283,11 @@
     <string name="proot_phase_starting">正在启动 AzurPilot 服务…</string>
     <string name="proot_phase_failed">AzurPilot Runtime 启动失败：%1$s</string>
 
-    <!-- 挂机 tab：虚拟屏画面 + 运行配置 + 控制面板 -->
-    <string name="nav_hangar">挂机</string>
-    <string name="hangar_env_down">Runtime 未启动，暂无画面</string>
-    <string name="hangar_env_reconnecting">正在恢复 Runtime 画面…</string>
-    <string name="hangar_env_start">启动 Runtime</string>
-    <string name="hangar_preview_waiting">正在接入画面…</string>
+    <!-- 主页 tab：运行配置 + 控制面板 + 运行日志 -->
+    <string name="nav_hangar">主页</string>
+    <string name="nav_screen">虚拟屏</string>
+    <string name="screen_waiting">正在接入画面…</string>
+    <string name="screen_hint">在画面上直接点按或滑动即可操作虚拟屏</string>
     <string name="hangar_config_label">运行配置</string>
     <string name="hangar_config_switch">切换</string>
     <string name="hangar_config_running_hint">调度器运行中，停止后可切换配置</string>
@@ -296,8 +296,6 @@
     <string name="hangar_tool_event_story">活动剧情</string>
     <string name="hangar_tool_running">%1$s 运行中</string>
     <string name="hangar_tool_stop">停止</string>
-    <string name="hangar_preview_moved">画面正在全屏显示</string>
-    <string name="hangar_fullscreen_exit">退出全屏</string>
 
     <!-- option 编辑器 -->
     <string name="option_input_invalid">输入不合法</string>

@@ -1,7 +1,9 @@
 package com.azurpilot.ghio.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
@@ -9,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
@@ -19,6 +23,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -37,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -71,11 +78,9 @@ import com.azurpilot.ghio.service.HostState
 import com.azurpilot.ghio.theme.AzurPilotTheme
 import com.azurpilot.ghio.ui.run.AzurPilotScreen
 import com.azurpilot.ghio.ui.components.ShizukuReadinessDialog
-import com.azurpilot.ghio.ui.hangar.FullscreenPreview
 import com.azurpilot.ghio.ui.hangar.HangarScreen
-import com.azurpilot.ghio.ui.hangar.PreviewTouchAction
-import com.azurpilot.ghio.ui.hangar.rememberMovablePreview
 import com.azurpilot.ghio.ui.navigation.Routes
+import com.azurpilot.ghio.ui.screen.ScreenPage
 import com.azurpilot.ghio.ui.logs.AzurPilotErrorDetailScreen
 import com.azurpilot.ghio.ui.logs.AzurPilotLogDetailScreen
 import com.azurpilot.ghio.ui.logs.AzurPilotLogScreen
@@ -94,10 +99,13 @@ private enum class TopDestination(
     val outlinedIcon: ImageVector,
     val filledIcon: ImageVector,
 ) {
-    // 默认首页：App 一打开就是挂机页（画面 + 控制面）
+    // 默认首页：App 一打开就是主页（运行配置 + 控制面 + 日志）
     Hangar(R.string.nav_hangar, Icons.Outlined.PlayCircle, Icons.Filled.PlayCircle),
     AzurPilot(R.string.nav_azurpilot, Icons.Outlined.Public, Icons.Filled.Public),
     Settings(R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
+    // 虚拟屏追加在末尾：不动原有三个 tab 的次序，也不让主页的相邻页变成它
+    // （pager 会预组合相邻页，主页的邻居只该是 AzurPilot）
+    Screen(R.string.nav_screen, Icons.Outlined.PhoneAndroid, Icons.Filled.PhoneAndroid),
 }
 
 /**
@@ -246,22 +254,18 @@ fun AppRoot(
         val snackbarHostState = remember { SnackbarHostState() }
         var exportKind by remember { mutableStateOf<LogExportKind?>(null) }
 
-        // 预览面（SurfaceView）的所有权在这一层：全屏宿主必须在 Scaffold 之外才盖得住
-        // 底部 tab 栏，而 movableContent 要求内嵌与全屏两处调用点同属一棵组合树（m0 同款）
         val hostState: HostState = koinInject()
+        // 主页是否可见：HangarScreen 靠它决定要不要自动补一次环境拉起
         val hangarActive = pagerState.currentPage == TopDestination.Hangar.ordinal
-        var previewFullscreen by rememberSaveable { mutableStateOf(false) }
-        val previewContent = rememberMovablePreview(
-            active = hangarActive,
-            onSurfaceAvailable = { hostState.attachPreviewSurface(it) },
-            onSurfaceDestroyed = { hostState.detachPreviewSurface() },
-        )
 
         val context = LocalContext.current
 
         // 底栏实际高度：snackbar 要停在它上面，而 M3 只给了 80dp 的私有常量
         val density = LocalDensity.current
         var bottomBarHeight by remember { mutableStateOf(0.dp) }
+        // 横屏（虚拟屏页）下导航栏靠边竖排，底部没有可遮挡 snackbar 的东西
+        val isLandscape =
+            LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
         // 未装/未启动/未授权时的引导；needsGuidance 为 false 时自身不渲染
         ShizukuReadinessDialog(
@@ -298,69 +302,99 @@ fun AppRoot(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
-                NavigationBar(
-                    modifier = Modifier.onGloballyPositioned {
-                        bottomBarHeight = with(density) { it.size.height.toDp() }
-                    },
-                ) {
-                    TopDestination.entries.forEachIndexed { index, destination ->
-                        val selected = pagerState.currentPage == index
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                selectedPage = index
-                                scope.launch { pagerState.scrollToPage(index) }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
-                                    contentDescription = stringResource(destination.labelRes),
-                                )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) },
-                        )
+                // 横屏（虚拟屏页）时导航栏靠边竖排，不从底部吃掉本就紧张的高度
+                if (!isLandscape) {
+                    NavigationBar(
+                        modifier = Modifier.onGloballyPositioned {
+                            bottomBarHeight = with(density) { it.size.height.toDp() }
+                        },
+                    ) {
+                        TopDestination.entries.forEachIndexed { index, destination ->
+                            val selected = pagerState.currentPage == index
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = {
+                                    selectedPage = index
+                                    scope.launch { pagerState.scrollToPage(index) }
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
+                                        contentDescription = stringResource(destination.labelRes),
+                                    )
+                                },
+                                label = { Text(stringResource(destination.labelRes)) },
+                            )
+                        }
                     }
                 }
             },
         ) { padding ->
-            HorizontalPager(
-                state = pagerState,
-                // AzurPilot 页会拉起浏览器，页内自己的横滑（网页手势）不该和 pager 切页抢事件；
-                // 在 AzurPilot 页禁用用户横滑（切页走底部 tab），其他页保持原样
-                userScrollEnabled = TopDestination.entries[pagerState.currentPage] != TopDestination.AzurPilot,
-                beyondViewportPageCount = 1,
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     // 页内 imePadding 量的是到窗口底边的距离，而这里的底边已经被底栏顶高了一截；
                     // 不声明这份已让位的 inset，页内就会多减一个底栏，正文与键盘之间空出一条
                     .consumeWindowInsets(padding),
-            ) { page ->
-                when (TopDestination.entries[page]) {
-                    TopDestination.Hangar -> HangarScreen(
-                        active = hangarActive,
-                        // 全屏时这里让位，同一份 previewContent 搬到下面的全屏宿主
-                        previewContent = previewContent.takeUnless { previewFullscreen },
-                        onEnterFullscreen = { previewFullscreen = true },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+            ) {
+                if (isLandscape) {
+                    NavigationRail {
+                        TopDestination.entries.forEachIndexed { index, destination ->
+                            val selected = pagerState.currentPage == index
+                            NavigationRailItem(
+                                selected = selected,
+                                onClick = {
+                                    selectedPage = index
+                                    scope.launch { pagerState.scrollToPage(index) }
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
+                                        contentDescription = stringResource(destination.labelRes),
+                                    )
+                                },
+                                label = { Text(stringResource(destination.labelRes)) },
+                            )
+                        }
+                    }
+                }
+                HorizontalPager(
+                    state = pagerState,
+                    // AzurPilot 页会拉起浏览器，页内自己的横滑（网页手势）不该和 pager 切页抢事件；
+                    // 在 AzurPilot 页禁用用户横滑（切页走导航栏），其他页保持原样
+                    userScrollEnabled = TopDestination.entries[pagerState.currentPage] != TopDestination.AzurPilot,
+                    beyondViewportPageCount = 1,
+                    modifier = Modifier.weight(1f),
+                ) { page ->
+                    when (TopDestination.entries[page]) {
+                        TopDestination.Hangar -> HangarScreen(
+                            active = hangarActive,
+                            modifier = Modifier.fillMaxSize(),
+                        )
 
-                    TopDestination.AzurPilot -> AzurPilotScreen(
-                        // 从挂机直接动画切到设置时，currentPage 会短暂经过中间的 AzurPilot 页。
-                        // 只有动画真正停在该页后才允许自动弹 WebUI。
-                        active = pagerState.settledPage == TopDestination.AzurPilot.ordinal,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                        TopDestination.Screen -> ScreenPage(
+                            active = pagerState.currentPage == TopDestination.Screen.ordinal,
+                            modifier = Modifier.fillMaxSize(),
+                        )
 
-                    TopDestination.Settings -> SettingsScreen(
-                        state = settingsState,
-                        onIntent = settingsViewModel::onIntent,
-                        onOpenAppLog = { navController.navigate(Routes.APP_LOG) },
-                        onOpenRunnerLog = { navController.navigate(Routes.AZURPILOT_LOG) },
-                        onExportRunnerLogs = { exportKind = LogExportKind.AZURPILOT },
-                        onExportLauncherLogs = { exportKind = LogExportKind.LAUNCHER },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                        TopDestination.AzurPilot -> AzurPilotScreen(
+                            // 从主页直接动画切到设置时，currentPage 会短暂经过中间的 AzurPilot 页。
+                            // 只有动画真正停在该页后才允许自动弹 WebUI。
+                            active = pagerState.settledPage == TopDestination.AzurPilot.ordinal,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        TopDestination.Settings -> SettingsScreen(
+                            state = settingsState,
+                            onIntent = settingsViewModel::onIntent,
+                            onOpenAppLog = { navController.navigate(Routes.APP_LOG) },
+                            onOpenRunnerLog = { navController.navigate(Routes.AZURPILOT_LOG) },
+                            onExportRunnerLogs = { exportKind = LogExportKind.AZURPILOT },
+                            onExportLauncherLogs = { exportKind = LogExportKind.LAUNCHER },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }
@@ -442,23 +476,10 @@ fun AppRoot(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (onSubPage) 0.dp else bottomBarHeight),
+                .padding(bottom = if (onSubPage || isLandscape) 0.dp else bottomBarHeight),
         )
 
-        // 全屏预览：挂在 Scaffold 之外，才盖得住底部 tab 栏与系统栏（m0 同款）
-        if (previewFullscreen) {
-            FullscreenPreview(
-                onExit = { previewFullscreen = false },
-                onTouch = { x, y, action ->
-                    when (action) {
-                        PreviewTouchAction.Down -> hostState.touchDown(x, y)
-                        PreviewTouchAction.Move -> hostState.touchMove(x, y)
-                        PreviewTouchAction.Up -> hostState.touchUp(x, y)
-                    }
-                },
-                content = previewContent,
-            )
-        }
+        // 全屏预览宿主已随虚屏画面一并移除：native 预览是旁路分叉，拆掉不影响截图/识别
         }
         }
 

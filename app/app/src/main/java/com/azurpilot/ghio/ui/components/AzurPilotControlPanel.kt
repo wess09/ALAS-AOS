@@ -37,10 +37,11 @@ import org.koin.compose.koinInject
 /**
  * AzurPilot 控制面板（共享组合件）：环境/调度器状态行 + 日志板 + 调度器启停
  *
- * 悬浮窗（OverlayPanel）与挂机页（HangarScreen）共用同一份。
+ * 悬浮窗（OverlayPanel）与主页（HangarScreen）共用同一份。
  * 调度器控制面只此一处（wrapper 薄 HTTP）；WebUI 里的启停按钮已被锁定补丁封死，
  * 双头同用会抢设备——别用（见 AzurPilotRunController 头注）
- * [showTools]：悬浮窗要工具区；挂机页的工具按钮已并进运行配置行（ConfigToolRow），传 false
+ * [showTools]：悬浮窗要工具区；主页的工具按钮已并进运行配置行（ConfigToolRow），传 false
+ * [showLog]：主页把日志单独渲染在启停按钮下方（要控高度），传 false；悬浮窗保持默认
  */
 @Composable
 fun AzurPilotControlPanel(
@@ -52,8 +53,9 @@ fun AzurPilotControlPanel(
     onToolStop: () -> Unit,
     modifier: Modifier = Modifier,
     showTools: Boolean = true,
-    /** 挂机页传 true：额外显示 /api/v1/ws 来的「调度总览」与「自启」；悬浮窗空间紧张，保持关闭 */
+    /** 主页传 true：额外显示 /api/v1/ws 来的「调度总览」与「自启」；悬浮窗空间紧张，保持关闭 */
     showGateway: Boolean = false,
+    showLog: Boolean = true,
 ) {
     // wrapper 不可达时区分「环境准备中（带阶段明细）」与真正的「未就绪」——
     // 准备链全程 2~5 分钟且 release 日志静默，状态行是唯一可见的进度面
@@ -96,29 +98,21 @@ fun AzurPilotControlPanel(
             )
             AzurPilotStatusRow(
                 labelRes = R.string.overlay_azurpilot_status,
-                value = when {
-                    !run.reachable && proot.phase == ProotPhase.FAILED ->
-                        stringResource(R.string.overlay_azurpilot_start_failed, proot.detail)
-                    !run.reachable && proot.sessionActive && proot.detail.isNotEmpty() ->
-                        stringResource(R.string.overlay_azurpilot_preparing, proot.detail)
-                    !run.reachable && proot.sessionActive ->
-                        stringResource(R.string.overlay_azurpilot_preparing_generic)
-                    !run.reachable -> stringResource(R.string.overlay_azurpilot_unreachable)
-                    run.runnerAlive -> stringResource(R.string.overlay_azurpilot_running, run.pid ?: 0)
-                    else -> stringResource(R.string.overlay_azurpilot_stopped)
-                },
+                value = azurPilotRunStatusText(run, proot.phase, proot.sessionActive, proot.detail),
             )
         }
         if (showGateway && apiState.connected) {
             AzurPilotSchedulerOverview(apiState)
         }
-        AzurPilotLogBoard(
-            lines = run.logTail,
-            linesCount = run.logLines,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        )
+        if (showLog) {
+            AzurPilotLogBoard(
+                lines = run.logTail,
+                linesCount = run.logLines,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        }
         if (showGateway) {
             AppLabeledControlRow(
                 label = stringResource(R.string.gateway_startup_auto),
@@ -163,9 +157,9 @@ fun AzurPilotControlPanel(
     }
 }
 
-/** 半透明黑底日志板：新日志自动沉底；无内容时给占位提示 */
+/** 半透明黑底日志板：新日志自动沉底；无内容时给占位提示。主页与悬浮窗共用的展示件 */
 @Composable
-private fun AzurPilotLogBoard(lines: List<String>, linesCount: Int, modifier: Modifier = Modifier) {
+fun AzurPilotLogBoard(lines: List<String>, linesCount: Int, modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
     LaunchedEffect(linesCount, lines.size) { scrollState.scrollTo(scrollState.maxValue) }
     Surface(
@@ -207,6 +201,29 @@ private fun AzurPilotStatusRow(labelRes: Int, value: String) {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/**
+ * 调度器状态一句话。wrapper 不可达时必须区分「环境准备中（带阶段明细）」与真正的「未就绪」——
+ * 准备链全程 2~5 分钟且 release 日志静默，这句是唯一可见的进度面。
+ * 控制面板与底部控制卡都用，故独立成件
+ */
+@Composable
+fun azurPilotRunStatusText(
+    run: AzurPilotRunState,
+    phase: ProotPhase,
+    sessionActive: Boolean,
+    detail: String,
+): String = when {
+    !run.reachable && phase == ProotPhase.FAILED ->
+        stringResource(R.string.overlay_azurpilot_start_failed, detail)
+    !run.reachable && sessionActive && detail.isNotEmpty() ->
+        stringResource(R.string.overlay_azurpilot_preparing, detail)
+    !run.reachable && sessionActive ->
+        stringResource(R.string.overlay_azurpilot_preparing_generic)
+    !run.reachable -> stringResource(R.string.overlay_azurpilot_unreachable)
+    run.runnerAlive -> stringResource(R.string.overlay_azurpilot_running, run.pid ?: 0)
+    else -> stringResource(R.string.overlay_azurpilot_stopped)
 }
 
 /**

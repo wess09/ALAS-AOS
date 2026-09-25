@@ -1,0 +1,684 @@
+<resources>
+    <string name="app_name">AzurPilot</string>
+
+    <!-- 通用 -->
+    <string name="common_close">關閉</string>
+    <string name="common_back">返回</string>
+    <string name="common_save">儲存</string>
+    <string name="common_copy">複製</string>
+    <string name="common_rename">重新命名</string>
+    <string name="common_delete">刪除</string>
+    <string name="common_loading">載入中…</string>
+    <string name="dialog_confirm">確定</string>
+    <string name="dialog_cancel">取消</string>
+
+    <!-- 任務頁 -->
+    <string name="tasks_project_load_failed">專案載入失敗，請查看首頁診斷</string>
+    <string name="tasks_reload">重新載入</string>
+    <string name="tasks_empty_config_title">還沒有設定</string>
+    <string name="tasks_empty_config_hint">點擊上方選擇器建立空白設定，或從範本快速建立</string>
+    <string name="tasks_empty_task_title">還沒有任務</string>
+    <string name="tasks_empty_task_hint">從任務目錄選擇要執行的任務</string>
+    <string name="tasks_add_task">新增任務</string>
+    <string name="tasks_run_order">任務清單</string>
+    <string name="tasks_live_preview">即時預覽</string>
+    <string name="tasks_preview_waiting_surface">等待畫面</string>
+    <string name="virtual_display_game_running">執行中</string>
+    <string name="virtual_display_game_stopped">已停止</string>
+    <string name="virtual_display_app_drifted">已離開畫面</string>
+    <string name="virtual_display_idle">閒置</string>
+    <string name="tasks_preview_exit_fullscreen">退出全螢幕</string>
+    <string name="tasks_preview_idle">未在執行</string>
+    <string name="tasks_remove">移除</string>
+    <string name="tasks_drag_reorder">拖曳排序</string>
+    <string name="tasks_rename">重新命名</string>
+    <string name="tasks_duplicate">複製</string>
+    <string name="tasks_rename_dialog_title">重新命名任務</string>
+    <string name="tasks_rename_label">名稱</string>
+    <string name="tasks_copy_suffix">（副本）</string>
+    <string name="tasks_description_title">任務說明</string>
+
+    <!-- 執行開關 -->
+    <string name="runner_start">開始任務</string>
+    <string name="runner_foreground_blocked">目前是前台模式，請先切換到後台模式</string>
+
+    <!-- 設定 sheet -->
+    <string name="config_title">設定</string>
+    <string name="config_select">選擇設定</string>
+    <string name="config_copy_name">%1$s 副本</string>
+    <string name="config_create_from_template">從範本建立</string>
+    <string name="config_template_list_hint">預覽範本內容，依需求挑選任務後建立</string>
+    <string name="config_name_label">設定名稱</string>
+    <string name="config_included_tasks">帶入任務</string>
+    <string name="config_included_count">%1$d/%2$d 個</string>
+    <string name="config_create_use">建立並使用</string>
+    <plurals name="config_create_use_count">
+        <item quantity="other">建立並使用（%1$d 個任務）</item>
+    </plurals>
+    <string name="config_task_disabled_by_default">預設停用</string>
+    <string name="config_create_empty">建立空白設定</string>
+    <string name="config_create_empty_hint">建立後可透過「新增任務」從任務目錄挑選任務</string>
+    <string name="config_empty_default_name">空白設定</string>
+    <string name="config_rename_title">重新命名設定</string>
+    <plurals name="config_task_count">
+        <item quantity="other">%1$d 個任務</item>
+    </plurals>
+    <plurals name="template_task_count">
+        <item quantity="other">%1$d/%2$d 個任務</item>
+    </plurals>
+
+    <!-- 新增任務 sheet -->
+    <string name="tasks_search_placeholder">搜尋任務名稱或說明</string>
+    <string name="tasks_search_clear">清除搜尋</string>
+    <string name="tasks_add_hint">勾選的任務會依點選順序附加到設定末尾，同一任務可重複新增</string>
+    <string name="tasks_search_empty">沒有符合「%1$s」的任務</string>
+    <string name="tasks_confirm_add">確認新增</string>
+    <string name="tasks_confirm_add_count">確認新增（%1$d）</string>
+
+    <!-- 首頁 -->
+    <string name="home_project">專案</string>
+    <string name="home_project_loading">正在載入 ProjectInterface…</string>
+    <string name="home_project_load_failed">專案載入失敗</string>
+    <string name="home_name">名稱</string>
+    <string name="home_resource">伺服器</string>
+    <string name="home_none">無</string>
+    <string name="home_diagnostics_summary">診斷：%1$d 筆</string>
+    <plurals name="home_diagnostics_summary_with_errors">
+        <item quantity="other">診斷：%1$d 筆（%2$d 筆錯誤）</item>
+    </plurals>
+
+    <!-- 設定頁；分組命名沿用上游 AzurPilotApp 系的 settings_section_* 慣例 -->
+    <string name="settings_section_global_option">任務設定</string>
+    <string name="settings_section_resource_option">資源設定</string>
+    <string name="settings_section_display">顯示設定</string>
+    <string name="settings_section_schedule">排程任務設定</string>
+    <string name="settings_section_other">其他設定</string>
+    <string name="settings_theme">主題</string>
+    <string name="settings_follow_system">跟隨系統</string>
+    <string name="settings_theme_light">淺色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_language">語言</string>
+    <string name="settings_language_hint">切換語言會重新載入專案，執行期間無法切換</string>
+    <string name="settings_run_mode">執行模式</string>
+    <string name="settings_run_mode_background">後台模式</string>
+    <string name="settings_run_mode_foreground">前台模式</string>
+    <string name="settings_run_mode_hint_background">在獨立的虛擬螢幕上執行任務，手機可正常使用；解析度由專案宣告推導</string>
+    <string name="settings_run_mode_hint_foreground">直接操作目前螢幕，執行期間手機被佔用；不會重新啟動目標應用程式，預覽中也不接管觸控</string>
+    <string name="settings_resource">伺服器選擇</string>
+    <string name="settings_no_resources">專案未提供可選伺服器</string>
+    <string name="settings_current_resource">目前資源</string>
+    <string name="settings_not_selected">未選擇</string>
+    <string name="settings_resource_hint">切換資源會影響任務適用性，執行期間無法切換</string>
+    <string name="settings_reload_project">重新載入專案</string>
+    <string name="settings_about">關於</string>
+    <string name="settings_about_description">AzurPilot Android 是 AzurPilot 的 Android 用戶端。它提供掛機控制、虛擬螢幕預覽、WebUI 與日誌檢視；App 與 Runtime 分開更新。</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_build">建置</string>
+    <string name="settings_telemetry">協助改進本專案</string>
+    <string name="settings_telemetry_desc">將任務名稱與執行結果傳送給專案作者，不含截圖、日誌內文與你填寫的內容</string>
+    <string name="settings_project">專案</string>
+    <string name="settings_project_version">專案版本</string>
+    <string name="settings_about_contact">聯絡方式</string>
+    <string name="settings_about_license">開源授權</string>
+    <string name="settings_about_repository">專案儲存庫</string>
+    <string name="settings_about_source_project">來源專案</string>
+    <string name="settings_about_components">使用的開源元件與授權（點擊查看專案）</string>
+    <string name="settings_about_all_dependencies">檢視完整 Android 相依清單</string>
+    <string name="welcome_title">歡迎</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_run">AzurPilot Runtime 守護</string>
+    <string name="notification_channel_run_desc">守護虛擬螢幕與橋接服務，避免應用程式被系統回收</string>
+    <string name="notification_channel_focus">專案訊息</string>
+    <string name="notification_channel_focus_desc">執行期間 PI 專案要求推播給你的提示</string>
+    <string name="notification_focus_title">專案訊息</string>
+    <string name="notification_host_title">AzurPilot Runtime 守護中</string>
+    <string name="notification_host_content_ok">虛擬螢幕 #%1$d · 橋接服務正常</string>
+    <string name="notification_host_content_degraded">虛擬螢幕 #%1$d · 橋接服務無法連線</string>
+    <string name="notification_host_content_proot">內建 AzurPilot Runtime 執行中（未建立虛擬螢幕）</string>
+
+    <!-- 懸浮控制層 -->
+    <string name="accessibility_service_description">前台模式下同時按音量 + 與音量 − 喚起控制面板。只攔截按鍵，不讀取螢幕內容</string>
+    <string name="overlay_panel_title">操作面板</string>
+    <string name="overlay_back_to_app">回到應用程式</string>
+    <string name="overlay_lock">鎖定位置</string>
+    <string name="overlay_unlock">解除鎖定</string>
+    <string name="overlay_ball_idle">閒置</string>
+    <string name="overlay_ball_running">執行中</string>
+    <string name="overlay_host_start">啟動 Runtime</string>
+    <string name="overlay_host_stop">停止 Runtime</string>
+    <string name="overlay_host_privileged">Main 行程：%1$s</string>
+    <string name="overlay_host_bridge">Bridge：%1$s</string>
+    <string name="overlay_host_display">Virtual Display：%1$s</string>
+    <string name="overlay_azurpilot_status">AzurPilot 排程器：%1$s</string>
+    <string name="overlay_azurpilot_running">執行中 · pid %1$d</string>
+    <string name="overlay_azurpilot_stopped">已停止</string>
+    <string name="overlay_azurpilot_unreachable">Runtime 未就緒</string>
+    <string name="overlay_azurpilot_preparing">Runtime 準備中 · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">Runtime 準備中…</string>
+    <string name="overlay_azurpilot_start_failed">啟動失敗：%1$s</string>
+    <string name="overlay_azurpilot_start">開始</string>
+    <string name="overlay_azurpilot_stop">停止掛機</string>
+    <string name="overlay_azurpilot_log_empty">尚無日誌</string>
+    <string name="overlay_azurpilot_hint">高頻操作在此面板；完整設定請回應用程式內的 AzurPilot 控制台</string>
+    <string name="host_state_connected">已連線</string>
+    <string name="host_state_disconnected">未連線</string>
+    <string name="host_state_ok">正常</string>
+    <string name="host_state_unreachable">無法連線</string>
+    <string name="host_state_display_none">未建立</string>
+    <string name="settings_overlay_mode">懸浮視窗模式</string>
+    <string name="settings_overlay_mode_ball">懸浮球模式</string>
+    <string name="settings_overlay_mode_accessibility">快捷鍵模式</string>
+    <string name="settings_overlay_mode_hint_ball">點擊懸浮球切換面板</string>
+    <string name="settings_overlay_mode_hint_accessibility">同時按音量上下鍵切換面板，需要無障礙服務</string>
+    <string name="settings_overlay_show">開啟操作面板</string>
+
+    <!-- 執行期關螢幕 -->
+    <string name="settings_screen_saver">關螢幕掛機</string>
+    <string name="settings_screen_saver_auto">執行時自動關閉螢幕</string>
+    <string name="settings_screen_saver_hint">後台執行時將螢幕顯示為全黑，僅保留時鐘、電量與最新一筆日誌；向右滑動解鎖，任務結束後自動關閉</string>
+    <string name="settings_screen_saver_show">立即關閉螢幕</string>
+    <string name="screensaver_idle">Runtime 守護中…</string>
+    <string name="screensaver_swipe_to_unlock">向右滑動解鎖</string>
+
+    <!-- 排程任務 -->
+    <string name="notification_channel_schedule">排程觸發</string>
+    <string name="notification_channel_schedule_desc">排程到點時短暫顯示</string>
+    <string name="notification_schedule_title">排程任務</string>
+    <string name="notification_schedule_triggered">已觸發</string>
+
+    <string name="schedule_title">排程任務</string>
+    <string name="schedule_add">新增規則</string>
+    <string name="schedule_empty">還沒有排程規則</string>
+    <string name="schedule_empty_hint">新增規則後，到達設定時間會自動執行綁定的執行設定</string>
+    <string name="schedule_next_trigger">下次 %1$s</string>
+    <string name="schedule_next_none">規則不完整，不會觸發</string>
+    <string name="schedule_disabled">已停用</string>
+    <string name="schedule_exact_alarm_blocked">系統未允許精確鬧鐘</string>
+    <string name="schedule_exact_alarm_hint">仍會準時觸發，但狀態列會多一個鬧鐘圖示</string>
+    <string name="schedule_exact_alarm_grant">前往允許</string>
+    <string name="schedule_exact_alarm_settings">精確鬧鐘設定</string>
+
+    <string name="schedule_edit_new">新增規則</string>
+    <string name="schedule_edit_existing">編輯規則</string>
+    <string name="schedule_edit_name">名稱</string>
+    <string name="schedule_edit_name_placeholder">未命名規則</string>
+    <string name="schedule_edit_type">觸發方式</string>
+    <string name="schedule_edit_type_fixed">固定時刻</string>
+    <string name="schedule_edit_type_interval">固定間隔</string>
+    <string name="schedule_edit_days">星期</string>
+    <string name="schedule_edit_times">時刻</string>
+    <string name="schedule_edit_add_time">新增時刻</string>
+    <string name="schedule_edit_start_time">首次觸發</string>
+    <string name="schedule_edit_interval">執行間隔</string>
+    <string name="schedule_edit_save">儲存</string>
+    <string name="schedule_edit_delete">刪除</string>
+    <string name="schedule_edit_error_name">名稱不能為空</string>
+    <string name="schedule_edit_error_days">至少選擇一天</string>
+    <string name="schedule_edit_error_times">至少新增一個觸發時刻</string>
+    <string name="schedule_edit_error_start">請選擇起始時間</string>
+    <string name="schedule_edit_error_interval">間隔須大於 0</string>
+    <string name="schedule_edit_every_day">每天</string>
+
+    <string name="schedule_interval_minutes">每 %1$d 分鐘</string>
+    <string name="schedule_interval_hours">每 %1$d 小時</string>
+    <string name="schedule_interval_days">每 %1$d 天</string>
+    <string name="schedule_edit_days_unit">天</string>
+    <string name="schedule_edit_hours_unit">小時</string>
+    <string name="schedule_edit_total_hours">= %1$d 小時</string>
+
+    <string name="schedule_log_title">觸發日誌</string>
+    <string name="schedule_log_empty">還沒有觸發記錄</string>
+    <string name="schedule_log_clear">清空</string>
+    <string name="schedule_log_delay">延遲 %1$s</string>
+    <string name="schedule_result_triggered">已觸發</string>
+    <string name="schedule_result_started">已開始執行</string>
+    <string name="schedule_result_duplicate">重複觸發，已略過</string>
+    <string name="run_countdown_remaining">%1$d 秒後開始</string>
+    <string name="run_countdown_start_now">立即開始</string>
+    <string name="run_countdown_cancel">取消本次</string>
+    <string name="run_countdown_cancelled">已取消本次排程觸發</string>
+    <string name="wake_unlock_need_pin">需要 PIN 才能解鎖，請到設定中填寫</string>
+    <string name="wake_unlock_pin_rejected">PIN 不正確，或該機型鎖定畫面不接受注入按鍵</string>
+    <string name="wake_unlock_screen_off">螢幕沒有亮起</string>
+    <string name="wake_unlock_unsupported">該機型上的亮螢幕解鎖不可用</string>
+    <string name="wake_unlock_failed">亮螢幕解鎖失敗（%1$d）</string>
+    <string name="settings_wake_unlock">排程觸發時亮螢幕解鎖</string>
+    <string name="settings_wake_credential">解鎖 PIN</string>
+    <string name="settings_wake_credential_hint">僅支援純數字 PIN；以明文儲存在本機，匯出設定時會清空</string>
+    <string name="schedule_edit_advanced">進階選項</string>
+    <string name="schedule_edit_force_start">強制啟動</string>
+    <string name="schedule_edit_force_start_tip">到達設定時間時若有任務正在執行，中斷後執行本規則</string>
+    <string name="schedule_edit_auto_sleep">任務結束後自動關閉螢幕</string>
+    <string name="schedule_edit_skip_sleep_if_awake">啟動時已亮螢幕則不關閉</string>
+    <string name="schedule_edit_close_app">任務結束後關閉目標應用程式</string>
+    <string name="schedule_edit_close_app_tip">僅後台模式生效。若「快捷選項 → 任務自動結束時關閉目標應用程式」已開啟，以該開關為準；未開啟時才依本策略執行。手動停止任務不會關閉</string>
+    <string name="schedule_result_failed_start">未能開始</string>
+    <string name="schedule_reason_configuration_missing">綁定的執行設定已被刪除</string>
+    <string name="schedule_reason_invalid_plan">設定有誤，無法產出本次執行</string>
+    <string name="schedule_reason_blocked">啟動前檢查未通過</string>
+    <string name="schedule_reason_rejected">已有執行正在進行</string>
+    <string name="schedule_edit_configuration">執行設定</string>
+    <string name="schedule_edit_configuration_required">請選擇這條規則要執行的設定</string>
+    <string name="schedule_configuration_missing">綁定的設定已刪除</string>
+    <string name="schedule_edit_configuration_none">還沒有執行設定，請先在任務頁建立</string>
+    <string name="schedule_result_failed_validation">規則缺失</string>
+    <string name="schedule_result_failed_service">服務啟動失敗</string>
+
+    <!-- 導覽與對話框 -->
+    <string name="nav_azurpilot">AzurPilot</string>
+    <string name="nav_home">首頁</string>
+    <string name="nav_tasks">任務</string>
+    <string name="nav_schedule">排程</string>
+    <string name="nav_settings">設定</string>
+    <string name="dialog_cannot_start">無法開始</string>
+    <string name="dialog_ok">知道了</string>
+
+    <!-- AzurPilot tab：WebUI 容器 -->
+    <string name="azurpilot_webui_not_running">AzurPilot 服務由 App 內建的 Runtime 提供，首次啟動需完成初始化；若長時間未恢復，請檢查 Runtime 後重試</string>
+    <string name="azurpilot_webui_retry">重試連線</string>
+    <string name="azurpilot_webui_loading">正在載入控制台…</string>
+    <string name="proot_phase_preparing">正在準備 Runtime…</string>
+    <string name="proot_phase_updating">正在熱更新 AzurPilot…</string>
+    <string name="proot_phase_starting">正在啟動 AzurPilot 服務…</string>
+    <string name="proot_phase_failed">AzurPilot Runtime 啟動失敗：%1$s</string>
+
+    <!-- 首頁 tab：執行設定 + 控制面板 + 執行日誌 -->
+    <string name="nav_hangar">首頁</string>
+    <string name="hangar_config_label">執行設定</string>
+    <string name="hangar_config_switch">切換</string>
+    <string name="hangar_config_running_hint">排程器執行中，停止後可切換設定</string>
+    <string name="hangar_tool_label">工具</string>
+    <string name="hangar_tool_semi_auto">半自動點擊</string>
+    <string name="hangar_tool_event_story">活動劇情</string>
+    <string name="hangar_tool_running">%1$s 執行中</string>
+    <string name="hangar_tool_stop">停止</string>
+
+    <!-- option 編輯器 -->
+    <string name="option_input_invalid">輸入不合法</string>
+
+    <!-- 跨層結構化語意的顯示文案（domain/VM -> ui/i18n/DomainStrings） -->
+    <string name="tasks_ungrouped">未分組</string>
+    <string name="task_unavailable_missing">專案中已不存在該任務</string>
+    <string name="task_unavailable_controller">不支援目前的控制器（需要 %1$s）</string>
+    <string name="task_unavailable_resource">不支援目前的資源（需要 %1$s）</string>
+    <string name="msg_locked_while_running">執行期間不能修改設定</string>
+    <string name="msg_project_not_loaded">專案尚未載入完成</string>
+    <string name="msg_backend_unavailable">%1$s 不可用</string>
+    <string name="msg_backend_auth_rejected">%1$s 未授權</string>
+    <string name="msg_bind_service_failed">連線特權行程失敗：%1$s</string>
+    <string name="msg_no_executable_tasks">沒有可用的任務</string>
+    <string name="msg_template_not_found">範本「%1$s」不存在</string>
+    <string name="msg_cannot_start">無法開始：%1$s</string>
+    <string name="msg_launch_in_progress">正在啟動中，請稍候</string>
+    <string name="msg_precheck_ignored_confirmation">啟動檢查未處理確認結果，已中止</string>
+    <string name="msg_hook_timeout">Runtime 準備逾時：%1$s</string>
+    <string name="msg_hook_failed">Runtime 準備失敗：%1$s</string>
+    <string name="msg_cannot_stop">無法停止：%1$s</string>
+
+    <!-- Runner 拒絕／失敗原因：reason 現為 UiText，不再當 %s 拼接 -->
+    <string name="msg_fail_default">執行失敗</string>
+    <string name="msg_fail_privileged_exited">特權行程已結束</string>
+    <string name="msg_fail_privileged_reported_finished">特權行程回報本輪已結束</string>
+    <string name="msg_reject_already_running">已有執行正在進行</string>
+    <string name="msg_reject_stop_failed">停止失敗</string>
+    <string name="msg_reject_setup_failed">特權行程初始化失敗</string>
+    <string name="msg_reject_switch_display_mode">切換顯示模式失敗：%1$s</string>
+    <string name="msg_reject_primary_capture">主螢幕擷取啟動失敗</string>
+    <string name="msg_reject_virtual_display">虛擬螢幕啟動失敗，請檢查服務權限</string>
+    <string name="msg_reject_service_rejected">特權行程拒絕了本次執行</string>
+
+    <!-- 資源切換與執行選項 -->
+    <string name="resource_switch_title">資源</string>
+    <string name="runner_quick_options">快捷選項</string>
+    <string name="quick_actions_title">快捷操作</string>
+    <string name="quick_settings_title">自動設定</string>
+    <string name="quick_action_screen_saver">關螢幕掛機</string>
+    <string name="quick_action_close_app">關閉目標應用程式</string>
+    <string name="quick_setting_close_app_after_task">任務自動結束時關閉目標應用程式</string>
+    <string name="quick_setting_touch_preview">顯示觸控預覽</string>
+
+    <!-- 提權授權（首頁權限卡 + Shizuku 引導） -->
+    <string name="permission_section">權限管理</string>
+    <string name="permission_backend">啟動模式</string>
+    <string name="permission_granted">已授權</string>
+    <string name="permission_request">請求權限</string>
+    <string name="permission_quick_grant">快捷授權</string>
+    <string name="permission_requesting">授權中…</string>
+    <string name="permission_service_connected">特權行程已連線</string>
+    <string name="permission_service_disconnected">特權行程未連線</string>
+    <string name="permission_open_shizuku">Shizuku 快捷入口</string>
+    <string name="permission_expand">展開其他權限</string>
+    <string name="permission_collapse">收合其他權限</string>
+    <string name="permission_notification">通知權限</string>
+    <string name="permission_battery">電源管理白名單</string>
+    <string name="permission_battery_added">已新增</string>
+    <string name="permission_overlay">懸浮視窗</string>
+    <string name="permission_storage">儲存存取</string>
+    <string name="permission_accessibility">無障礙服務</string>
+    <string name="permission_keepalive_hint">後台任務執行期間，應用程式或遊戲可能會被系統電源管理策略清理。建議在系統最近任務中鎖定遊戲後台，並在遊戲電池設定中允許後台高耗電執行</string>
+    <string name="home_overview">總覽</string>
+    <string name="home_display_resolution">螢幕解析度</string>
+    <string name="home_service_status">服務狀態</string>
+
+    <!-- 服務狀態列：連線狀態 / 專案載入 / 執行狀態歸納成一句 -->
+    <string name="home_status_connecting">服務啟動中…</string>
+    <string name="home_status_died">服務已中斷</string>
+    <string name="home_status_error">服務異常</string>
+    <string name="home_status_disconnected">未啟動</string>
+    <string name="home_status_project_loading">專案載入中…</string>
+    <string name="home_status_project_failed">專案載入失敗</string>
+    <string name="home_status_runner_unavailable">無法執行任務</string>
+    <string name="home_status_preparing">任務啟動中…</string>
+    <string name="home_status_running">執行中</string>
+    <string name="home_status_stopping">任務停止中…</string>
+    <string name="home_status_ready">就緒</string>
+    <string name="home_service_connect">重新載入服務</string>
+    <string name="home_service_disconnect">關閉服務</string>
+    <string name="dialog_shizuku_not_installed_title">未偵測到 shizuku-m</string>
+    <string name="dialog_shizuku_not_installed_message">本應用程式依賴 shizuku-m（修改版 Shizuku）提供的特權服務，偵測到裝置未安裝。請點下方按鈕前往下載頁安裝，安裝完成後切回本應用程式會自動重新偵測。</string>
+    <string name="dialog_shizuku_download_confirm">前往下載 shizuku-m</string>
+    <string name="dialog_shizuku_switch_to_root">切換至 Root 模式</string>
+    <string name="dialog_shizuku_skip_check">略過檢查（不建議）</string>
+    <string name="dialog_shizuku_not_running_title">Shizuku 未啟動</string>
+    <string name="dialog_shizuku_not_running_message">偵測到 Shizuku 已安裝但服務未啟動。每次重新啟動手機後都需要重新啟用：開啟 shizuku-m 點「啟動」（無需連接 WLAN 或電腦），啟動成功後返回本應用程式即可自動繼續。</string>
+    <string name="dialog_shizuku_open_app">開啟 Shizuku</string>
+    <string name="dialog_sui_detected_title">偵測到 Sui</string>
+    <string name="dialog_sui_detected_message">目前由 Sui 提供 Shizuku 服務。Sui 以 Root 身分執行，本應用程式可能無法正常運作，請以實際測試為準。</string>
+    <string name="dialog_shizuku_need_auth_title">Shizuku 未授權</string>
+    <string name="dialog_shizuku_need_auth_message">Shizuku 服務正在執行但尚未授權本應用程式，請完成授權。授權成功前會持續提示。</string>
+    <string name="dialog_shizuku_official_conflict_title">偵測到官方版 Shizuku</string>
+    <string name="dialog_shizuku_official_conflict_message">本應用程式搭配的特權服務是修改版 shizuku-m：重新啟動手機後可離線自連，無需 WLAN 或電腦。它與官方 Shizuku 套件名稱相同但簽章不同，無法覆寫安裝——請先在系統中解除安裝官方 Shizuku，再依提示安裝 shizuku-m。解除安裝官方版不影響本應用程式的資料。</string>
+    <string name="dialog_shizuku_uninstall_confirm">前往解除安裝官方版</string>
+    <string name="common_got_it">知道了</string>
+
+    <string name="tasks_log">日誌</string>
+
+    <!-- 歷史日誌：每輪執行落盤一份 -->
+    <string name="log_archive_title">執行歷史</string>
+    <string name="log_archive_empty">還沒有歷史記錄；每次執行結束後會記錄在這裡</string>
+    <string name="log_archive_meta">%1$d 個任務 · %2$s</string>
+    <string name="log_archive_cleanup">清理過期</string>
+    <string name="log_archive_delete_title">刪除這筆記錄</string>
+    <string name="log_archive_delete_message">刪除 %1$s 的執行記錄？此操作無法復原。</string>
+    <string name="log_detail_title">執行詳情</string>
+    <string name="log_detail_started">開始 %1$s</string>
+    <string name="log_detail_tasks">任務：%1$s</string>
+    <string name="log_detail_ended">結束 %1$s</string>
+    <string name="log_detail_empty">此執行記錄為空</string>
+
+    <!-- 啟動器日誌：log/ 目錄遞迴（AppLogWriter 落盤的 app.log 系列、session.log、當機） -->
+    <string name="app_log_title">啟動器日誌</string>
+    <string name="app_log_empty">還沒有啟動器日誌</string>
+    <string name="app_log_clear">全部清除</string>
+    <!-- 大小 · 最後寫入時間 -->
+    <string name="app_log_meta">%1$s · %2$s</string>
+    <string name="app_log_clear_title">清除啟動器日誌</string>
+    <string name="app_log_clear_message">僅刪除 app.log 系列滾動檔案；session.log 與當機記錄會保留。此操作無法復原。</string>
+
+    <!-- AzurPilot 日誌（rootfs/opt/azurpilot/log）：錯誤現場 + 按天日誌 -->
+    <string name="azurpilot_log_title">AzurPilot 日誌</string>
+    <string name="azurpilot_log_empty">還沒有 AzurPilot 日誌</string>
+    <string name="azurpilot_log_section_errors">錯誤記錄</string>
+    <string name="azurpilot_log_section_daily">按天日誌</string>
+    <string name="azurpilot_log_error_meta">%1$d 個檔案</string>
+
+    <!-- 日誌檢視器（尾端載入） -->
+    <string name="log_tail_load_earlier">載入更早</string>
+    <string name="log_tail_empty">這份日誌是空的</string>
+    <string name="log_tail_missing">檔案不存在或已被清理</string>
+
+    <!-- 匯出 -->
+    <string name="log_export_azurpilot_title">匯出 AzurPilot 日誌</string>
+    <string name="log_export_launcher_title">匯出啟動器日誌</string>
+    <string name="log_export_share">分享</string>
+    <string name="log_export_save">儲存到裝置</string>
+    <string name="log_export_running">正在封裝…</string>
+    <string name="log_export_failed">匯出失敗：沒有可匯出的日誌</string>
+    <string name="log_export_saved">已儲存為 %1$s</string>
+    <string name="log_export_subject">AzurPilot Android 日誌</string>
+
+    <!-- 設定頁「日誌」分組入口 -->
+    <string name="settings_section_log">日誌</string>
+    <string name="settings_log_launcher_desc">檢視啟動器執行日誌與當機記錄</string>
+    <string name="settings_log_azurpilot_desc">檢視 AzurPilot 按天日誌與錯誤現場</string>
+    <string name="settings_log_export_azurpilot_desc">封裝近 7 天的 AzurPilot 日誌與錯誤現場</string>
+    <string name="settings_log_export_launcher_desc">封裝啟動器全部日誌與裝置屬性</string>
+    <string name="settings_auto_clean_logs">自動清理日誌</string>
+    <string name="settings_auto_clean_logs_desc">冷啟動時自動刪除 7 天前的 AzurPilot 日誌，並截斷過期的工作階段日誌</string>
+    <string name="dialog_disable_auto_clean_title">關閉自動清理</string>
+    <string name="dialog_disable_auto_clean_message">關閉後過期日誌將不再自動清理，長期使用可能佔用大量手機空間。</string>
+
+    <!-- 診斷文案；建構點在 domain/Diagnostics.kt 的 DiagnosticMessages -->
+    <string name="diagnostic_severity_warning">警告</string>
+    <string name="diagnostic_severity_error">錯誤</string>
+    <string name="diagnostic_interface_read_failed">讀取 interface.json 失敗：%1$s</string>
+    <string name="diagnostic_missing_interface_version">缺少 interface_version（PI V2 協定要求為 2）</string>
+    <string name="diagnostic_unsupported_interface_version">不支援 interface_version %1$d（僅支援 2）</string>
+    <string name="diagnostic_json_parse_failed">JSON 解析失敗：%1$s</string>
+    <string name="diagnostic_translation_json_parse_failed">翻譯檔 JSON 解析失敗：%1$s</string>
+    <string name="diagnostic_entry_not_object">%1$s 項目不是物件</string>
+    <string name="diagnostic_required_field_missing">%1$s 缺少 %2$s</string>
+    <string name="diagnostic_resource_path_missing">resource "%1$s" 缺少 path</string>
+    <string name="diagnostic_no_adb_controller">該專案未宣告 Adb controller，限定 controller 的任務都不可用</string>
+    <string name="diagnostic_language_path_invalid">languages "%1$s" 的路徑不是字串</string>
+    <string name="diagnostic_import_read_failed">import 分片讀取失敗，已略過：%1$s</string>
+    <string name="diagnostic_project_has_no_tasks">專案未宣告任何任務</string>
+    <string name="diagnostic_duplicate_declaration">%1$s "%2$s" 重複宣告，保留先出現的定義</string>
+    <string name="diagnostic_translation_read_failed">翻譯檔讀取失敗：%1$s</string>
+    <string name="diagnostic_description_read_failed">description 檔讀取失敗，保留原始文字：%1$s</string>
+    <string name="diagnostic_default_case_missing">option "%1$s" 的 default_case "%2$s" 不在 cases 中</string>
+    <string name="diagnostic_input_has_no_fields">input option "%1$s" 沒有可用的 inputs</string>
+    <string name="diagnostic_unsupported_option_type">option "%1$s" 的 type "%2$s" 在 Android 端不支援，已略過</string>
+    <string name="diagnostic_invalid_option_type">option "%1$s" 的 type 不合法：%2$s</string>
+    <string name="diagnostic_option_case_not_object">option "%1$s" 存在非物件 case</string>
+    <string name="diagnostic_option_case_name_missing">option "%1$s" 存在缺少 name 的 case</string>
+    <string name="diagnostic_invalid_pipeline_type">input "%1$s.%2$s" 的 pipeline_type 不合法：%3$s，以 string 處理</string>
+    <string name="diagnostic_regex_compile_failed">input "%1$s.%2$s" 的 verify regex 編譯失敗：%3$s</string>
+    <string name="diagnostic_missing_reference">參照了不存在的 %1$s "%2$s"</string>
+    <string name="diagnostic_option_cycle">option 參照形成 cycle：%1$s</string>
+    <string name="diagnostic_directory_enumeration_failed">無法列舉 %1$s 目錄：%2$s</string>
+    <string name="diagnostic_no_available_resource">沒有可用的 resource</string>
+    <string name="diagnostic_resource_selection_missing">resource "%1$s" 已不存在，回退到 %2$s</string>
+    <string name="diagnostic_none">無</string>
+    <string name="diagnostic_active_configuration_missing">activeConfigurationId 指向不存在的設定</string>
+    <string name="diagnostic_configured_task_missing">任務 "%1$s" 已不在專案中</string>
+    <string name="diagnostic_runtime_no_resource">沒有可用的 resource，無法建構 Runtime</string>
+    <string name="diagnostic_enabled_task_missing_definition">已啟用任務 "%1$s" 缺少 definition</string>
+    <string name="diagnostic_option_unset_without_default">option "%1$s" 未設定且沒有預設值</string>
+    <string name="diagnostic_selected_case_missing">option "%1$s" 選擇的 case "%2$s" 不存在</string>
+    <string name="diagnostic_invalid_input">option "%1$s" 的輸入 "%2$s" 不合法：%3$s</string>
+    <string name="diagnostic_integer_conversion_failed">option "%1$s" 的輸入 "%2$s" 無法轉換為整數</string>
+    <string name="diagnostic_boolean_conversion_failed">option "%1$s" 的輸入 "%2$s" 無法轉換為布林值</string>
+    <string name="schedule_default_name">排程任務 %1$d</string>
+
+    <!-- PI 解壓縮 -->
+    <string name="pi_install_title">正在準備專案資源</string>
+    <string name="pi_install_progress">%1$d / %2$d (%3$d%%)</string>
+    <string name="pi_install_progress_count">已寫入 %1$d 個檔案</string>
+    <string name="pi_install_note">首次啟動與版本更新後需要解壓縮一次，請稍候…</string>
+    <string name="pi_install_failed_title">專案資源準備失敗</string>
+    <string name="pi_install_failed_message">%1$s\n\n請檢查儲存空間是否充足，然後重試。</string>
+    <string name="pi_install_retry">重試</string>
+    <string name="pi_install_error">解壓縮失敗：%1$s</string>
+
+    <string name="settings_section_pi">專案資源</string>
+    <string name="pi_reinstall_title">重新解壓縮資源</string>
+    <string name="pi_reinstall_desc">從安裝套件重新解壓縮專案資源</string>
+    <string name="dialog_reinstall_pi_title">重新解壓縮專案資源</string>
+    <string name="dialog_reinstall_pi_message">確定要重新解壓縮專案資源嗎？\n\n這將刪除裝置上已解壓縮的專案資源並重新解壓縮，請勿在此期間離開應用程式。執行設定與日誌不受影響。</string>
+
+    <!-- 前台模式：主螢幕解析度與操作面板 -->
+    <string name="foreground_resolution_title">螢幕解析度</string>
+    <string name="foreground_resolution_hint">前台模式在主螢幕上直接操作，需要 16:9 的畫面比例。變更會影響整個系統，使用完記得重設</string>
+    <string name="foreground_resolution_apply">修改解析度</string>
+    <string name="foreground_resolution_reset">重設解析度</string>
+    <string name="foreground_resolution_applied">已改為 %1$s</string>
+    <string name="foreground_resolution_cleared">已還原原始解析度</string>
+    <string name="foreground_resolution_apply_failed">修改解析度失敗，該裝置可能不允許</string>
+    <string name="foreground_resolution_reset_failed">重設解析度失敗，該裝置可能不允許</string>
+    <string name="foreground_resolution_too_small">螢幕 %1$s 太小，放不下 16:9 的畫面</string>
+    <string name="foreground_resolution_required">目前螢幕比例不是 16:9，請先點「修改解析度」</string>
+    <string name="foreground_service_required">請先連線 Shizuku 或 Root 後端</string>
+    <string name="foreground_overlay_unsupported">操作面板暫時不可用</string>
+
+    <!-- 設定頁「通知」分組入口 -->
+    <string name="settings_section_notification">通知</string>
+    <string name="settings_notification_desc">任務結束時提醒，也可推播到手機以外的地方</string>
+
+    <!-- 通知設定頁 -->
+    <string name="notification_settings_title">通知設定</string>
+    <string name="notification_section_internal">本機通知</string>
+    <string name="notification_enable">任務結束時提醒</string>
+    <string name="notification_popup">顯示橫幅</string>
+    <string name="notification_send_test">傳送測試通知</string>
+    <string name="notification_section_external">推播時機</string>
+    <string name="notification_send_on_complete">任務全部完成時</string>
+    <string name="notification_send_on_error">任務發生錯誤時</string>
+    <string name="notification_send_on_service_died">後台服務中斷時</string>
+    <string name="notification_include_log_details">推播內容附帶執行日誌</string>
+    <string name="notification_section_test">測試推播</string>
+    <string name="notification_test_title">測試通知</string>
+    <string name="notification_test_message">這是一則來自 AzurPilot Android 的測試通知</string>
+
+    <!-- 推播管道名稱 -->
+    <string name="notification_provider_server_chan">Server 醬</string>
+    <string name="notification_provider_telegram">Telegram</string>
+    <string name="notification_provider_discord">Discord</string>
+    <string name="notification_provider_ding_talk">釘釘機器人</string>
+    <string name="notification_provider_kook">KOOK 機器人</string>
+    <string name="notification_provider_discord_webhook">Discord Webhook</string>
+    <string name="notification_provider_smtp">郵件（SMTP）</string>
+    <string name="notification_provider_bark">Bark</string>
+    <string name="notification_provider_qmsg">Qmsg 醬</string>
+    <string name="notification_provider_gotify">Gotify</string>
+    <string name="notification_provider_custom_webhook">自訂 Webhook</string>
+
+    <!-- 管道設定項 -->
+    <string name="notification_label_send_key">Send Key</string>
+    <string name="notification_label_server_url">伺服器位址</string>
+    <string name="notification_label_bark_send_key">Bark Send Key</string>
+    <string name="notification_label_bot_token">Bot Token</string>
+    <string name="notification_label_chat_id">Chat ID</string>
+    <string name="notification_label_topic_id">Topic ID</string>
+    <string name="notification_label_user_id">User ID</string>
+    <string name="notification_label_access_token">Access Token</string>
+    <string name="notification_label_secret">加簽密鑰</string>
+    <string name="notification_label_kook_target_id">頻道 ID / 使用者 ID</string>
+    <string name="notification_kook_direct_message">傳送私訊</string>
+    <string name="notification_label_webhook_url">Webhook 位址</string>
+    <string name="notification_label_webhook_headers">請求標頭</string>
+    <string name="notification_label_request_body_template">請求主體範本</string>
+    <string name="notification_label_smtp_server">SMTP 伺服器</string>
+    <string name="notification_label_smtp_port">連接埠</string>
+    <string name="notification_use_ssl">使用 SSL</string>
+    <string name="notification_requires_auth">需要登入驗證</string>
+    <string name="notification_label_smtp_user">使用者名稱</string>
+    <string name="notification_label_smtp_password">密碼</string>
+    <string name="notification_label_from">寄件者</string>
+    <string name="notification_label_to">收件者</string>
+    <string name="notification_label_qmsg_server">Qmsg 伺服器</string>
+    <string name="notification_label_qmsg_key">Qmsg Key</string>
+    <string name="notification_label_user_qq">接收 QQ</string>
+    <string name="notification_label_bot_qq">機器人 QQ</string>
+    <string name="notification_label_application_token">應用程式 Token</string>
+    <string name="notification_placeholder_optional">選填</string>
+    <string name="notification_placeholder_optional_signing_secret">選填，機器人選「加簽」時填寫</string>
+    <string name="notification_placeholder_optional_required_when_auth">開啟驗證後必填</string>
+    <string name="notification_placeholder_kook_target_id">私訊填使用者 ID，頻道填頻道 ID</string>
+    <string name="notification_supported_placeholders">可用佔位符：{title} {content} {time}</string>
+
+    <!-- 測試推播的逐條回饋 -->
+    <string name="notification_feedback_no_channel">請先啟用至少一個推播管道</string>
+    <string name="notification_feedback_send_success">%1$s 傳送成功</string>
+    <string name="notification_feedback_send_failed">%1$s 傳送失敗</string>
+
+    <!-- 執行事件通知；channel 名稱與說明會出現在系統的通知設定裡 -->
+    <string name="notification_event_channel_silent_name">任務結果（靜音）</string>
+    <string name="notification_event_channel_silent_desc">任務結束後在通知列留一則，不出聲</string>
+    <string name="notification_event_channel_popup_name">任務結果（彈出）</string>
+    <string name="notification_event_channel_popup_desc">任務結束後顯示橫幅並出聲</string>
+    <string name="notification_event_run_completed">任務已全部完成</string>
+    <plurals name="notification_event_run_completed_body">
+        <item quantity="other">共 %1$d 個任務</item>
+    </plurals>
+    <string name="notification_event_run_partial">任務已結束，有失敗項目</string>
+    <string name="notification_event_run_partial_body">成功 %1$d/%2$d；失敗：%3$s</string>
+    <string name="notification_event_run_failed">任務執行失敗</string>
+    <string name="notification_event_service_died">後台服務中斷</string>
+    <string name="notification_event_service_died_body">執行中的後台服務意外結束，本輪任務已中止</string>
+
+    <!-- 推播失敗原因；由各管道產出，顯示在測試回饋裡 -->
+    <string name="notification_err_network">網路請求失敗</string>
+    <string name="notification_err_http_status">伺服器回傳狀態碼 %1$d</string>
+    <string name="notification_err_serverchan_key_empty">Server 醬 Send Key 未填寫</string>
+    <string name="notification_err_serverchan_sctp_fmt">Server 醬 sctp 開頭的 Send Key 格式不正確</string>
+    <string name="notification_err_telegram_token_empty">Telegram Bot Token 未填寫</string>
+    <string name="notification_err_telegram_chat_empty">Telegram Chat ID 未填寫</string>
+    <string name="notification_err_discord_token_empty">Discord Bot Token 未填寫</string>
+    <string name="notification_err_discord_user_empty">Discord User ID 未填寫</string>
+    <string name="notification_err_discord_dm_failed">建立 Discord 私訊頻道失敗</string>
+    <string name="notification_err_discord_webhook_empty">Discord Webhook 位址未填寫</string>
+    <string name="notification_err_dingtalk_token_empty">釘釘 Access Token 未填寫</string>
+    <string name="notification_err_kook_token_empty">KOOK Bot Token 未填寫</string>
+    <string name="notification_err_kook_target_empty">KOOK 頻道 ID 或使用者 ID 未填寫</string>
+    <string name="notification_err_kook_api">KOOK 介面錯誤 %1$d：%2$s</string>
+    <string name="notification_err_smtp_server_empty">SMTP 伺服器位址未填寫</string>
+    <string name="notification_err_smtp_port_invalid">SMTP 連接埠不是數字</string>
+    <string name="notification_err_smtp_from_empty">寄件者位址未填寫</string>
+    <string name="notification_err_smtp_to_empty">收件者位址未填寫</string>
+    <string name="notification_err_smtp_auth_empty">已開啟驗證但使用者名稱或密碼為空</string>
+    <string name="notification_err_bark_server_empty">Bark 伺服器位址未填寫</string>
+    <string name="notification_err_bark_key_empty">Bark Send Key 未填寫</string>
+    <string name="notification_err_qmsg_server_empty">Qmsg 伺服器位址未填寫</string>
+    <string name="notification_err_qmsg_key_empty">Qmsg Key 未填寫</string>
+    <string name="notification_err_gotify_server_empty">Gotify 伺服器位址未填寫</string>
+    <string name="notification_err_gotify_token_empty">Gotify 應用程式 Token 未填寫</string>
+    <string name="notification_err_gotify_scheme">Gotify 伺服器位址要以 http:// 或 https:// 開頭</string>
+    <string name="notification_err_webhook_url_empty">Webhook 位址未填寫</string>
+    <string name="notification_err_webhook_body_empty">Webhook 請求主體範本未填寫</string>
+    <!-- 首啟 rootfs 部署 -->
+    <string name="provision_title">部署 Runtime</string>
+    <string name="provision_subtitle">首次啟動需要部署約 1GB 的 Runtime：完整版直接解壓縮內建套件，輕量版從 GitHub 下載，只需一次</string>
+    <string name="provision_checking">正在檢查 Runtime…</string>
+    <string name="provision_extracting">解壓縮中 %1$d%%（%2$d / %3$d MB）</string>
+    <string name="provision_downloading">正在從 GitHub 下載 Runtime %1$d%%…</string>
+    <string name="provision_low_disk">儲存空間不足：僅剩 %1$d MB，需要至少 2 GB 餘量</string>
+    <string name="provision_not_bundled">GitHub 發布中暫無可用 Runtime。請檢查網路後重試，或改用內建 Runtime 的完整版 APK</string>
+    <string name="provision_failed">部署失敗：%1$s</string>
+    <string name="provision_retry">重試</string>
+    <string name="provision_skip">略過（僅除錯用）</string>
+    <string name="provision_source">下載來源</string>
+    <string name="provision_source_direct">直連 GitHub</string>
+    <string name="provision_source_mirror">ghproxy 鏡像</string>
+    <string name="provision_source_desc">直連不通時切換到鏡像，切換後會立即重新下載</string>
+    <string name="app_update_title">AzurPilot Android 有新版本</string>
+    <string name="app_update_message">App 版本 %1$s 已就緒，安裝後會保留 App 資料與已安裝的 Runtime。</string>
+    <string name="app_update_downloading">正在下載並驗證安裝套件…</string>
+    <string name="app_update_error">更新失敗：%1$s</string>
+    <string name="app_update_install">下載並安裝</string>
+    <string name="app_update_later">稍後</string>
+    <string name="azurpilot_browser_title">AzurPilot WebUI</string>
+    <string name="azurpilot_browser_ready">WebUI 已在瀏覽器分頁中開啟。關閉分頁即可返回 App。</string>
+    <string name="azurpilot_browser_open">開啟 WebUI</string>
+    <string name="gateway_startup_auto">啟動後自動開始掛機</string>
+    <string name="gateway_overview_empty">暫無排程任務</string>
+    <string name="gateway_overview_next">下一個任務：%1$s · %2$s（共 %3$d 個）</string>
+    <string name="settings_runtime">Runtime</string>
+    <string name="settings_runtime_commit">AzurPilot 提交</string>
+    <string name="settings_runtime_unknown">未知</string>
+    <string name="settings_runtime_installed">已安裝 Runtime 版本</string>
+    <string name="settings_runtime_latest">Latest Runtime 版本</string>
+    <string name="runtime_update_title">發現 Runtime 更新</string>
+    <string name="runtime_update_message">已安裝：%1$s\nLatest：%2$s\n現在下載並更新 Runtime 嗎？</string>
+    <string name="runtime_update_now">立即更新</string>
+    <string name="settings_runtime_managed">啟動時檢查 GitHub Latest；發現新版本會先詢問，只有確認後才下載並更新 Runtime。手動檢查可檢視版本，重新啟動 App 時可選擇更新。</string>
+    <string name="settings_github_mirror">使用 ghproxy.net 更新鏡像</string>
+    <string name="settings_github_mirror_desc">用於 Runtime 與 App 的更新檢查與下載；檔案仍依發布清單驗證大小與 SHA-256。</string>
+    <string name="settings_runtime_check">檢查 Runtime 更新</string>
+    <string name="settings_runtime_checking">正在檢查 Runtime…</string>
+    <string name="settings_runtime_current">Runtime 已是 Latest 版本</string>
+    <string name="settings_runtime_new_version">發現新版本；重新啟動 App 時可選擇更新</string>
+    <string name="settings_runtime_check_failed">檢查失敗：%1$s</string>
+    <string name="settings_app_check">檢查 App 更新</string>
+</resources>

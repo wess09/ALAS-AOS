@@ -118,15 +118,27 @@ private fun ColumnScope.LanguageChoice(onIntent: (SettingsIntent) -> Unit) {
     val options = listOf<Pair<String?, String>>(
         null to stringResource(R.string.settings_follow_system),
         "zh-CN" to "简体中文",
+        "zh-TW" to "繁體中文",
         "en" to "English",
+        "ja" to "日本語",
     )
     // 选中态用本地 state 立即回显：切到效果相同的档位（如 跟随系统(中文) ↔ 简体中文）
     // 不触发 Activity 重建，重新读 AppLocales 的时机不会到来
     var selectedTag by remember {
         mutableStateOf(
-            when (val tag = AppLocales.currentTag()) {
-                null -> null
-                else -> if (tag.startsWith("zh")) "zh-CN" else "en"
+            AppLocales.currentTag()?.let { rawTag ->
+                // 系统侧 per-app locale 可能带地区与脚本（ja-JP、zh-Hant-TW），档位只到语言/脚本粒度
+                val tag = rawTag.replace('_', '-').lowercase()
+                val language = tag.substringBefore('-')
+                // zh 的繁简靠语言子标签分不开：带 Hant 或港澳台地区才是繁体
+                if (language == "zh") {
+                    val hant = tag.contains("hant") ||
+                        tag.endsWith("-tw") || tag.endsWith("-hk") || tag.endsWith("-mo")
+                    if (hant) "zh-TW" else "zh-CN"
+                } else {
+                    // 档位外的语言（ko-KR 等）在资源层落到 values/ 那份简中，回显与之一致
+                    options.firstOrNull { it.first == language }?.first ?: "zh-CN"
+                }
             },
         )
     }
@@ -256,6 +268,11 @@ private fun AboutCard() {
             label = stringResource(R.string.settings_about_repository),
             description = "github.com/wess09/AzurPilot-for-Android",
             onClick = { uriHandler.openUri("https://github.com/wess09/AzurPilot-for-Android") },
+        )
+        AppNavigationRow(
+            label = stringResource(R.string.settings_about_source_project),
+            description = "github.com/Shinarin/ALAS-AOS",
+            onClick = { uriHandler.openUri("https://github.com/Shinarin/ALAS-AOS") },
         )
         AppFieldLabel(stringResource(R.string.settings_about_components))
         val components = listOf(

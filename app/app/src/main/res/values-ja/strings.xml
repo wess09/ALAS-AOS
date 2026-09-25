@@ -1,0 +1,684 @@
+<resources>
+    <string name="app_name">AzurPilot</string>
+
+    <!-- 共通 -->
+    <string name="common_close">閉じる</string>
+    <string name="common_back">戻る</string>
+    <string name="common_save">保存</string>
+    <string name="common_copy">コピー</string>
+    <string name="common_rename">名前を変更</string>
+    <string name="common_delete">削除</string>
+    <string name="common_loading">読み込み中…</string>
+    <string name="dialog_confirm">OK</string>
+    <string name="dialog_cancel">キャンセル</string>
+
+    <!-- タスク画面 -->
+    <string name="tasks_project_load_failed">プロジェクトの読み込みに失敗しました。ホームの診断を確認してください</string>
+    <string name="tasks_reload">再読み込み</string>
+    <string name="tasks_empty_config_title">構成がまだありません</string>
+    <string name="tasks_empty_config_hint">上のセレクターから空の構成を新規作成するか、テンプレートから作成できます</string>
+    <string name="tasks_empty_task_title">タスクがまだありません</string>
+    <string name="tasks_empty_task_hint">タスク一覧から実行するタスクを選んでください</string>
+    <string name="tasks_add_task">タスクを追加</string>
+    <string name="tasks_run_order">タスクリスト</string>
+    <string name="tasks_live_preview">ライブプレビュー</string>
+    <string name="tasks_preview_waiting_surface">画面を待機中</string>
+    <string name="virtual_display_game_running">実行中</string>
+    <string name="virtual_display_game_stopped">停止</string>
+    <string name="virtual_display_app_drifted">画面外</string>
+    <string name="virtual_display_idle">アイドル</string>
+    <string name="tasks_preview_exit_fullscreen">全画面を終了</string>
+    <string name="tasks_preview_idle">実行していません</string>
+    <string name="tasks_remove">削除</string>
+    <string name="tasks_drag_reorder">ドラッグで並べ替え</string>
+    <string name="tasks_rename">名前を変更</string>
+    <string name="tasks_duplicate">複製</string>
+    <string name="tasks_rename_dialog_title">タスクの名前を変更</string>
+    <string name="tasks_rename_label">名前</string>
+    <string name="tasks_copy_suffix"> のコピー</string>
+    <string name="tasks_description_title">タスクの説明</string>
+
+    <!-- 実行スイッチ -->
+    <string name="runner_start">タスクを開始</string>
+    <string name="runner_foreground_blocked">フォアグラウンドモードです。先にバックグラウンドモードへ切り替えてください</string>
+
+    <!-- 構成シート -->
+    <string name="config_title">構成</string>
+    <string name="config_select">構成を選択</string>
+    <string name="config_copy_name">%1$s のコピー</string>
+    <string name="config_create_from_template">テンプレートから新規作成</string>
+    <string name="config_template_list_hint">テンプレートの内容を確認し、必要なタスクを選んで作成します</string>
+    <string name="config_name_label">構成名</string>
+    <string name="config_included_tasks">含めるタスク</string>
+    <string name="config_included_count">%1$d/%2$d</string>
+    <string name="config_create_use">作成して使用</string>
+    <plurals name="config_create_use_count">
+        <item quantity="other">作成して使用（%1$d タスク）</item>
+    </plurals>
+    <string name="config_task_disabled_by_default">既定で無効</string>
+    <string name="config_create_empty">空の構成を新規作成</string>
+    <string name="config_create_empty_hint">作成後は「タスクを追加」からタスク一覧を選べます</string>
+    <string name="config_empty_default_name">空の構成</string>
+    <string name="config_rename_title">構成の名前を変更</string>
+    <plurals name="config_task_count">
+        <item quantity="other">%1$d タスク</item>
+    </plurals>
+    <plurals name="template_task_count">
+        <item quantity="other">%1$d/%2$d タスク</item>
+    </plurals>
+
+    <!-- タスク追加シート -->
+    <string name="tasks_search_placeholder">タスク名または説明で検索</string>
+    <string name="tasks_search_clear">検索をクリア</string>
+    <string name="tasks_add_hint">チェックしたタスクは選んだ順に構成の末尾へ追加されます。同じタスクを重複して追加できます</string>
+    <string name="tasks_search_empty">「%1$s」に一致するタスクはありません</string>
+    <string name="tasks_confirm_add">追加を確定</string>
+    <string name="tasks_confirm_add_count">追加を確定（%1$d）</string>
+
+    <!-- ホーム -->
+    <string name="home_project">プロジェクト</string>
+    <string name="home_project_loading">ProjectInterface を読み込み中…</string>
+    <string name="home_project_load_failed">プロジェクトの読み込みに失敗</string>
+    <string name="home_name">名前</string>
+    <string name="home_resource">サーバー</string>
+    <string name="home_none">なし</string>
+    <string name="home_diagnostics_summary">診断：%1$d 件</string>
+    <plurals name="home_diagnostics_summary_with_errors">
+        <item quantity="other">診断：%1$d 件（%2$d 件のエラー）</item>
+    </plurals>
+
+    <!-- 設定画面 -->
+    <string name="settings_section_global_option">タスク設定</string>
+    <string name="settings_section_resource_option">リソース設定</string>
+    <string name="settings_section_display">表示設定</string>
+    <string name="settings_section_schedule">スケジュール設定</string>
+    <string name="settings_section_other">その他の設定</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_follow_system">システムに従う</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_hint">言語を切り替えるとプロジェクトが再読み込みされます。実行中は切り替えられません</string>
+    <string name="settings_run_mode">実行モード</string>
+    <string name="settings_run_mode_background">バックグラウンドモード</string>
+    <string name="settings_run_mode_foreground">フォアグラウンドモード</string>
+    <string name="settings_run_mode_hint_background">独立した仮想ディスプレイでタスクを実行するため、スマートフォンは通常どおり使用できます。解像度はプロジェクトの宣言から決定されます</string>
+    <string name="settings_run_mode_hint_foreground">現在の画面を直接操作するため、実行中はスマートフォンが占有されます。対象アプリは再起動されず、プレビューではタッチも受け付けません</string>
+    <string name="settings_resource">サーバー選択</string>
+    <string name="settings_no_resources">このプロジェクトには選択可能なサーバーがありません</string>
+    <string name="settings_current_resource">現在のリソース</string>
+    <string name="settings_not_selected">未選択</string>
+    <string name="settings_resource_hint">リソースを切り替えるとタスクの適用可否が変わります。実行中は切り替えられません</string>
+    <string name="settings_reload_project">プロジェクトを再読み込み</string>
+    <string name="settings_about">このアプリについて</string>
+    <string name="settings_about_description">AzurPilot Android は AzurPilot の Android クライアントです。放置運転の操作、仮想ディスプレイのプレビュー、WebUI、ログ閲覧を提供します。アプリと Runtime は別々に更新されます。</string>
+    <string name="settings_version">バージョン</string>
+    <string name="settings_build">ビルド</string>
+    <string name="settings_telemetry">このプロジェクトの改善に協力</string>
+    <string name="settings_telemetry_desc">タスク名と実行結果を作者へ送信します。スクリーンショット、ログ本文、入力した内容は含まれません</string>
+    <string name="settings_project">プロジェクト</string>
+    <string name="settings_project_version">プロジェクトのバージョン</string>
+    <string name="settings_about_contact">連絡先</string>
+    <string name="settings_about_license">オープンソースライセンス</string>
+    <string name="settings_about_repository">リポジトリ</string>
+    <string name="settings_about_source_project">元プロジェクト</string>
+    <string name="settings_about_components">使用しているオープンソースコンポーネントとライセンス（タップで表示）</string>
+    <string name="settings_about_all_dependencies">Android の依存関係一覧を表示</string>
+    <string name="welcome_title">ようこそ</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_run">AzurPilot Runtime の常駐</string>
+    <string name="notification_channel_run_desc">仮想ディスプレイとブリッジサービスを維持し、システムによるプロセス回収を防ぎます</string>
+    <string name="notification_channel_focus">プロジェクトのメッセージ</string>
+    <string name="notification_channel_focus_desc">実行中に PI プロジェクトが通知を求めたメッセージ</string>
+    <string name="notification_focus_title">プロジェクトのメッセージ</string>
+    <string name="notification_host_title">AzurPilot Runtime 常駐中</string>
+    <string name="notification_host_content_ok">仮想ディスプレイ #%1$d · ブリッジ正常</string>
+    <string name="notification_host_content_degraded">仮想ディスプレイ #%1$d · ブリッジに到達できません</string>
+    <string name="notification_host_content_proot">内蔵 AzurPilot Runtime が実行中（仮想ディスプレイなし）</string>
+
+    <!-- フローティング操作レイヤー -->
+    <string name="accessibility_service_description">フォアグラウンドモードでは音量 + と音量 − の同時押しで操作パネルを開きます。キーイベントのみを監視し、画面の内容は読み取りません</string>
+    <string name="overlay_panel_title">操作パネル</string>
+    <string name="overlay_back_to_app">アプリに戻る</string>
+    <string name="overlay_lock">位置を固定</string>
+    <string name="overlay_unlock">固定を解除</string>
+    <string name="overlay_ball_idle">アイドル</string>
+    <string name="overlay_ball_running">実行中</string>
+    <string name="overlay_host_start">Runtime を起動</string>
+    <string name="overlay_host_stop">Runtime を停止</string>
+    <string name="overlay_host_privileged">Main プロセス：%1$s</string>
+    <string name="overlay_host_bridge">Bridge：%1$s</string>
+    <string name="overlay_host_display">Virtual Display：%1$s</string>
+    <string name="overlay_azurpilot_status">AzurPilot スケジューラ：%1$s</string>
+    <string name="overlay_azurpilot_running">実行中 · pid %1$d</string>
+    <string name="overlay_azurpilot_stopped">停止</string>
+    <string name="overlay_azurpilot_unreachable">Runtime 未準備</string>
+    <string name="overlay_azurpilot_preparing">Runtime 準備中 · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">Runtime 準備中…</string>
+    <string name="overlay_azurpilot_start_failed">起動に失敗：%1$s</string>
+    <string name="overlay_azurpilot_start">開始</string>
+    <string name="overlay_azurpilot_stop">放置を停止</string>
+    <string name="overlay_azurpilot_log_empty">ログはまだありません</string>
+    <string name="overlay_azurpilot_hint">よく使う操作はこのパネルに。詳しい設定はアプリ内の AzurPilot コンソールで</string>
+    <string name="host_state_connected">接続済み</string>
+    <string name="host_state_disconnected">未接続</string>
+    <string name="host_state_ok">正常</string>
+    <string name="host_state_unreachable">到達不可</string>
+    <string name="host_state_display_none">未作成</string>
+    <string name="settings_overlay_mode">オーバーレイモード</string>
+    <string name="settings_overlay_mode_ball">フローティングボール</string>
+    <string name="settings_overlay_mode_accessibility">ショートカットキー</string>
+    <string name="settings_overlay_mode_hint_ball">フローティングボールをタップしてパネルを切り替えます</string>
+    <string name="settings_overlay_mode_hint_accessibility">音量 + と − の同時押しでパネルを切り替えます。ユーザー補助サービスが必要です</string>
+    <string name="settings_overlay_show">操作パネルを開く</string>
+
+    <!-- 実行中の画面消灯 -->
+    <string name="settings_screen_saver">画面オフ放置</string>
+    <string name="settings_screen_saver_auto">実行中は自動で画面をオフ</string>
+    <string name="settings_screen_saver_hint">バックグラウンド実行中は画面を全黒にし、時計・バッテリー・最新のログ 1 行だけを表示します。右へスワイプで解除でき、タスク終了時に自動で閉じます</string>
+    <string name="settings_screen_saver_show">今すぐ画面をオフ</string>
+    <string name="screensaver_idle">Runtime 常駐中…</string>
+    <string name="screensaver_swipe_to_unlock">右へスワイプして解除</string>
+
+    <!-- スケジュール -->
+    <string name="notification_channel_schedule">スケジュール実行</string>
+    <string name="notification_channel_schedule_desc">スケジュール時刻に短時間だけ表示されます</string>
+    <string name="notification_schedule_title">スケジュール</string>
+    <string name="notification_schedule_triggered">実行済み</string>
+
+    <string name="schedule_title">スケジュール</string>
+    <string name="schedule_add">新規ルール</string>
+    <string name="schedule_empty">スケジュールルールがまだありません</string>
+    <string name="schedule_empty_hint">ルールを作成すると、設定した時刻に関連付けられた実行構成が自動で実行されます</string>
+    <string name="schedule_next_trigger">次回 %1$s</string>
+    <string name="schedule_next_none">ルールが不完全なため実行されません</string>
+    <string name="schedule_disabled">無効</string>
+    <string name="schedule_exact_alarm_blocked">正確なアラームが許可されていません</string>
+    <string name="schedule_exact_alarm_hint">予定どおり実行されますが、ステータスバーにアラームアイコンが表示されます</string>
+    <string name="schedule_exact_alarm_grant">許可する</string>
+    <string name="schedule_exact_alarm_settings">正確なアラームの設定</string>
+
+    <string name="schedule_edit_new">新規ルール</string>
+    <string name="schedule_edit_existing">ルールを編集</string>
+    <string name="schedule_edit_name">名前</string>
+    <string name="schedule_edit_name_placeholder">無題のルール</string>
+    <string name="schedule_edit_type">実行方法</string>
+    <string name="schedule_edit_type_fixed">固定時刻</string>
+    <string name="schedule_edit_type_interval">固定間隔</string>
+    <string name="schedule_edit_days">曜日</string>
+    <string name="schedule_edit_times">時刻</string>
+    <string name="schedule_edit_add_time">時刻を追加</string>
+    <string name="schedule_edit_start_time">初回実行</string>
+    <string name="schedule_edit_interval">実行間隔</string>
+    <string name="schedule_edit_save">保存</string>
+    <string name="schedule_edit_delete">削除</string>
+    <string name="schedule_edit_error_name">名前を入力してください</string>
+    <string name="schedule_edit_error_days">曜日を 1 つ以上選択してください</string>
+    <string name="schedule_edit_error_times">実行時刻を 1 つ以上追加してください</string>
+    <string name="schedule_edit_error_start">開始時刻を選択してください</string>
+    <string name="schedule_edit_error_interval">間隔は 0 より大きい必要があります</string>
+    <string name="schedule_edit_every_day">毎日</string>
+
+    <string name="schedule_interval_minutes">%1$d 分ごと</string>
+    <string name="schedule_interval_hours">%1$d 時間ごと</string>
+    <string name="schedule_interval_days">%1$d 日ごと</string>
+    <string name="schedule_edit_days_unit">日</string>
+    <string name="schedule_edit_hours_unit">時間</string>
+    <string name="schedule_edit_total_hours">= %1$d 時間</string>
+
+    <string name="schedule_log_title">実行ログ</string>
+    <string name="schedule_log_empty">実行履歴がまだありません</string>
+    <string name="schedule_log_clear">クリア</string>
+    <string name="schedule_log_delay">%1$s 遅延</string>
+    <string name="schedule_result_triggered">実行済み</string>
+    <string name="schedule_result_started">実行を開始</string>
+    <string name="schedule_result_duplicate">重複実行のためスキップ</string>
+    <string name="run_countdown_remaining">%1$d 秒後に開始</string>
+    <string name="run_countdown_start_now">今すぐ開始</string>
+    <string name="run_countdown_cancel">今回はキャンセル</string>
+    <string name="run_countdown_cancelled">今回のスケジュール実行をキャンセルしました</string>
+    <string name="wake_unlock_need_pin">ロック解除に PIN が必要です。設定で入力してください</string>
+    <string name="wake_unlock_pin_rejected">PIN が違うか、この端末のロック画面がキー注入を受け付けません</string>
+    <string name="wake_unlock_screen_off">画面が点灯しませんでした</string>
+    <string name="wake_unlock_unsupported">この端末では画面点灯とロック解除を利用できません</string>
+    <string name="wake_unlock_failed">画面点灯とロック解除に失敗（%1$d）</string>
+    <string name="settings_wake_unlock">スケジュール実行時に画面を点灯してロック解除</string>
+    <string name="settings_wake_credential">ロック解除 PIN</string>
+    <string name="settings_wake_credential_hint">数字のみの PIN に対応。平文で本端末に保存され、構成の書き出し時に消去されます</string>
+    <string name="schedule_edit_advanced">詳細オプション</string>
+    <string name="schedule_edit_force_start">強制開始</string>
+    <string name="schedule_edit_force_start_tip">設定時刻にタスクが実行中の場合は中断してこのルールを実行します</string>
+    <string name="schedule_edit_auto_sleep">タスク終了後に自動で画面をオフ</string>
+    <string name="schedule_edit_skip_sleep_if_awake">開始時に画面が点灯していればオフにしない</string>
+    <string name="schedule_edit_close_app">タスク終了後に対象アプリを閉じる</string>
+    <string name="schedule_edit_close_app_tip">バックグラウンドモードのみ有効。「クイックオプション → タスク自動終了時に対象アプリを閉じる」が有効な場合はそちらが優先され、無効なときだけこの設定が適用されます。手動で停止した場合は閉じません</string>
+    <string name="schedule_result_failed_start">開始できませんでした</string>
+    <string name="schedule_reason_configuration_missing">関連付けられた実行構成が削除されました</string>
+    <string name="schedule_reason_invalid_plan">構成に誤りがあり、今回の実行を準備できません</string>
+    <string name="schedule_reason_blocked">開始前チェックに通りませんでした</string>
+    <string name="schedule_reason_rejected">すでに実行中です</string>
+    <string name="schedule_edit_configuration">実行構成</string>
+    <string name="schedule_edit_configuration_required">このルールで実行する構成を選択してください</string>
+    <string name="schedule_configuration_missing">関連付けられた構成が削除されました</string>
+    <string name="schedule_edit_configuration_none">実行構成がありません。先にタスク画面で作成してください</string>
+    <string name="schedule_result_failed_validation">ルールが不足</string>
+    <string name="schedule_result_failed_service">サービスの起動に失敗</string>
+
+    <!-- ナビゲーションとダイアログ -->
+    <string name="nav_azurpilot">AzurPilot</string>
+    <string name="nav_home">ホーム</string>
+    <string name="nav_tasks">タスク</string>
+    <string name="nav_schedule">スケジュール</string>
+    <string name="nav_settings">設定</string>
+    <string name="dialog_cannot_start">開始できません</string>
+    <string name="dialog_ok">OK</string>
+
+    <!-- AzurPilot タブ：WebUI コンテナ -->
+    <string name="azurpilot_webui_not_running">AzurPilot サービスはアプリ内蔵の Runtime が提供します。初回起動時は初期化が必要です。長時間復帰しない場合は Runtime を確認して再試行してください</string>
+    <string name="azurpilot_webui_retry">接続を再試行</string>
+    <string name="azurpilot_webui_loading">コンソールを読み込み中…</string>
+    <string name="proot_phase_preparing">Runtime を準備中…</string>
+    <string name="proot_phase_updating">AzurPilot をホット更新中…</string>
+    <string name="proot_phase_starting">AzurPilot サービスを起動中…</string>
+    <string name="proot_phase_failed">AzurPilot Runtime の起動に失敗：%1$s</string>
+
+    <!-- ホームタブ：実行構成 + 操作パネル + 実行ログ -->
+    <string name="nav_hangar">ホーム</string>
+    <string name="hangar_config_label">実行構成</string>
+    <string name="hangar_config_switch">切り替え</string>
+    <string name="hangar_config_running_hint">スケジューラ実行中です。停止すると構成を切り替えられます</string>
+    <string name="hangar_tool_label">ツール</string>
+    <string name="hangar_tool_semi_auto">セミオートクリック</string>
+    <string name="hangar_tool_event_story">イベントストーリー</string>
+    <string name="hangar_tool_running">%1$s 実行中</string>
+    <string name="hangar_tool_stop">停止</string>
+
+    <!-- option エディター -->
+    <string name="option_input_invalid">入力が不正です</string>
+
+    <!-- 構造化された意味づけの表示文案（domain/VM -> ui/i18n/DomainStrings） -->
+    <string name="tasks_ungrouped">未分類</string>
+    <string name="task_unavailable_missing">このタスクはプロジェクトに存在しません</string>
+    <string name="task_unavailable_controller">現在のコントローラーでは使用できません（%1$s が必要）</string>
+    <string name="task_unavailable_resource">現在のリソースでは使用できません（%1$s が必要）</string>
+    <string name="msg_locked_while_running">実行中は構成を変更できません</string>
+    <string name="msg_project_not_loaded">プロジェクトがまだ読み込まれていません</string>
+    <string name="msg_backend_unavailable">%1$s を利用できません</string>
+    <string name="msg_backend_auth_rejected">%1$s が許可されていません</string>
+    <string name="msg_bind_service_failed">特権プロセスへの接続に失敗：%1$s</string>
+    <string name="msg_no_executable_tasks">実行できるタスクがありません</string>
+    <string name="msg_template_not_found">テンプレート「%1$s」が存在しません</string>
+    <string name="msg_cannot_start">開始できません：%1$s</string>
+    <string name="msg_launch_in_progress">起動中です。しばらくお待ちください</string>
+    <string name="msg_precheck_ignored_confirmation">開始前チェックが確認結果を処理できず、中止しました</string>
+    <string name="msg_hook_timeout">Runtime の準備がタイムアウト：%1$s</string>
+    <string name="msg_hook_failed">Runtime の準備に失敗：%1$s</string>
+    <string name="msg_cannot_stop">停止できません：%1$s</string>
+
+    <!-- Runner の拒否・失敗理由：reason は UiText のため %s 連結しない -->
+    <string name="msg_fail_default">実行に失敗</string>
+    <string name="msg_fail_privileged_exited">特権プロセスが終了しました</string>
+    <string name="msg_fail_privileged_reported_finished">特権プロセスが今回の実行は終了済みと報告しました</string>
+    <string name="msg_reject_already_running">すでに実行中です</string>
+    <string name="msg_reject_stop_failed">停止に失敗</string>
+    <string name="msg_reject_setup_failed">特権プロセスの初期化に失敗</string>
+    <string name="msg_reject_switch_display_mode">表示モードの切り替えに失敗：%1$s</string>
+    <string name="msg_reject_primary_capture">メイン画面のキャプチャ開始に失敗</string>
+    <string name="msg_reject_virtual_display">仮想ディスプレイの起動に失敗しました。サービスの権限を確認してください</string>
+    <string name="msg_reject_service_rejected">特権プロセスが今回の実行を拒否しました</string>
+
+    <!-- リソース切り替えと実行オプション -->
+    <string name="resource_switch_title">リソース</string>
+    <string name="runner_quick_options">クイックオプション</string>
+    <string name="quick_actions_title">クイック操作</string>
+    <string name="quick_settings_title">自動設定</string>
+    <string name="quick_action_screen_saver">画面オフ放置</string>
+    <string name="quick_action_close_app">対象アプリを閉じる</string>
+    <string name="quick_setting_close_app_after_task">タスク自動終了時に対象アプリを閉じる</string>
+    <string name="quick_setting_touch_preview">タッチプレビューを表示</string>
+
+    <!-- 特権アクセス（ホームの権限カード + Shizuku ガイド） -->
+    <string name="permission_section">権限管理</string>
+    <string name="permission_backend">起動モード</string>
+    <string name="permission_granted">許可済み</string>
+    <string name="permission_request">権限を要求</string>
+    <string name="permission_quick_grant">クイック許可</string>
+    <string name="permission_requesting">許可を要求中…</string>
+    <string name="permission_service_connected">特権プロセスに接続済み</string>
+    <string name="permission_service_disconnected">特権プロセスに未接続</string>
+    <string name="permission_open_shizuku">Shizuku ショートカット</string>
+    <string name="permission_expand">その他の権限を表示</string>
+    <string name="permission_collapse">その他の権限を隠す</string>
+    <string name="permission_notification">通知権限</string>
+    <string name="permission_battery">バッテリー最適化の除外</string>
+    <string name="permission_battery_added">追加済み</string>
+    <string name="permission_overlay">重ねて表示</string>
+    <string name="permission_storage">ストレージへのアクセス</string>
+    <string name="permission_accessibility">ユーザー補助サービス</string>
+    <string name="permission_keepalive_hint">バックグラウンドでタスクを実行している間、アプリやゲームがシステムの電力管理ポリシーで終了されることがあります。最近使ったアプリでゲームをロックし、ゲームのバッテリー設定でバックグラウンドでの高消費電力を許可することをおすすめします</string>
+    <string name="home_overview">概要</string>
+    <string name="home_display_resolution">画面の解像度</string>
+    <string name="home_service_status">サービスの状態</string>
+
+    <!-- サービスの状態行：接続状態 / プロジェクト読み込み / 実行状態を 1 文に集約 -->
+    <string name="home_status_connecting">サービス起動中…</string>
+    <string name="home_status_died">サービスが切断されました</string>
+    <string name="home_status_error">サービス異常</string>
+    <string name="home_status_disconnected">未起動</string>
+    <string name="home_status_project_loading">プロジェクトを読み込み中…</string>
+    <string name="home_status_project_failed">プロジェクトの読み込みに失敗</string>
+    <string name="home_status_runner_unavailable">タスクを実行できません</string>
+    <string name="home_status_preparing">タスクを起動中…</string>
+    <string name="home_status_running">実行中</string>
+    <string name="home_status_stopping">タスクを停止中…</string>
+    <string name="home_status_ready">準備完了</string>
+    <string name="home_service_connect">サービスを再読み込み</string>
+    <string name="home_service_disconnect">サービスを閉じる</string>
+    <string name="dialog_shizuku_not_installed_title">shizuku-m が見つかりません</string>
+    <string name="dialog_shizuku_not_installed_message">本アプリは shizuku-m（改造版 Shizuku）が提供する特権サービスに依存していますが、この端末にはインストールされていません。下のボタンからダウンロードページを開いてインストールし、本アプリに戻ると自動で再検出します。</string>
+    <string name="dialog_shizuku_download_confirm">shizuku-m をダウンロード</string>
+    <string name="dialog_shizuku_switch_to_root">Root モードに切り替え</string>
+    <string name="dialog_shizuku_skip_check">チェックをスキップ（非推奨）</string>
+    <string name="dialog_shizuku_not_running_title">Shizuku が起動していません</string>
+    <string name="dialog_shizuku_not_running_message">Shizuku はインストールされていますが、サービスが起動していません。スマートフォンを再起動するたびに再有効化が必要です。shizuku-m を開いて「起動」をタップし（WLAN やパソコンは不要）、起動後に本アプリへ戻れば自動で続行します。</string>
+    <string name="dialog_shizuku_open_app">Shizuku を開く</string>
+    <string name="dialog_sui_detected_title">Sui を検出</string>
+    <string name="dialog_sui_detected_message">現在は Sui が Shizuku サービスを提供しています。Sui は Root 権限で動作するため、本アプリが正常に動作しない可能性があります。実際の動作で確認してください。</string>
+    <string name="dialog_shizuku_need_auth_title">Shizuku が未許可</string>
+    <string name="dialog_shizuku_need_auth_message">Shizuku サービスは動作していますが、本アプリにはまだ許可されていません。許可を完了してください。許可されるまでこの案内が表示され続けます。</string>
+    <string name="dialog_shizuku_official_conflict_title">公式版 Shizuku を検出</string>
+    <string name="dialog_shizuku_official_conflict_message">本アプリが対応する特権サービスは改造版の shizuku-m です。再起動後に WLAN やパソコンなしでオフライン接続できます。公式 Shizuku とはパッケージ名が同じで署名が異なるため上書きインストールできません。先に公式 Shizuku をアンインストールしてから、案内に従って shizuku-m をインストールしてください。公式版のアンインストールは本アプリのデータに影響しません。</string>
+    <string name="dialog_shizuku_uninstall_confirm">公式版をアンインストール</string>
+    <string name="common_got_it">OK</string>
+
+    <string name="tasks_log">ログ</string>
+
+    <!-- 実行履歴：1 回の実行ごとに 1 件保存 -->
+    <string name="log_archive_title">実行履歴</string>
+    <string name="log_archive_empty">履歴はまだありません。実行が終わるたびにここへ記録されます</string>
+    <string name="log_archive_meta">%1$d タスク · %2$s</string>
+    <string name="log_archive_cleanup">古い記録を削除</string>
+    <string name="log_archive_delete_title">この記録を削除</string>
+    <string name="log_archive_delete_message">%1$s の実行記録を削除しますか？この操作は取り消せません。</string>
+    <string name="log_detail_title">実行の詳細</string>
+    <string name="log_detail_started">開始 %1$s</string>
+    <string name="log_detail_tasks">タスク：%1$s</string>
+    <string name="log_detail_ended">終了 %1$s</string>
+    <string name="log_detail_empty">この実行記録は空です</string>
+
+    <!-- ランチャーログ：log/ ディレクトリを再帰的に（app.log 系、session.log、クラッシュ） -->
+    <string name="app_log_title">ランチャーログ</string>
+    <string name="app_log_empty">ランチャーログはまだありません</string>
+    <string name="app_log_clear">すべて削除</string>
+    <!-- サイズ · 最終書き込み時刻 -->
+    <string name="app_log_meta">%1$s · %2$s</string>
+    <string name="app_log_clear_title">ランチャーログを削除</string>
+    <string name="app_log_clear_message">app.log のローテーションファイルのみを削除します。session.log とクラッシュ記録は保持されます。この操作は取り消せません。</string>
+
+    <!-- AzurPilot ログ（rootfs/opt/azurpilot/log）：エラー記録 + 日別ログ -->
+    <string name="azurpilot_log_title">AzurPilot ログ</string>
+    <string name="azurpilot_log_empty">AzurPilot ログはまだありません</string>
+    <string name="azurpilot_log_section_errors">エラー記録</string>
+    <string name="azurpilot_log_section_daily">日別ログ</string>
+    <string name="azurpilot_log_error_meta">%1$d ファイル</string>
+
+    <!-- ログビューア（末尾から読み込み） -->
+    <string name="log_tail_load_earlier">以前を読み込む</string>
+    <string name="log_tail_empty">このログは空です</string>
+    <string name="log_tail_missing">ファイルが存在しないか、削除されています</string>
+
+    <!-- 書き出し -->
+    <string name="log_export_azurpilot_title">AzurPilot ログを書き出す</string>
+    <string name="log_export_launcher_title">ランチャーログを書き出す</string>
+    <string name="log_export_share">共有</string>
+    <string name="log_export_save">デバイスに保存</string>
+    <string name="log_export_running">パッケージング中…</string>
+    <string name="log_export_failed">書き出しに失敗：書き出せるログがありません</string>
+    <string name="log_export_saved">%1$s として保存しました</string>
+    <string name="log_export_subject">AzurPilot Android のログ</string>
+
+    <!-- 設定画面「ログ」グループの入口 -->
+    <string name="settings_section_log">ログ</string>
+    <string name="settings_log_launcher_desc">ランチャーの実行ログとクラッシュ記録を表示</string>
+    <string name="settings_log_azurpilot_desc">AzurPilot の日別ログとエラー記録を表示</string>
+    <string name="settings_log_export_azurpilot_desc">直近 7 日分の AzurPilot ログとエラー記録をまとめる</string>
+    <string name="settings_log_export_launcher_desc">ランチャーの全ログと端末情報をまとめる</string>
+    <string name="settings_auto_clean_logs">ログの自動削除</string>
+    <string name="settings_auto_clean_logs_desc">コールドスタート時に 7 日より古い AzurPilot ログを自動削除し、期限切れのセッションログを切り詰めます</string>
+    <string name="dialog_disable_auto_clean_title">自動削除をオフ</string>
+    <string name="dialog_disable_auto_clean_message">オフにすると期限切れのログが自動削除されなくなり、長く使うとスマートフォンの容量を大きく占める可能性があります。</string>
+
+    <!-- 診断文案；生成元は domain/Diagnostics.kt の DiagnosticMessages -->
+    <string name="diagnostic_severity_warning">警告</string>
+    <string name="diagnostic_severity_error">エラー</string>
+    <string name="diagnostic_interface_read_failed">interface.json の読み込みに失敗：%1$s</string>
+    <string name="diagnostic_missing_interface_version">interface_version がありません（PI V2 では 2 が必要）</string>
+    <string name="diagnostic_unsupported_interface_version">interface_version %1$d は非対応（2 のみ対応）</string>
+    <string name="diagnostic_json_parse_failed">JSON の解析に失敗：%1$s</string>
+    <string name="diagnostic_translation_json_parse_failed">翻訳ファイルの JSON 解析に失敗：%1$s</string>
+    <string name="diagnostic_entry_not_object">%1$s のエントリがオブジェクトではありません</string>
+    <string name="diagnostic_required_field_missing">%1$s に %2$s がありません</string>
+    <string name="diagnostic_resource_path_missing">resource "%1$s" に path がありません</string>
+    <string name="diagnostic_no_adb_controller">このプロジェクトは Adb controller を宣言していないため、controller を限定するタスクは使用できません</string>
+    <string name="diagnostic_language_path_invalid">languages "%1$s" のパスが文字列ではありません</string>
+    <string name="diagnostic_import_read_failed">import の分割ファイル読み込みに失敗し、スキップしました：%1$s</string>
+    <string name="diagnostic_project_has_no_tasks">プロジェクトがタスクを宣言していません</string>
+    <string name="diagnostic_duplicate_declaration">%1$s "%2$s" が重複して宣言されています。先に出現した定義を保持します</string>
+    <string name="diagnostic_translation_read_failed">翻訳ファイルの読み込みに失敗：%1$s</string>
+    <string name="diagnostic_description_read_failed">description ファイルの読み込みに失敗しました。元のテキストを保持します：%1$s</string>
+    <string name="diagnostic_default_case_missing">option "%1$s" の default_case "%2$s" が cases にありません</string>
+    <string name="diagnostic_input_has_no_fields">input option "%1$s" に使用可能な inputs がありません</string>
+    <string name="diagnostic_unsupported_option_type">option "%1$s" の type "%2$s" は Android では非対応のためスキップしました</string>
+    <string name="diagnostic_invalid_option_type">option "%1$s" の type が不正：%2$s</string>
+    <string name="diagnostic_option_case_not_object">option "%1$s" にオブジェクトでない case があります</string>
+    <string name="diagnostic_option_case_name_missing">option "%1$s" に name のない case があります</string>
+    <string name="diagnostic_invalid_pipeline_type">input "%1$s.%2$s" の pipeline_type が不正：%3$s。string として扱います</string>
+    <string name="diagnostic_regex_compile_failed">input "%1$s.%2$s" の verify regex のコンパイルに失敗：%3$s</string>
+    <string name="diagnostic_missing_reference">存在しない %1$s "%2$s" を参照しています</string>
+    <string name="diagnostic_option_cycle">option の参照が cycle を形成：%1$s</string>
+    <string name="diagnostic_directory_enumeration_failed">%1$s ディレクトリを列挙できません：%2$s</string>
+    <string name="diagnostic_no_available_resource">使用可能な resource がありません</string>
+    <string name="diagnostic_resource_selection_missing">resource "%1$s" は存在しないため %2$s にフォールバックしました</string>
+    <string name="diagnostic_none">なし</string>
+    <string name="diagnostic_active_configuration_missing">activeConfigurationId が存在しない構成を指しています</string>
+    <string name="diagnostic_configured_task_missing">タスク "%1$s" はプロジェクトにありません</string>
+    <string name="diagnostic_runtime_no_resource">使用可能な resource がなく Runtime を構成できません</string>
+    <string name="diagnostic_enabled_task_missing_definition">有効なタスク "%1$s" に definition がありません</string>
+    <string name="diagnostic_option_unset_without_default">option "%1$s" は未設定で既定値もありません</string>
+    <string name="diagnostic_selected_case_missing">option "%1$s" が選択した case "%2$s" が存在しません</string>
+    <string name="diagnostic_invalid_input">option "%1$s" の入力 "%2$s" が不正：%3$s</string>
+    <string name="diagnostic_integer_conversion_failed">option "%1$s" の入力 "%2$s" を整数に変換できません</string>
+    <string name="diagnostic_boolean_conversion_failed">option "%1$s" の入力 "%2$s" をブール値に変換できません</string>
+    <string name="schedule_default_name">スケジュール %1$d</string>
+
+    <!-- PI 展開 -->
+    <string name="pi_install_title">プロジェクトリソースを準備中</string>
+    <string name="pi_install_progress">%1$d / %2$d (%3$d%%)</string>
+    <string name="pi_install_progress_count">%1$d ファイル書き込みました</string>
+    <string name="pi_install_note">初回起動時とバージョン更新後に一度展開します。しばらくお待ちください…</string>
+    <string name="pi_install_failed_title">プロジェクトリソースの準備に失敗</string>
+    <string name="pi_install_failed_message">%1$s\n\n空き容量が足りているか確認して、再試行してください。</string>
+    <string name="pi_install_retry">再試行</string>
+    <string name="pi_install_error">展開に失敗：%1$s</string>
+
+    <string name="settings_section_pi">プロジェクトリソース</string>
+    <string name="pi_reinstall_title">リソースを再展開</string>
+    <string name="pi_reinstall_desc">インストールパッケージからプロジェクトリソースを再展開</string>
+    <string name="dialog_reinstall_pi_title">プロジェクトリソースを再展開</string>
+    <string name="dialog_reinstall_pi_message">プロジェクトリソースを再展開しますか？\n\n本端末で展開済みのプロジェクトリソースを削除して再展開します。この間アプリを終了しないでください。実行構成とログには影響しません。</string>
+
+    <!-- フォアグラウンドモード：メイン画面の解像度と操作パネル -->
+    <string name="foreground_resolution_title">画面の解像度</string>
+    <string name="foreground_resolution_hint">フォアグラウンドモードはメイン画面を直接操作するため、16:9 の画面比率が必要です。変更はシステム全体に影響するため、使い終わったらリセットしてください</string>
+    <string name="foreground_resolution_apply">解像度を変更</string>
+    <string name="foreground_resolution_reset">解像度をリセット</string>
+    <string name="foreground_resolution_applied">%1$s に変更しました</string>
+    <string name="foreground_resolution_cleared">元の解像度に戻しました</string>
+    <string name="foreground_resolution_apply_failed">解像度の変更に失敗しました。この端末では許可されていない可能性があります</string>
+    <string name="foreground_resolution_reset_failed">解像度のリセットに失敗しました。この端末では許可されていない可能性があります</string>
+    <string name="foreground_resolution_too_small">画面 %1$s は小さすぎて 16:9 の表示を収められません</string>
+    <string name="foreground_resolution_required">現在の画面比率は 16:9 ではありません。先に「解像度を変更」をタップしてください</string>
+    <string name="foreground_service_required">先に Shizuku または Root バックエンドへ接続してください</string>
+    <string name="foreground_overlay_unsupported">操作パネルは現在利用できません</string>
+
+    <!-- 設定画面「通知」グループの入口 -->
+    <string name="settings_section_notification">通知</string>
+    <string name="settings_notification_desc">タスク終了時にお知らせします。スマートフォン以外へのプッシュにも対応</string>
+
+    <!-- 通知設定画面 -->
+    <string name="notification_settings_title">通知設定</string>
+    <string name="notification_section_internal">本端末の通知</string>
+    <string name="notification_enable">タスク終了時に通知</string>
+    <string name="notification_popup">バナーを表示</string>
+    <string name="notification_send_test">テスト通知を送信</string>
+    <string name="notification_section_external">プッシュするタイミング</string>
+    <string name="notification_send_on_complete">すべてのタスクが完了したとき</string>
+    <string name="notification_send_on_error">タスクが失敗したとき</string>
+    <string name="notification_send_on_service_died">バックグラウンドサービスが中断したとき</string>
+    <string name="notification_include_log_details">メッセージに実行ログを添付</string>
+    <string name="notification_section_test">テストプッシュ</string>
+    <string name="notification_test_title">テスト通知</string>
+    <string name="notification_test_message">AzurPilot Android からのテスト通知です</string>
+
+    <!-- プッシュ先の名前 -->
+    <string name="notification_provider_server_chan">ServerChan</string>
+    <string name="notification_provider_telegram">Telegram</string>
+    <string name="notification_provider_discord">Discord</string>
+    <string name="notification_provider_ding_talk">DingTalk Bot</string>
+    <string name="notification_provider_kook">KOOK Bot</string>
+    <string name="notification_provider_discord_webhook">Discord Webhook</string>
+    <string name="notification_provider_smtp">メール（SMTP）</string>
+    <string name="notification_provider_bark">Bark</string>
+    <string name="notification_provider_qmsg">Qmsg</string>
+    <string name="notification_provider_gotify">Gotify</string>
+    <string name="notification_provider_custom_webhook">カスタム Webhook</string>
+
+    <!-- プッシュ先の設定項目 -->
+    <string name="notification_label_send_key">Send Key</string>
+    <string name="notification_label_server_url">サーバー URL</string>
+    <string name="notification_label_bark_send_key">Bark Send Key</string>
+    <string name="notification_label_bot_token">Bot Token</string>
+    <string name="notification_label_chat_id">Chat ID</string>
+    <string name="notification_label_topic_id">Topic ID</string>
+    <string name="notification_label_user_id">User ID</string>
+    <string name="notification_label_access_token">Access Token</string>
+    <string name="notification_label_secret">署名用シークレット</string>
+    <string name="notification_label_kook_target_id">チャンネル ID / ユーザー ID</string>
+    <string name="notification_kook_direct_message">ダイレクトメッセージとして送信</string>
+    <string name="notification_label_webhook_url">Webhook URL</string>
+    <string name="notification_label_webhook_headers">リクエストヘッダー</string>
+    <string name="notification_label_request_body_template">リクエストボディのテンプレート</string>
+    <string name="notification_label_smtp_server">SMTP サーバー</string>
+    <string name="notification_label_smtp_port">ポート</string>
+    <string name="notification_use_ssl">SSL を使用</string>
+    <string name="notification_requires_auth">ログイン認証が必要</string>
+    <string name="notification_label_smtp_user">ユーザー名</string>
+    <string name="notification_label_smtp_password">パスワード</string>
+    <string name="notification_label_from">差出人</string>
+    <string name="notification_label_to">宛先</string>
+    <string name="notification_label_qmsg_server">Qmsg サーバー</string>
+    <string name="notification_label_qmsg_key">Qmsg Key</string>
+    <string name="notification_label_user_qq">受信 QQ</string>
+    <string name="notification_label_bot_qq">Bot QQ</string>
+    <string name="notification_label_application_token">アプリケーション Token</string>
+    <string name="notification_placeholder_optional">任意</string>
+    <string name="notification_placeholder_optional_signing_secret">任意。Bot で「署名」を選んだ場合に入力</string>
+    <string name="notification_placeholder_optional_required_when_auth">認証を有効にすると必須</string>
+    <string name="notification_placeholder_kook_target_id">ダイレクトメッセージはユーザー ID、チャンネルはチャンネル ID</string>
+    <string name="notification_supported_placeholders">使用可能なプレースホルダー：{title} {content} {time}</string>
+
+    <!-- テストプッシュの個別フィードバック -->
+    <string name="notification_feedback_no_channel">先にプッシュ先を 1 つ以上有効にしてください</string>
+    <string name="notification_feedback_send_success">%1$s を送信しました</string>
+    <string name="notification_feedback_send_failed">%1$s の送信に失敗</string>
+
+    <!-- 実行イベントの通知；チャンネル名と説明はシステムの通知設定に表示される -->
+    <string name="notification_event_channel_silent_name">タスク結果（サイレント）</string>
+    <string name="notification_event_channel_silent_desc">タスク終了後に通知欄へ 1 件残します。音は鳴りません</string>
+    <string name="notification_event_channel_popup_name">タスク結果（バナー）</string>
+    <string name="notification_event_channel_popup_desc">タスク終了後にバナーを表示して音を鳴らします</string>
+    <string name="notification_event_run_completed">すべてのタスクが完了しました</string>
+    <plurals name="notification_event_run_completed_body">
+        <item quantity="other">合計 %1$d タスク</item>
+    </plurals>
+    <string name="notification_event_run_partial">タスクが終了しました。失敗があります</string>
+    <string name="notification_event_run_partial_body">成功 %1$d/%2$d、失敗：%3$s</string>
+    <string name="notification_event_run_failed">タスクの実行に失敗</string>
+    <string name="notification_event_service_died">バックグラウンドサービスが中断</string>
+    <string name="notification_event_service_died_body">実行中のバックグラウンドサービスが予期せず終了し、今回のタスクは中止されました</string>
+
+    <!-- プッシュ失敗の理由；各プッシュ先が生成し、テスト結果に表示される -->
+    <string name="notification_err_network">ネットワーク要求に失敗</string>
+    <string name="notification_err_http_status">サーバーがステータスコード %1$d を返しました</string>
+    <string name="notification_err_serverchan_key_empty">ServerChan の Send Key が未入力</string>
+    <string name="notification_err_serverchan_sctp_fmt">ServerChan の sctp で始まる Send Key の形式が正しくありません</string>
+    <string name="notification_err_telegram_token_empty">Telegram Bot Token が未入力</string>
+    <string name="notification_err_telegram_chat_empty">Telegram Chat ID が未入力</string>
+    <string name="notification_err_discord_token_empty">Discord Bot Token が未入力</string>
+    <string name="notification_err_discord_user_empty">Discord User ID が未入力</string>
+    <string name="notification_err_discord_dm_failed">Discord のダイレクトメッセージチャンネルを作成できませんでした</string>
+    <string name="notification_err_discord_webhook_empty">Discord Webhook URL が未入力</string>
+    <string name="notification_err_dingtalk_token_empty">DingTalk の Access Token が未入力</string>
+    <string name="notification_err_kook_token_empty">KOOK Bot Token が未入力</string>
+    <string name="notification_err_kook_target_empty">KOOK のチャンネル ID またはユーザー ID が未入力</string>
+    <string name="notification_err_kook_api">KOOK API エラー %1$d：%2$s</string>
+    <string name="notification_err_smtp_server_empty">SMTP サーバーのアドレスが未入力</string>
+    <string name="notification_err_smtp_port_invalid">SMTP ポートが数字ではありません</string>
+    <string name="notification_err_smtp_from_empty">差出人アドレスが未入力</string>
+    <string name="notification_err_smtp_to_empty">宛先アドレスが未入力</string>
+    <string name="notification_err_smtp_auth_empty">認証が有効ですがユーザー名またはパスワードが空です</string>
+    <string name="notification_err_bark_server_empty">Bark サーバーのアドレスが未入力</string>
+    <string name="notification_err_bark_key_empty">Bark Send Key が未入力</string>
+    <string name="notification_err_qmsg_server_empty">Qmsg サーバーのアドレスが未入力</string>
+    <string name="notification_err_qmsg_key_empty">Qmsg Key が未入力</string>
+    <string name="notification_err_gotify_server_empty">Gotify サーバーのアドレスが未入力</string>
+    <string name="notification_err_gotify_token_empty">Gotify のアプリケーション Token が未入力</string>
+    <string name="notification_err_gotify_scheme">Gotify サーバーのアドレスは http:// または https:// で始める必要があります</string>
+    <string name="notification_err_webhook_url_empty">Webhook URL が未入力</string>
+    <string name="notification_err_webhook_body_empty">Webhook のリクエストボディのテンプレートが未入力</string>
+    <!-- 初回起動時の rootfs 展開 -->
+    <string name="provision_title">Runtime のセットアップ</string>
+    <string name="provision_subtitle">初回起動時に約 1GB の Runtime をセットアップします。フル版は内蔵パッケージを展開し、軽量版は GitHub からダウンロードします。必要なのは一度だけです</string>
+    <string name="provision_checking">Runtime を確認中…</string>
+    <string name="provision_extracting">展開中 %1$d%%（%2$d / %3$d MB）</string>
+    <string name="provision_downloading">GitHub から Runtime をダウンロード中 %1$d%%…</string>
+    <string name="provision_low_disk">空き容量が不足しています：残り %1$d MB、2 GB 以上の余裕が必要です</string>
+    <string name="provision_not_bundled">GitHub リリースに利用可能な Runtime がありません。ネットワークを確認して再試行するか、Runtime 内蔵のフル版 APK を使用してください</string>
+    <string name="provision_failed">セットアップに失敗：%1$s</string>
+    <string name="provision_retry">再試行</string>
+    <string name="provision_skip">スキップ（デバッグ専用）</string>
+    <string name="provision_source">ダウンロード元</string>
+    <string name="provision_source_direct">GitHub に直接接続</string>
+    <string name="provision_source_mirror">ghproxy ミラー</string>
+    <string name="provision_source_desc">直接接続できない場合はミラーに切り替えてください。切り替えるとすぐにダウンロードをやり直します</string>
+    <string name="app_update_title">AzurPilot Android の新しいバージョン</string>
+    <string name="app_update_message">アプリのバージョン %1$s を利用できます。インストールしてもアプリのデータとインストール済み Runtime は保持されます。</string>
+    <string name="app_update_downloading">インストールパッケージをダウンロードして検証中…</string>
+    <string name="app_update_error">更新に失敗：%1$s</string>
+    <string name="app_update_install">ダウンロードしてインストール</string>
+    <string name="app_update_later">後で</string>
+    <string name="azurpilot_browser_title">AzurPilot WebUI</string>
+    <string name="azurpilot_browser_ready">WebUI はブラウザのタブで開きました。タブを閉じるとアプリに戻ります。</string>
+    <string name="azurpilot_browser_open">WebUI を開く</string>
+    <string name="gateway_startup_auto">起動後に自動で放置を開始</string>
+    <string name="gateway_overview_empty">スケジュールされたタスクはありません</string>
+    <string name="gateway_overview_next">次のタスク：%1$s · %2$s（全 %3$d 件）</string>
+    <string name="settings_runtime">Runtime</string>
+    <string name="settings_runtime_commit">AzurPilot のコミット</string>
+    <string name="settings_runtime_unknown">不明</string>
+    <string name="settings_runtime_installed">インストール済み Runtime のバージョン</string>
+    <string name="settings_runtime_latest">Latest の Runtime バージョン</string>
+    <string name="runtime_update_title">Runtime の更新があります</string>
+    <string name="runtime_update_message">インストール済み：%1$s\nLatest：%2$s\n今すぐ Runtime をダウンロードして更新しますか？</string>
+    <string name="runtime_update_now">今すぐ更新</string>
+    <string name="settings_runtime_managed">起動時に GitHub Latest を確認します。新しいバージョンがあればまず確認し、承認した場合のみ Runtime をダウンロードして更新します。手動チェックではバージョンを確認でき、アプリを再起動すると更新を選べます。</string>
+    <string name="settings_github_mirror">ghproxy.net の更新ミラーを使用</string>
+    <string name="settings_github_mirror_desc">Runtime とアプリの更新確認とダウンロードに使用します。ファイルはリリースマニフェストに従ってサイズと SHA-256 を検証します。</string>
+    <string name="settings_runtime_check">Runtime の更新を確認</string>
+    <string name="settings_runtime_checking">Runtime を確認中…</string>
+    <string name="settings_runtime_current">Runtime は Latest と同じです</string>
+    <string name="settings_runtime_new_version">新しいバージョンがあります。アプリを再起動すると更新を選べます</string>
+    <string name="settings_runtime_check_failed">確認に失敗：%1$s</string>
+    <string name="settings_app_check">アプリの更新を確認</string>
+</resources>

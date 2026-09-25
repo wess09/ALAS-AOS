@@ -144,9 +144,9 @@ class HostState(
     }
 
     /**
-     * 预览面挂载/摘除：挂机页 SurfaceView 的 Surface 交给特权进程渲染虚拟屏画面
+     * 预览面挂载/摘除：虚拟屏页 SurfaceView 的 Surface 交给特权进程渲染画面
      * （native bridge_preview 通道，零拷贝）。特权断线时静默失败——
-     * 页面侧显示占位，连接恢复后随页面 active 翻转会重挂
+     * 页面切走时靠 DisposableEffect 补一次摘面
      */
     fun attachPreviewSurface(surface: Surface) {
         runCatching { servicePort.serviceOrNull()?.setMonitorSurface(surface) }
@@ -159,7 +159,7 @@ class HostState(
     }
 
     /**
-     * 全屏预览上的手动操作：坐标由 UI 换算到虚拟屏坐标系后传入，
+     * 虚拟屏页上的手动操作：坐标由 UI 换算到虚拟屏坐标系后传入，
      * 直通 AIDL 同名方法（oneway，内部带虚拟屏 displayId 注入，见 RemoteServiceImpl）。
      * 高频（一次滑动几十条），失败静默——特权断线时快照清零，注入也随之失去目标
      */
