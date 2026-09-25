@@ -108,13 +108,17 @@ import datetime, hashlib, json, os, pathlib, subprocess
 root = pathlib.Path(os.environ['ROOTFS_DIR']) / 'opt/azurpilot'
 host_commit = subprocess.check_output(['git', '-C', os.environ['REPO_ROOT'], 'rev-parse', 'HEAD'], text=True).strip()
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
-inputs = pathlib.Path(os.environ['REPO_ROOT']) / 'rootfs'
+repo_root = pathlib.Path(os.environ['REPO_ROOT'])
+inputs = repo_root / 'rootfs'
 content_hash = hashlib.sha256()
-for directory in ('build', 'overlays', 'seeds'):
-    for path in sorted((inputs / directory).rglob('*')):
-        if path.is_file():
-            content_hash.update(str(path.relative_to(inputs)).encode())
-            content_hash.update(path.read_bytes())
+tracked = subprocess.check_output(
+    ['git', 'ls-files', '-z', '--', 'rootfs/build', 'rootfs/overlays', 'rootfs/seeds'],
+    cwd=repo_root,
+)
+for name in filter(None, tracked.split(b'\0')):
+    path = repo_root / os.fsdecode(name)
+    content_hash.update(str(path.relative_to(inputs)).encode())
+    content_hash.update(path.read_bytes())
 manifest = {
     'rootfs_version': os.environ['SOURCE_COMMIT'][:12] + '-' + content_hash.hexdigest()[:10],
     'runtime': 'azurpilot-android',
