@@ -68,13 +68,20 @@ jobs:
           elif [[ "$publish" == true ]]; then
             echo 'Release signing secrets are incomplete: build debug APK and publish rootfs only.'
           fi
-          # push 与每小时 schedule 都完整构建；不能只按上游 commit 跳过，宿主代码也会变化。
+          # 每小时定时构建：上游 AP 与宿主都没有新提交时整轮跳过，不空转 CI。
+          # push 事件本身就代表宿主持仓有了新提交，始终构建。
           should_build=true
           mkdir -p .tmp/previous-release
           build_apk=true
           if gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
               --pattern latest.json --dir .tmp/previous-release >/dev/null 2>&1; then
+            previous_ap_commit="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
+            previous_host_commit="$(jq -r '.androidHostCommit // empty' .tmp/previous-release/latest.json)"
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
+            if [[ "$EVENT_NAME" == schedule && "$previous_ap_commit" == "$ref" &&
+                "$previous_host_commit" == "$GITHUB_SHA" ]]; then
+              should_build=false
+            fi
             if [[ "$app_commit" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "${app_commit}^{commit}" 2>/dev/null &&
                 git merge-base --is-ancestor "$app_commit" HEAD; then
               if [[ -z "$(git diff --name-only "$app_commit" HEAD -- app .github/workflows/rootfs.yml)" ]]; then
@@ -82,6 +89,7 @@ jobs:
               fi
             fi
           fi
+          if [[ "$should_build" == false ]]; then build_apk=false; fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "signing_ready=$signing_ready" >> "$GITHUB_OUTPUT"
@@ -226,6 +234,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AP_REF: ${{ needs.resolve.outputs.ref }}
+          HOST_SHA: ${{ github.sha }}
           VERSION_CODE: ${{ needs.apk.outputs.version_code }}
           VERSION_NAME: ${{ needs.apk.outputs.version_name }}
           SIGNING_READY: ${{ needs.resolve.outputs.signing_ready }}
@@ -257,8 +266,8 @@ jobs:
           fi
           jq --arg azurpilotCommit "$AP_REF" --arg rootfsVersion "$rootfs_version" \
             --arg rootfsUrl "$rootfs_url" --arg rootfsSha256 "$rootfs_sha" \
-            --argjson rootfsSize "$rootfs_size" \
-            '. + {azurpilotCommit:$azurpilotCommit,rootfsVersion:$rootfsVersion,rootfsUrl:$rootfsUrl,rootfsSha256:$rootfsSha256,rootfsSize:$rootfsSize}' latest.json > latest.tmp.json
+            --argjson rootfsSize "$rootfs_size" --arg androidHostCommit "$HOST_SHA" \
+            '. + {azurpilotCommit:$azurpilotCommit,rootfsVersion:$rootfsVersion,rootfsUrl:$rootfsUrl,rootfsSha256:$rootfsSha256,rootfsSize:$rootfsSize,androidHostCommit:$androidHostCommit}' latest.json > latest.tmp.json
           mv latest.tmp.json latest.json
           if [[ "$SIGNING_READY" == true && "$APK_BUILT" == true ]]; then
             jq --argjson versionCode "$VERSION_CODE" --arg versionName "$VERSION_NAME" \
