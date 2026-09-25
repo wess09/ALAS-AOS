@@ -1,0 +1,49 @@
+name: Runner info
+description: 打印 runner 的机器规格与工具链版本，供对比构建耗时、排查换 runner 的差异
+
+# build 与 apk 两个 job 共用：每跑一次就把当次硬件摊在日志里，
+# 不用回头查文档猜「这档 runner 到底几核多少内存」。
+runs:
+  using: composite
+  steps:
+    - name: Machine
+      shell: bash
+      run: |
+        echo "runner       : ${RUNNER_NAME:-?} / $RUNNER_OS / $RUNNER_ARCH"
+        echo "image        : ${ImageOS:-?} ${ImageVersion:-?}"
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          echo "model        : $(sysctl -n hw.model)"
+          echo "cpu          : $(sysctl -n machdep.cpu.brand_string)"
+          echo "cores        : ncpu=$(sysctl -n hw.ncpu) physical=$(sysctl -n hw.physicalcpu)"
+          echo "perf levels  : P=$(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || echo -) E=$(sysctl -n hw.perflevel1.physicalcpu 2>/dev/null || echo -)"
+          echo "memory       : $(( $(sysctl -n hw.memsize) / 1048576 )) MB"
+        else
+          echo "cpu          : $(grep -m1 -E 'model name|Hardware|CPU part' /proc/cpuinfo || echo unknown)"
+          echo "cores        : $(nproc)"
+          echo "memory       : $(awk '/^MemTotal:/ {printf "%.0f MB", $2 / 1024}' /proc/meminfo)"
+        fi
+        df -h / "$RUNNER_TEMP"
+    - name: Toolchain
+      shell: bash
+      run: |
+        sdk="${ANDROID_HOME:-/nonexistent}"
+        # 不用管道接 head：日志量小但 head 提前退出会让上游吃到 SIGPIPE
+        if command -v java >/dev/null; then java -version 2>&1 | sed -n 1p; else echo "java         : none"; fi
+        echo "android sdk  : ${ANDROID_HOME:-unset}"
+        echo "build-tools  : $(ls "$sdk/build-tools" 2>/dev/null | tr '\n' ' ')"
+        echo "cmake        : $(ls "$sdk/cmake" 2>/dev/null | tr '\n' ' ')"
+        echo "ndk          : $(ls "$sdk/ndk" 2>/dev/null | tr '\n' ' ')"
+    - name: Single-core benchmark
+      shell: bash
+      run: |
+        # 粗基准：只反映单核标量吞吐，用来横向比 runner，不等于 Gradle 构建耗时
+        python3 - <<'PY'
+        import time
+        n = 10_000_000
+        t0 = time.perf_counter()
+        total = 0
+        for i in range(n):
+            total += i * i
+        d = time.perf_counter() - t0
+        print(f"single-core  : {n / d / 1e6:.1f} Miter/s ({n / 1e6:.0f}M iters in {d:.2f}s)")
+        PY

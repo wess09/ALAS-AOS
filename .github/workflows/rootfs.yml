@@ -23,6 +23,15 @@ on:
         required: false
         default: false
         type: boolean
+      apk_runner:
+        description: Runner for the APK job (macos-26 is the default; drop to macos-15 / ubuntu-24.04 if it misbehaves)
+        required: false
+        default: macos-26
+        type: choice
+        options:
+          - macos-26
+          - macos-15
+          - ubuntu-24.04
 
 permissions:
   actions: read
@@ -145,11 +154,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Runner info
-        run: |
-          uname -m
-          nproc
-          df -h
+      - uses: ./.github/actions/runner-info
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -173,7 +178,10 @@ jobs:
       version_code: ${{ steps.version.outputs.version_code }}
       version_name: ${{ steps.version.outputs.version_name }}
     if: ${{ always() && needs.resolve.outputs.build_apk == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') }}
-    runs-on: ubuntu-24.04
+    # APK 编译走 macOS arm64（M1，3 核 / 7GB）；compile 部分是单核密集，M1 单核比 ubuntu 的 Xeon 快。
+    # 需要回落时改上面的 apk_runner 输入即可，不必动文件。
+    # 注意 rootfs job 仍必须在 Linux arm64 上跑（debootstrap + uv + npm）。
+    runs-on: ${{ inputs.apk_runner || 'macos-26' }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -181,6 +189,8 @@ jobs:
           # 版本名第三段取本仓提交数：浅克隆下 `git rev-list --count HEAD` 只回 1，
           # 会让 CI 与本地算出不同的版本号，必须取全量历史
           fetch-depth: 0
+      # 本地 action 必须在 checkout 之后：机器规格每次构建都留在日志里
+      - uses: ./.github/actions/runner-info
       - uses: actions/download-artifact@v4
         with:
           name: rootfs
@@ -191,6 +201,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/cache@v4
+        with:
+          # Gradle 依赖与 build-cache 都在 GRADLE_USER_HOME 里，冷启动每次都要重下 AGP/Kotlin/Compose
+          path: .tmp/gradle-home
+          key: gradle-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('app/gradle/libs.versions.toml', 'app/gradle/wrapper/gradle-wrapper.properties', 'app/**/*.gradle.kts', 'app/build-logic/**/*.kt') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ runner.arch }}-
       - name: Prepare signing key
         if: ${{ needs.resolve.outputs.publish == 'true' && needs.resolve.outputs.signing_ready == 'true' }}
         env:
@@ -198,7 +215,8 @@ jobs:
         run: |
           test -n "$KEYSTORE_BASE64" || { echo 'AZURPILOT_ANDROID_KEYSTORE_BASE64 is missing' >&2; exit 1; }
           mkdir -p .tmp/signing
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > .tmp/signing/azurpilot.jks
+          # macOS 的 base64 不认 -d，python3 两个镜像都自带
+          printf '%s' "$KEYSTORE_BASE64" | python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > .tmp/signing/azurpilot.jks
       - name: Bundle runtime and build APK
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.tmp/gradle-home
@@ -216,27 +234,41 @@ jobs:
           cd app
           chmod +x gradlew
           mkdir -p ../dist
+          # M1 runner 只有 3 核 7GB，默认的 -Xmx4096m 与 Kotlin/KSP 守护进程会互相挤爆
+          gradle_args=(--console=plain --stacktrace)
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            gradle_args+=("-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1g")
+          fi
           if [[ "$SIGNING_READY" == true ]]; then
-            ./gradlew :app:assembleRelease --console=plain --stacktrace
+            ./gradlew :app:assembleRelease "${gradle_args[@]}"
             cp app/build/outputs/apk/release/*.apk ../dist/azurpilot-full.apk
           else
             unset KEYSTORE_PATH KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD
-            ./gradlew :app:assembleDebug --console=plain --stacktrace
+            ./gradlew :app:assembleDebug "${gradle_args[@]}"
             cp app/build/outputs/apk/debug/*.apk ../dist/azurpilot-full.apk
           fi
           rm app/src/main/assets/rootfs/rootfs.tar.xz app/src/main/assets/rootfs/BUILD_MANIFEST
+          # 第二次不带 clean：assets 变了 Gradle 自己会重跑 merge/package，
+          # 把 Kotlin/KSP/CMake 全部重编一遍纯属白烧
           if [[ "$SIGNING_READY" == true ]]; then
-            ./gradlew clean :app:assembleRelease -Pazurpilot.slimApk=true --console=plain --stacktrace
+            ./gradlew :app:assembleRelease -Pazurpilot.slimApk=true "${gradle_args[@]}"
             cp app/build/outputs/apk/release/*.apk ../dist/azurpilot-update.apk
           else
-            ./gradlew clean :app:assembleDebug -Pazurpilot.slimApk=true --console=plain --stacktrace
+            ./gradlew :app:assembleDebug -Pazurpilot.slimApk=true "${gradle_args[@]}"
             cp app/build/outputs/apk/debug/*.apk ../dist/azurpilot-update.apk
           fi
+          # 增量包只有个位数 MB：兜住「增量重打包没生效、把完整包当增量包发出去」
+          test "$(wc -c < ../dist/azurpilot-update.apk)" -lt 50000000
       - name: Read version from build output
         id: version
         run: |
           set -euo pipefail
-          meta="$(find app/app/build/outputs/apk -name output-metadata.json -print -quit)"
+          # 不用 find -quit / ls|head：BSD 与 GNU 行为不一致，且 set -o pipefail 下 head 会 SIGPIPE
+          meta=''
+          for candidate in app/app/build/outputs/apk/release/output-metadata.json \
+                           app/app/build/outputs/apk/debug/output-metadata.json; do
+            if [ -f "$candidate" ]; then meta="$candidate"; break; fi
+          done
           test -n "$meta"
           code="$(jq -r '.elements[0].versionCode' "$meta")"
           name="$(jq -r '.elements[0].versionName' "$meta")"
