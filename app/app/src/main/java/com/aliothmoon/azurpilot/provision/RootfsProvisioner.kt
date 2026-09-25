@@ -2,6 +2,7 @@ package com.aliothmoon.azurpilot.provision
 
 import android.app.Application
 import android.system.Os
+import com.aliothmoon.azurpilot.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,11 @@ import java.io.File
 import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
+import org.json.JSONObject
 
 /** 首启 rootfs 部署状态机 */
 sealed interface ProvisionState {
@@ -32,6 +37,8 @@ sealed interface ProvisionState {
 
     /** 解压中；进度按压缩字节读数 / 资产总长（流式解压拿不到的解压后总量不用） */
     data class Extracting(val doneBytes: Long, val totalBytes: Long) : ProvisionState
+
+    data class Downloading(val doneBytes: Long, val totalBytes: Long) : ProvisionState
 
     data object Ready : ProvisionState
 
@@ -62,6 +69,7 @@ class RootfsProvisioner(
     private val rootDir: File get() = File(app.filesDir, "rootfs")
     private val tmpDir: File get() = File(app.filesDir, "rootfs.tmp")
     private val markerFile: File get() = File(rootDir, MARKER_NAME)
+    private val sourceCodeFile: File get() = File(rootDir, SOURCE_CODE_NAME)
 
     fun start() {
         if (running.compareAndSet(false, true)) {
@@ -79,35 +87,26 @@ class RootfsProvisioner(
     private suspend fun run() = withContext(Dispatchers.IO) {
         _state.value = ProvisionState.Checking
         try {
+            val previous = File(app.filesDir, "rootfs.previous")
+            if (!rootDir.exists() && previous.exists()) {
+                check(previous.renameTo(rootDir)) { "cannot restore previous rootfs" }
+            }
             val bundled = bundledVersion()
             if (bundled == null) {
                 Timber.w("rootfs archive not bundled in this build")
                 _state.value = ProvisionState.NotBundled
                 return@withContext
             }
-            if (isInstalled(bundled)) {
-                Timber.i("rootfs $bundled already provisioned")
-                _state.value = ProvisionState.Ready
-                return@withContext
+            val installedCode = sourceCodeFile.takeIf { it.isFile }?.readText()?.trim()?.toIntOrNull() ?: 0
+            if (!isInstalled() || (installedVersion() != bundled && installedCode < BuildConfig.VERSION_CODE)) {
+                checkDisk()
+                extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled, BuildConfig.VERSION_CODE)
             }
-
-            val free = app.filesDir.let { it.mkdirs(); it.usableSpace }
-            if (free < MIN_FREE_BYTES) {
-                Timber.w("low disk: ${free / 1_000_000}MB free, need ${MIN_FREE_BYTES / 1_000_000}MB")
-                _state.value = ProvisionState.LowDisk(free)
-                return@withContext
+            // 发布通道只在冷启动时检查，Ready 之前不启动 proot，避免替换正在使用的 rootfs。
+            runCatching { updateFromRelease() }.onFailure {
+                tmpDir.deleteRecursively()
+                Timber.w(it, "rootfs update skipped")
             }
-
-            extract()
-
-            // 解完 sanity：解释器在且可执行，版本以镜像内清单为准
-            val python = File(rootDir, PYTHON_REL)
-            check(python.isFile || java.nio.file.Files.isSymbolicLink(python.toPath())) {
-                "$PYTHON_REL missing"
-            }
-            val installed = readExtractedVersion() ?: bundled
-            markerFile.writeText(installed)
-            Timber.i("rootfs $installed provisioned")
             _state.value = ProvisionState.Ready
         } catch (e: Exception) {
             Timber.e(e, "rootfs provision failed")
@@ -118,8 +117,8 @@ class RootfsProvisioner(
         }
     }
 
-    private fun isInstalled(bundled: String): Boolean =
-        installedVersion() == bundled &&
+    private fun isInstalled(): Boolean =
+        installedVersion() == readExtractedVersion() &&
                 File(rootDir, PYTHON_REL).let {
                     it.isFile || java.nio.file.Files.isSymbolicLink(it.toPath())
                 }
@@ -138,16 +137,72 @@ class RootfsProvisioner(
     private fun parseVersion(manifestJson: String): String? =
         VERSION_KEY.find(manifestJson)?.groupValues?.get(1)
 
+    private fun checkDisk() {
+        val free = app.filesDir.let { it.mkdirs(); it.usableSpace }
+        if (free < MIN_FREE_BYTES) throw IOException("磁盘空间不足：剩余 ${free / 1_000_000} MB，需要至少 2 GB")
+    }
+
+    private fun updateFromRelease() {
+        val index = URL("$INDEX_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+        val info = try {
+            index.connectTimeout = 12_000
+            index.readTimeout = 12_000
+            index.setRequestProperty("Cache-Control", "no-cache")
+            check(index.responseCode == 200) { "更新检查 HTTP ${index.responseCode}" }
+            JSONObject(index.inputStream.bufferedReader().use { it.readText() })
+        } finally { index.disconnect() }
+        // 旧版 latest.json 只有 APK 字段，等下一次发布同时带上 rootfs 资产。
+        if (!info.has("rootfsVersion")) return
+        val version = info.getString("rootfsVersion")
+        val code = info.getInt("versionCode")
+        val currentCode = sourceCodeFile.takeIf { it.isFile }?.readText()?.trim()?.toIntOrNull()
+            ?: if (installedVersion() == bundledVersion()) BuildConfig.VERSION_CODE else 0
+        if (version == installedVersion() || code < currentCode) return
+        val url = info.getString("rootfsUrl")
+        val sha = info.getString("rootfsSha256")
+        val size = info.getLong("rootfsSize")
+        require(url.startsWith("https://github.com/wess09/AzurPilot-AOS/releases/download/azurpilot-android-dev/"))
+        require(sha.matches(Regex("[0-9a-f]{64}")) && size > 0)
+        checkDisk()
+        val archive = File(app.filesDir, "rootfs-update.tar.xz")
+        try {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            try {
+                connection.connectTimeout = 20_000
+                connection.readTimeout = 120_000
+                check(connection.responseCode == 200) { "rootfs 下载 HTTP ${connection.responseCode}" }
+                val digest = MessageDigest.getInstance("SHA-256")
+                var done = 0L
+                connection.inputStream.use { input ->
+                    archive.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            done += count
+                            check(done <= size) { "rootfs 下载大小超出清单" }
+                            digest.update(buffer, 0, count)
+                            output.write(buffer, 0, count)
+                            _state.value = ProvisionState.Downloading(done, size)
+                        }
+                    }
+                }
+                check(done == size && digest.digest().joinToString("") { "%02x".format(it) } == sha) {
+                    "rootfs 下载校验失败"
+                }
+            } finally { connection.disconnect() }
+            extract({ archive.inputStream() }, size, version, code)
+            Timber.i("rootfs updated to $version")
+        } finally { archive.delete() }
+    }
+
     // ── 解压 ──
 
-    private fun extract() {
+    private fun extract(openArchive: () -> InputStream, total: Long, expectedVersion: String, sourceCode: Int) {
         tmpDir.deleteRecursively()
         check(tmpDir.mkdirs()) { "cannot create $tmpDir" }
 
-        // openFd 拿未压缩资产的真实长度做进度分母（noCompress "xz" 已配）
-        val afd = app.assets.openFd(ASSET_ARCHIVE)
-        val total = afd.length
-        val counting = CountingInputStream(afd.createInputStream().buffered(BUFFER_SIZE)) { read ->
+        val counting = CountingInputStream(openArchive().buffered(BUFFER_SIZE)) { read ->
             _state.value = ProvisionState.Extracting(read, total)
         }
         val extracted = mutableMapOf<String, File>()
@@ -158,7 +213,6 @@ class RootfsProvisioner(
                 extractEntry(tar, entry, extracted, deferredLinks)
             }
         }
-        afd.close()
 
         // 硬链接前向引用兜底：解完全量后目标必然在（否则包本身坏）
         for ((name, linkName) in deferredLinks) {
@@ -166,6 +220,13 @@ class RootfsProvisioner(
             check(src.isFile) { "hard link target missing: $linkName (for $name)" }
             src.copyTo(File(tmpDir, name), overwrite = true)
         }
+
+        val extractedVersion = parseVersion(File(tmpDir, MANIFEST_REL).readText())
+        check(extractedVersion == expectedVersion) { "rootfs 清单版本不符" }
+        val python = File(tmpDir, PYTHON_REL)
+        check(python.isFile || java.nio.file.Files.isSymbolicLink(python.toPath())) { "$PYTHON_REL missing" }
+        File(tmpDir, MARKER_NAME).writeText(expectedVersion)
+        File(tmpDir, SOURCE_CODE_NAME).writeText(sourceCode.toString())
 
         // APK 升级重铺 rootfs 时保留用户实例与日志。
         val oldPilot = File(rootDir, "opt/azurpilot")
@@ -276,6 +337,8 @@ class RootfsProvisioner(
         const val MANIFEST_REL = "opt/azurpilot/BUILD_MANIFEST"
         const val PYTHON_REL = "opt/azurpilot/.venv/bin/python"
         const val MARKER_NAME = ".provisioned"
+        const val SOURCE_CODE_NAME = ".source-version-code"
+        const val INDEX_URL = "https://github.com/wess09/AzurPilot-AOS/releases/download/azurpilot-android-dev/latest.json"
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024
         val VERSION_KEY = Regex(""""rootfs_version"\s*:\s*"([^"]+)"""")

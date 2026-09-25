@@ -648,6 +648,7 @@
     <string name="provision_subtitle">The first launch extracts about 1 GB of runtime files. This takes a minute or two and happens only once</string>
     <string name="provision_checking">Checking runtime environment…</string>
     <string name="provision_extracting">Extracting %1$d%% (%2$d / %3$d MB)</string>
+    <string name="provision_downloading">Downloading runtime from GitHub %1$d%%…</string>
     <string name="provision_low_disk">Not enough storage: only %1$d MB left, at least 2 GB required</string>
     <string name="provision_not_bundled">This build does not bundle the runtime environment (dev build)</string>
     <string name="provision_failed">Setup failed: %1$s</string>
@@ -668,6 +669,6 @@
     <string name="settings_runtime">Runtime</string>
     <string name="settings_runtime_commit">AzurPilot commit</string>
     <string name="settings_runtime_unknown">Unknown</string>
-    <string name="settings_runtime_managed">The bundled runtime ships with the app package and is not hot-updated separately; when a new build exists the app prompts to install it.</string>
+    <string name="settings_runtime_managed">The app checks GitHub for a newer runtime on launch, then downloads, verifies and applies it. If that fails, the current runtime remains available. The app itself updates separately.</string>
     <string name="settings_runtime_check">Check for app update</string>
 </resources>

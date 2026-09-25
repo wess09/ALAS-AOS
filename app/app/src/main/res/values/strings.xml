@@ -643,6 +643,7 @@
     <string name="provision_subtitle">首次启动需要解压约 1GB 运行环境，通常一到三分钟，只需一次</string>
     <string name="provision_checking">正在检查运行环境…</string>
     <string name="provision_extracting">解压中 %1$d%%（%2$d / %3$d MB）</string>
+    <string name="provision_downloading">正在从 GitHub 下载运行环境 %1$d%%…</string>
     <string name="provision_low_disk">磁盘空间不足：仅剩 %1$d MB，需要至少 2 GB 余量</string>
     <string name="provision_not_bundled">此安装包未内置运行环境（开发构建）</string>
     <string name="provision_failed">部署失败：%1$s</string>
@@ -663,6 +664,6 @@
     <string name="settings_runtime">运行时</string>
     <string name="settings_runtime_commit">AzurPilot 提交</string>
     <string name="settings_runtime_unknown">未知</string>
-    <string name="settings_runtime_managed">内置运行时随 App 整包更新，不单独热更；有新版本时打开 App 会提示安装。</string>
+    <string name="settings_runtime_managed">启动时自动检查 GitHub 上的运行环境新版本；下载校验后直接更新，失败时继续使用当前版本。App 本身可单独更新。</string>
     <string name="settings_runtime_check">检查 App 更新</string>
 </resources>

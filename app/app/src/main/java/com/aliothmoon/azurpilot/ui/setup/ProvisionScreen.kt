@@ -80,6 +80,12 @@ fun ProvisionScreen(
                     )
                 }
 
+                is ProvisionState.Downloading -> {
+                    val progress = if (state.totalBytes > 0) state.doneBytes.toFloat() / state.totalBytes else 0f
+                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                    StatusLine(stringResource(R.string.provision_downloading, (progress * 100).toInt()))
+                }
+
                 is ProvisionState.LowDisk -> {
                     StatusLine(
                         stringResource(

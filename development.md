@@ -9,7 +9,8 @@
 - `app/`：Kotlin/Compose Android 宿主，根包 `com.aliothmoon.azurpilot`（namespace 同名；applicationId 另由构建配方给）。`provision/RootfsProvisioner.kt` 解包内置 Ubuntu rootfs；`proot/ProotHost.kt` 管理单个 AzurPilot WebUI 进程及最终清场；`remote/internal/BridgeServer.kt` 连接虚拟屏截图、触控、应用控制。React WebUI 由浏览器 Custom Tab 打开，挂机页和悬浮窗继续使用回环控制接口。
 - 宿主 UI 为**标准 Material 3**：色板取系统动态色（Android 12+）/M3 基线色板（其余），形状、字阶、动效一律用 `MaterialTheme` 默认 token，组件直接用 M3 现成件（`NavigationBar`、`Card`、`Button`、`Switch`、`FilterChip`、`ModalBottomSheet`、`ListItem`、`ExposedDropdownMenuBox` 等）。改 UI 时**不要再引入自绘控件或自定义圆角/字阶体系**；`theme/Theme.kt` 是全 App 唯一主题入口，`theme/DesignTokens.kt` 只放 M3 之外的间距/图标尺寸。
 - `rootfs/build/build-azurpilot.sh`：原生 ARM64 Ubuntu 24.04 构建；锁定 Python 3.14.6、`uv.lock`，预构建 React，验证 OCR CPU 推理，输出随 APK 发布的 rootfs 与构建清单。
-- `.github/workflows/rootfs.yml`：由 AOS 每 15 分钟轮询 AzurPilot `dev`；新 commit 通过门禁后构建固定签名 APK，更新 `azurpilot-android-dev` release 和 App 更新清单。
+- `.github/workflows/rootfs.yml`：由 AOS 每 15 分钟轮询 AzurPilot `dev`；新 commit 通过门禁后构建固定签名 APK，更新 `azurpilot-android-dev` release，上传 rootfs 归档、清单及 SHA-256/大小索引。
+- `provision/RootfsProvisioner.kt`：冷启动先部署内置包，再检查 GitHub 开发通道的 rootfs；下载并校验后，在 proot 启动前原子替换，保留实例配置与日志。离线或更新失败继续使用现有 rootfs。
 - `update/AppUpdateManager.kt`：App 启动时检查 APK 更新清单，下载并校验 SHA-256，随后调用系统安装器覆盖安装。
 - AzurPilot Android 设备后端、控制 API 和 proot 进程兼容位于 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev` 分支；AOS 构建直接钉住对应提交，不维护源码覆盖补丁。
 - `rootfs/seeds/`：Android deploy 配置及实例种子；`rootfs/overlays/`：单进程入口和兼容性检查、原子切换、失败回滚脚本。

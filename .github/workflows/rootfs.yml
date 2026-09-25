@@ -180,6 +180,12 @@ jobs:
         with:
           name: azurpilot-android-apk
           path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: rootfs
+          path: .tmp/publish-rootfs
+          run-id: ${{ inputs.reuse_rootfs_run_id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish in-app update channel
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -195,13 +201,22 @@ jobs:
           sha="$(sha256sum "$asset" | awk '{print $1}')"
           size="$(stat -c %s "$asset")"
           url="https://github.com/${GITHUB_REPOSITORY}/releases/download/azurpilot-android-dev/$asset"
+          cp .tmp/publish-rootfs/rootfs.tar.xz rootfs.tar.xz
+          cp .tmp/publish-rootfs/BUILD_MANIFEST BUILD_MANIFEST
+          rootfs_version="$(jq -r '.rootfs_version' BUILD_MANIFEST)"
+          test -n "$rootfs_version" && test "$rootfs_version" != null
+          rootfs_sha="$(sha256sum rootfs.tar.xz | awk '{print $1}')"
+          rootfs_size="$(stat -c %s rootfs.tar.xz)"
+          rootfs_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/azurpilot-android-dev/rootfs.tar.xz"
           jq -n --argjson versionCode "$VERSION_CODE" --arg versionName "$VERSION_NAME" \
             --arg azurpilotCommit "$AP_REF" --arg apkUrl "$url" --arg apkSha256 "$sha" \
-            --argjson apkSize "$size" \
-            '{versionCode:$versionCode,versionName:$versionName,azurpilotCommit:$azurpilotCommit,apkUrl:$apkUrl,apkSha256:$apkSha256,apkSize:$apkSize}' \
+            --argjson apkSize "$size" --arg rootfsVersion "$rootfs_version" \
+            --arg rootfsUrl "$rootfs_url" --arg rootfsSha256 "$rootfs_sha" \
+            --argjson rootfsSize "$rootfs_size" \
+            '{versionCode:$versionCode,versionName:$versionName,azurpilotCommit:$azurpilotCommit,apkUrl:$apkUrl,apkSha256:$apkSha256,apkSize:$apkSize,rootfsVersion:$rootfsVersion,rootfsUrl:$rootfsUrl,rootfsSha256:$rootfsSha256,rootfsSize:$rootfsSize}' \
             > latest.json
           gh release view azurpilot-android-dev --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create azurpilot-android-dev --repo "$GITHUB_REPOSITORY" --prerelease \
               --title 'AzurPilot Android 自动更新通道' \
               --notes '由 AzurPilot dev 更新自动构建。安装后由 App 内更新器继续接收更新。'
-          gh release upload azurpilot-android-dev "$asset" latest.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload azurpilot-android-dev "$asset" rootfs.tar.xz BUILD_MANIFEST latest.json --clobber --repo "$GITHUB_REPOSITORY"

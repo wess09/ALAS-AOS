@@ -241,11 +241,7 @@ private fun AboutCard() {
 }
 
 /**
- * 运行时卡：内置 AzurPilot 的提交，以及「更新怎么走」
- *
- * Android 下上游有意关闭了运行时热更（`updater.status` 直接回 `managedByAndroid=true`、
- * `available=false`），运行时是随 App 整包走的——所以这里不做 git 式热更按钮，
- * 只展示版本并把用户引到 App 整包更新上。
+ * 运行时卡：启动时由宿主更新完整 rootfs，上游 git 热更仍由 Android 关闭。
  */
 @Composable
 private fun RuntimeCard(api: AzurPilotApi = koinInject(), updateManager: AppUpdateManager = koinInject()) {

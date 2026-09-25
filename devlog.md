@@ -3,6 +3,11 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：运行环境独立自动更新
+- 启动时从 GitHub `azurpilot-android-dev` 发布通道检查 rootfs；下载完整归档，按清单大小与 SHA-256 校验，在启动 proot 前解包并原子替换。保留用户实例配置与日志；网络或更新失败则继续使用已安装版本。
+- 发布流程新增 `rootfs.tar.xz`、`BUILD_MANIFEST` 资产及 `latest.json` 的 rootfs 版本、地址、校验值字段。旧清单缺字段时跳过运行环境更新。
+- 安装包更新后的内置 rootfs 仍可覆盖较旧的独立更新版本；设置页说明同步改为独立更新流程。
+
 ### 2026-09-25 · 未发版：接入 AzurPilot 富接口（自启 / 任务总览 / 运行时）
 - **接入 AzurPilot 富接口 `/api/v1/ws`**（用户选定「自启 + 任务总览」「运行时热更新」）：新增 WS 网关客户端与 App 侧状态层，挂机页加「调度总览 + 启动后自动开始挂机」，设置页加「运行时」卡。鉴权走**本机直连免密**——网关的 `is_local_client()` 只要求来源与 Host 是回环且无 Origin 头，而 OkHttp 的 WebSocket 天然不带 Origin，故无需 WebUI 密码。
 - **运行时热更在 Android 下被上游有意关闭**：`update_service.py` 的 `status()` 开头即 `if self.android: ... managedByAndroid=True, available=False`，运行时随 APK 整包走。因此设置页那张卡只展示运行时提交并提供「检查 App 更新」（走已有整包更新器），未做 git 式热更按钮；要真热更需先在上游放开该分支。

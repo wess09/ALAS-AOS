@@ -131,7 +131,9 @@ fun AppRoot(
     var provisionSkipped by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { provisioner.start() }
     val appUpdateState by appUpdateManager.state.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { appUpdateManager.check() }
+    LaunchedEffect(provisionState) {
+        if (provisionState is ProvisionState.Ready) appUpdateManager.check()
+    }
     val showProvision = provisionState !is ProvisionState.Ready && !provisionSkipped
 
     // 部署就绪即起内置 AzurPilot 环境（自愈清锁→热更新→wrapper/WebUI；ProotHost 内幂等）
