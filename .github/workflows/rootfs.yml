@@ -19,7 +19,7 @@ on:
         default: false
         type: boolean
       force:
-        description: Rebuild even when upstream AP and host commits are unchanged
+        description: Rebuild even when upstream AzurPilot has not changed
         required: false
         default: false
         type: boolean
@@ -76,9 +76,11 @@ jobs:
             echo 'Release signing secrets are incomplete; cannot publish all APKs.' >&2
             exit 1
           fi
-          # Dispatch may have waited for an earlier build. Recheck the published release here.
+          # Both push and dispatch only build when the upstream source changed.
+          # Dispatch may have waited for an earlier build, so check again here.
           should_build=true
           mkdir -p .tmp/previous-release
+          previous_ap_commit=''
           previous_version_code=''
           previous_version_name=''
           app_commit=''
@@ -86,15 +88,21 @@ jobs:
             gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
               --pattern latest.json --dir .tmp/previous-release
             previous_ap_commit="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
-            previous_host_commit="$(jq -r '.androidHostCommit // empty' .tmp/previous-release/latest.json)"
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
             previous_version_code="$(jq -r '.versionCode // empty' .tmp/previous-release/latest.json)"
             previous_version_name="$(jq -r '.versionName // empty' .tmp/previous-release/latest.json)"
-            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" &&
-                  ( "$EVENT_NAME" != push || "$previous_host_commit" == "$GITHUB_SHA" ) ]]; then
+            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" ]]; then
               should_build=false
             fi
           fi
+          echo "Upstream dev: $ref; published: ${previous_ap_commit:-none}; build: $should_build"
+          {
+            echo '### AzurPilot upstream check'
+            echo "- Trigger: $EVENT_NAME"
+            echo "- Upstream dev: \`$ref\`"
+            echo "- Published commit: \`${previous_ap_commit:-none}\`"
+            echo "- Build rootfs and APKs: **$should_build**"
+          } >> "$GITHUB_STEP_SUMMARY"
           # Rebuild both APK variants with every new rootfs, but keep their package version
           # unless a Kotlin source file changed since the last versioned APK.
           version_code="$(git log -1 --format=%ct HEAD)"

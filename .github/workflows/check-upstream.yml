@@ -32,9 +32,21 @@ jobs:
             published="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
           fi
           if [[ "$ref" == "$published" ]]; then
+            {
+              echo '### AzurPilot upstream check'
+              echo "- Upstream dev: \`$ref\`"
+              echo "- Published commit: \`$published\`"
+              echo '- Build dispatched: **false**'
+            } >> "$GITHUB_STEP_SUMMARY"
             echo "AzurPilot dev is unchanged ($ref); skipping build."
             exit 0
           fi
+          {
+            echo '### AzurPilot upstream check'
+            echo "- Upstream dev: \`$ref\`"
+            echo "- Published commit: \`${published:-none}\`"
+            echo '- Build dispatched: **true**'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "AzurPilot dev changed: ${published:-<no release>} -> $ref"
           gh workflow run rootfs.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
             -f azurpilot_ref="$ref" -f publish_update=true
