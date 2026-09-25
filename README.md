@@ -8,6 +8,13 @@
 
 全功能《碧蓝航线》自动化助手 [AzurPilot](https://github.com/wess09/AzurPilot) 专用的 Android 移动端一体化运行环境
 
+<p align="center">
+  <b>简体中文</b> |
+  <a href="README_en.md">English</a> |
+  <a href="README_ja.md">日本語</a> |
+  <a href="README_zh-TW.md">繁體中文</a>
+</p>
+
 ---
 
 <!-- 核心环境与平台标签组 -->
