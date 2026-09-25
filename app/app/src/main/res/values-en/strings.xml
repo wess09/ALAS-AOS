@@ -672,11 +672,12 @@
     <string name="settings_runtime_commit">AzurPilot commit</string>
     <string name="settings_runtime_unknown">Unknown</string>
     <string name="settings_runtime_installed">Installed runtime version</string>
+    <string name="settings_runtime_latest">Latest runtime version</string>
     <string name="settings_runtime_managed">The app checks GitHub for a newer runtime on launch, then downloads, verifies and applies it before starting the service. A manual check shows the Latest status; restart the app to apply a new version.</string>
     <string name="settings_runtime_check">Check runtime update</string>
     <string name="settings_runtime_checking">Checking runtime…</string>
     <string name="settings_runtime_current">Runtime is up to date with Latest</string>
-    <string name="settings_runtime_new_version">New version %1$s available; restart the app to update</string>
+    <string name="settings_runtime_new_version">New version available; restart the app to update</string>
     <string name="settings_runtime_check_failed">Check failed: %1$s</string>
     <string name="settings_app_check">Check for app update</string>
 </resources>

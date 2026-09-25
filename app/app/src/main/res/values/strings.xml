@@ -667,11 +667,12 @@
     <string name="settings_runtime_commit">AzurPilot 提交</string>
     <string name="settings_runtime_unknown">未知</string>
     <string name="settings_runtime_installed">已安装运行时版本</string>
+    <string name="settings_runtime_latest">Latest 运行时版本</string>
     <string name="settings_runtime_managed">启动时自动检查 GitHub 上的运行环境新版本；下载校验后在启动服务前更新。手动检查可查看 Latest 状态，发现新版本后重启 App 应用更新。</string>
     <string name="settings_runtime_check">检查运行时更新</string>
     <string name="settings_runtime_checking">正在检查运行时…</string>
     <string name="settings_runtime_current">运行时已是 Latest 版本</string>
-    <string name="settings_runtime_new_version">发现新版本 %1$s；重启 App 后自动更新</string>
+    <string name="settings_runtime_new_version">发现新版本；重启 App 后自动更新</string>
     <string name="settings_runtime_check_failed">检查失败：%1$s</string>
     <string name="settings_app_check">检查 App 更新</string>
 </resources>
