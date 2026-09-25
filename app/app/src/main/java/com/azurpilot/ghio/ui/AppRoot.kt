@@ -128,18 +128,30 @@ fun AppRoot(
 
     // 首启 rootfs 部署的门：未 Ready 时整屏接管，tab/二级页都在门内
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
+    val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
     var provisionSkipped by remember { mutableStateOf(false) }
+    var runtimePromptDismissed by rememberSaveable { mutableStateOf(false) }
+    var applyingRuntimeUpdate by remember { mutableStateOf(false) }
+    var prootStarted by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { provisioner.start() }
     val appUpdateState by appUpdateManager.state.collectAsStateWithLifecycle()
-    LaunchedEffect(provisionState) {
-        if (provisionState is ProvisionState.Ready) appUpdateManager.check()
+    LaunchedEffect(prootStarted) {
+        if (prootStarted) appUpdateManager.check()
     }
     val showProvision = provisionState !is ProvisionState.Ready && !provisionSkipped
 
-    // 部署就绪即起内置 AzurPilot 环境（自愈清锁→热更新→wrapper/WebUI；ProotHost 内幂等）
+    // 启动时只查版本，先等用户决定是否更新，再启动 proot。
     val prootHost: ProotHost = koinInject()
-    LaunchedEffect(provisionState) {
-        if (provisionState is ProvisionState.Ready) prootHost.ensureStarted()
+    val installedRuntime = provisioner.installedVersion()
+    val runtimeAvailable = runtimeCheck.checked && runtimeCheck.error == null &&
+        runtimeCheck.latestVersion != null && runtimeCheck.latestVersion != installedRuntime
+    LaunchedEffect(provisionState, runtimeCheck, runtimePromptDismissed, applyingRuntimeUpdate) {
+        if (provisionState is ProvisionState.Ready && runtimeCheck.checked && !runtimeCheck.checking &&
+            !applyingRuntimeUpdate && (!runtimeAvailable || runtimePromptDismissed)
+        ) {
+            prootHost.ensureStarted()
+            prootStarted = true
+        }
     }
 
     val darkTheme = when (settingsState.themeMode) {
@@ -150,6 +162,34 @@ fun AppRoot(
     LaunchedEffect(darkTheme) { onDarkThemeChanged(darkTheme) }
 
     AzurPilotTheme(darkTheme = darkTheme) {
+        if (provisionState is ProvisionState.Ready && runtimeAvailable &&
+            !runtimePromptDismissed && !applyingRuntimeUpdate && !prootStarted
+        ) {
+            AlertDialog(
+                onDismissRequest = { runtimePromptDismissed = true },
+                title = { Text(stringResource(R.string.runtime_update_title)) },
+                text = { Text(stringResource(R.string.runtime_update_message, installedRuntime.orEmpty(), runtimeCheck.latestVersion.orEmpty())) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        applyingRuntimeUpdate = true
+                        provisioner.applyUpdate()
+                    }) { Text(stringResource(R.string.runtime_update_now)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { runtimePromptDismissed = true }) {
+                        Text(stringResource(R.string.app_update_later))
+                    }
+                },
+            )
+        }
+        LaunchedEffect(provisionState, applyingRuntimeUpdate) {
+            if (applyingRuntimeUpdate && provisionState is ProvisionState.Ready &&
+                runtimeCheck.latestVersion == provisioner.installedVersion()
+            ) applyingRuntimeUpdate = false
+            if (applyingRuntimeUpdate && provisionState is ProvisionState.Ready && runtimeCheck.error != null) {
+                applyingRuntimeUpdate = false
+            }
+        }
         appUpdateState.available?.let { update ->
             AlertDialog(
                 onDismissRequest = appUpdateManager::dismiss,
@@ -158,7 +198,7 @@ fun AppRoot(
                     Text(
                         if (appUpdateState.downloading) stringResource(R.string.app_update_downloading)
                         else if (appUpdateState.error != null) stringResource(R.string.app_update_error, appUpdateState.error!!)
-                        else stringResource(R.string.app_update_message, update.versionName, update.azurPilotCommit.take(10)),
+                        else stringResource(R.string.app_update_message, update.versionName),
                     )
                 },
                 confirmButton = {

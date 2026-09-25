@@ -652,12 +652,12 @@
     <string name="provision_extracting">Extracting %1$d%% (%2$d / %3$d MB)</string>
     <string name="provision_downloading">Downloading runtime from GitHub %1$d%%…</string>
     <string name="provision_low_disk">Not enough storage: only %1$d MB left, at least 2 GB required</string>
-    <string name="provision_not_bundled">This build does not bundle the runtime environment (dev build)</string>
+    <string name="provision_not_bundled">No runtime is installed. Install the full APK that includes the runtime first</string>
     <string name="provision_failed">Setup failed: %1$s</string>
     <string name="provision_retry">Retry</string>
     <string name="provision_skip">Skip (debug only)</string>
     <string name="app_update_title">AzurPilot Android update</string>
-    <string name="app_update_message">Version %1$s is ready (AzurPilot %2$s). App data will be preserved.</string>
+    <string name="app_update_message">App version %1$s is ready. Your app data and installed runtime will be preserved.</string>
     <string name="app_update_downloading">Downloading and verifying the APK…</string>
     <string name="app_update_error">Update failed: %1$s</string>
     <string name="app_update_install">Download and install</string>
@@ -673,11 +673,14 @@
     <string name="settings_runtime_unknown">Unknown</string>
     <string name="settings_runtime_installed">Installed runtime version</string>
     <string name="settings_runtime_latest">Latest runtime version</string>
-    <string name="settings_runtime_managed">The app checks GitHub for a newer runtime on launch, then downloads, verifies and applies it before starting the service. A manual check shows the Latest status; restart the app to apply a new version.</string>
+    <string name="runtime_update_title">Runtime update available</string>
+    <string name="runtime_update_message">Installed: %1$s\nLatest: %2$s\nDownload and update the runtime now?</string>
+    <string name="runtime_update_now">Update now</string>
+    <string name="settings_runtime_managed">The app checks GitHub Latest on launch and asks before downloading or updating the runtime. A manual check shows the available version; restart the app to choose an update.</string>
     <string name="settings_runtime_check">Check runtime update</string>
     <string name="settings_runtime_checking">Checking runtime…</string>
     <string name="settings_runtime_current">Runtime is up to date with Latest</string>
-    <string name="settings_runtime_new_version">New version available; restart the app to update</string>
+    <string name="settings_runtime_new_version">New version available; restart the app to choose an update</string>
     <string name="settings_runtime_check_failed">Check failed: %1$s</string>
     <string name="settings_app_check">Check for app update</string>
 </resources>

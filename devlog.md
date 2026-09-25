@@ -3,6 +3,12 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：运行时更新确认与轻量 APK
+- 启动时只检查 GitHub Latest 的 rootfs 版本；发现新版先弹出确认，只有用户同意后才在启动 proot 前下载和替换。设置页手动检查继续展示已安装与 Latest 版本。
+- APK 版本号和版本名只随 Android 宿主提交变化，不再纳入 AP 上游提交；AP 更新独立提示 rootfs，不再触发 APK 更新。
+- CI 同时构建内置 rootfs 的首次安装完整版和不含 rootfs 的轻量更新版，应用内 APK 更新指向轻量包；轻量包保留已安装运行时，未安装运行时的设备提示改用完整版。
+- rootfs 版本由 AP 提交与 rootfs 构建输入指纹组成，宿主 UI 或文档改动不再造成无意义的运行时更新。
+
 ### 2026-09-25 · 未发版：修复 Android 下调度器停止失败
 - 根据用户导出的 App、proot 与 AP 日志确认：WebUI 和宿主发出的停止请求均到达 AP，但 worker 子进程枚举无法验证身份，导致停止失败。
 - 在 rootfs 的 Python 虚拟环境安装 Android 专用 `sitecustomize` 兼容层：psutil 子进程枚举遇到 `/proc/stat` 权限拒绝时，从同 UID 的 `/proc/<pid>/stat` 读取父子关系和启动 tick；保留 AP 原有身份校验与停止流程，不改 AP 上游跟踪文件。

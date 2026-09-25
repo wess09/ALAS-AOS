@@ -38,7 +38,6 @@ jobs:
       should_build: ${{ steps.resolve.outputs.should_build }}
       publish: ${{ steps.resolve.outputs.publish }}
       signing_ready: ${{ steps.resolve.outputs.signing_ready }}
-      runtime_commit_time: ${{ steps.resolve.outputs.runtime_commit_time }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,14 +68,10 @@ jobs:
           fi
           # push 与每小时 schedule 都完整构建；不能只按上游 commit 跳过，宿主代码也会变化。
           should_build=true
-          # 版本号由 Gradle 统一算：max(本仓提交时间, 上游提交时间)。这里只负责把上游那半取回来。
-          runtime_commit_time="$(curl -fsSL "https://api.github.com/repos/wess09/AzurPilot/commits/$ref" 2>/dev/null | jq -r '.commit.committer.date' 2>/dev/null || true)"
-          runtime_commit_time="$(date -u -d "$runtime_commit_time" +%s 2>/dev/null || echo 0)"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "signing_ready=$signing_ready" >> "$GITHUB_OUTPUT"
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
-          echo "runtime_commit_time=$runtime_commit_time" >> "$GITHUB_OUTPUT"
 
   build:
     needs: resolve
@@ -143,8 +138,6 @@ jobs:
       - name: Bundle runtime and build APK
         env:
           GRADLE_USER_HOME: ${{ github.workspace }}/.tmp/gradle-home
-          APP_RUNTIME_COMMIT: ${{ needs.resolve.outputs.ref }}
-          APP_RUNTIME_COMMIT_TIME: ${{ needs.resolve.outputs.runtime_commit_time }}
           KEYSTORE_PATH: ${{ github.workspace }}/.tmp/signing/azurpilot.jks
           KEYSTORE_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
@@ -156,11 +149,22 @@ jobs:
           cp .tmp/azurpilot-artifact/BUILD_MANIFEST app/app/src/main/assets/rootfs/
           cd app
           chmod +x gradlew
+          mkdir -p ../dist
           if [[ "$SIGNING_READY" == true ]]; then
             ./gradlew :app:assembleRelease --console=plain --stacktrace
+            cp app/build/outputs/apk/release/*.apk ../dist/azurpilot-full.apk
           else
             unset KEYSTORE_PATH KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD
             ./gradlew :app:assembleDebug --console=plain --stacktrace
+            cp app/build/outputs/apk/debug/*.apk ../dist/azurpilot-full.apk
+          fi
+          rm app/src/main/assets/rootfs/rootfs.tar.xz app/src/main/assets/rootfs/BUILD_MANIFEST
+          if [[ "$SIGNING_READY" == true ]]; then
+            ./gradlew clean :app:assembleRelease -Pazurpilot.slimApk=true --console=plain --stacktrace
+            cp app/build/outputs/apk/release/*.apk ../dist/azurpilot-update.apk
+          else
+            ./gradlew clean :app:assembleDebug -Pazurpilot.slimApk=true --console=plain --stacktrace
+            cp app/build/outputs/apk/debug/*.apk ../dist/azurpilot-update.apk
           fi
       - name: Read version from build output
         id: version
@@ -178,13 +182,13 @@ jobs:
         if: ${{ needs.resolve.outputs.signing_ready == 'true' }}
         run: |
           set -euo pipefail
-          apk="$(find app/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
-          test -n "$apk"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --verbose --print-certs "$apk"
+          signer="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$signer" verify --verbose --print-certs dist/azurpilot-full.apk
+          "$signer" verify --verbose --print-certs dist/azurpilot-update.apk
       - uses: actions/upload-artifact@v4
         with:
           name: azurpilot-android-apk
-          path: app/app/build/outputs/apk/**/*.apk
+          path: dist/*.apk
           retention-days: 14
 
   publish:
@@ -212,10 +216,13 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$SIGNING_READY" == true ]]; then
-            apk="$(find dist -type f -name '*release*.apk' -print -quit)"
-            test -n "$apk"
-            asset="AzurPilot-Android-${VERSION_NAME}.apk"
+            apk="dist/azurpilot-update.apk"
+            full_apk="dist/azurpilot-full.apk"
+            test -s "$apk" && test -s "$full_apk"
+            asset="AzurPilot-Android-${VERSION_NAME}-update.apk"
+            full_asset="AzurPilot-Android-${VERSION_NAME}-full.apk"
             cp "$apk" "$asset"
+            cp "$full_apk" "$full_asset"
             sha="$(sha256sum "$asset" | awk '{print $1}')"
             size="$(stat -c %s "$asset")"
             url="https://github.com/${GITHUB_REPOSITORY}/releases/download/azurpilot-android-latest/$asset"
@@ -243,6 +250,6 @@ jobs:
               --title 'AzurPilot Android 自动构建' \
               --notes '每小时及 main 更新时自动构建。包含 rootfs 和校验清单；配置正式签名后同时提供 APK。'
           assets=(rootfs.tar.xz BUILD_MANIFEST latest.json)
-          if [[ "$SIGNING_READY" == true ]]; then assets+=("$asset"); fi
+          if [[ "$SIGNING_READY" == true ]]; then assets+=("$asset" "$full_asset"); fi
           gh release upload azurpilot-android-latest "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit azurpilot-android-latest --repo "$GITHUB_REPOSITORY" --draft=false --latest

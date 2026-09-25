@@ -647,12 +647,12 @@
     <string name="provision_extracting">解压中 %1$d%%（%2$d / %3$d MB）</string>
     <string name="provision_downloading">正在从 GitHub 下载运行环境 %1$d%%…</string>
     <string name="provision_low_disk">磁盘空间不足：仅剩 %1$d MB，需要至少 2 GB 余量</string>
-    <string name="provision_not_bundled">此安装包未内置运行环境（开发构建）</string>
+    <string name="provision_not_bundled">尚未安装运行环境。请先安装包含运行时的完整版 APK</string>
     <string name="provision_failed">部署失败：%1$s</string>
     <string name="provision_retry">重试</string>
     <string name="provision_skip">跳过（仅调试用）</string>
     <string name="app_update_title">AzurPilot Android 有新版本</string>
-    <string name="app_update_message">版本 %1$s 已就绪（AzurPilot %2$s），安装后会保留 App 数据。</string>
+    <string name="app_update_message">App 版本 %1$s 已就绪，安装后会保留 App 数据和已安装的运行时。</string>
     <string name="app_update_downloading">正在下载并校验安装包…</string>
     <string name="app_update_error">更新失败：%1$s</string>
     <string name="app_update_install">下载并安装</string>
@@ -668,11 +668,14 @@
     <string name="settings_runtime_unknown">未知</string>
     <string name="settings_runtime_installed">已安装运行时版本</string>
     <string name="settings_runtime_latest">Latest 运行时版本</string>
-    <string name="settings_runtime_managed">启动时自动检查 GitHub 上的运行环境新版本；下载校验后在启动服务前更新。手动检查可查看 Latest 状态，发现新版本后重启 App 应用更新。</string>
+    <string name="runtime_update_title">发现运行时更新</string>
+    <string name="runtime_update_message">已安装：%1$s\nLatest：%2$s\n现在下载并更新运行时吗？</string>
+    <string name="runtime_update_now">立即更新</string>
+    <string name="settings_runtime_managed">启动时检查 GitHub Latest；发现新版本会先询问，只有确认后才下载并更新运行时。手动检查可查看版本，重启 App 时可选择更新。</string>
     <string name="settings_runtime_check">检查运行时更新</string>
     <string name="settings_runtime_checking">正在检查运行时…</string>
     <string name="settings_runtime_current">运行时已是 Latest 版本</string>
-    <string name="settings_runtime_new_version">发现新版本；重启 App 后自动更新</string>
+    <string name="settings_runtime_new_version">发现新版本；重启 App 时可选择更新</string>
     <string name="settings_runtime_check_failed">检查失败：%1$s</string>
     <string name="settings_app_check">检查 App 更新</string>
 </resources>

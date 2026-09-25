@@ -2,10 +2,11 @@
 
 <p align="center"><img src="app/app/src/main/res/drawable-nodpi/azurpilot_android_logo.png" alt="AzurPilot for Android 标志" width="280"></p>
 
-AzurPilot 的 Android 宿主。它在手机内部运行 ARM64 Ubuntu 环境和 [AzurPilot](https://github.com/wess09/AzurPilot)，通过 Shizuku 或 Root 控制游戏，并用浏览器打开本机 WebUI。App 包名为 `com.azurpilot.ghio`，桌面显示名为 **AzurPilot**。
-
-> 当前仍处于验证阶段：rootfs 和 APK 构建链已跑通，完整真机后台挂机尚未完成验收。
-
+[![License](https://img.shields.io/github/license/wess09/AzurPilot-for-Android?style=flat-square&color=4a90d9)](./LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%209%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](https://github.com/wess09/AzurPilot-for-Android)
+[![API](https://img.shields.io/badge/minSdk-28-green?style=flat-square)](https://developer.android.com/google/play/requirements/target-sdk)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/wess09/AzurPilot-for-Android?style=flat-square&color=00d4aa)](https://github.com/wess09/AzurPilot-for-Android/commits)
+[![Stars](https://img.shields.io/github/stars/wess09/AzurPilot-for-Android?style=flat-square&color=ffca28)](https://github.com/wess09/AzurPilot-for-Android/stargazers)
 ## 使用条件
 
 - Android 9（API 28）及以上的 ARM64 设备；rootfs 不支持 x86 或 32 位 ARM。

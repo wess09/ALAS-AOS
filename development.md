@@ -10,8 +10,8 @@
 - 宿主 UI 为**标准 Material 3**：色板取系统动态色（Android 12+）/M3 基线色板（其余），形状、字阶、动效一律用 `MaterialTheme` 默认 token，组件直接用 M3 现成件（`NavigationBar`、`Card`、`Button`、`Switch`、`FilterChip`、`ModalBottomSheet`、`ListItem`、`ExposedDropdownMenuBox` 等）。改 UI 时**不要再引入自绘控件或自定义圆角/字阶体系**；`theme/Theme.kt` 是全 App 唯一主题入口，`theme/DesignTokens.kt` 只放 M3 之外的间距/图标尺寸。
 - `rootfs/build/build-azurpilot.sh`：原生 ARM64 Ubuntu 24.04 构建；锁定 Python 3.14.6、`uv.lock`，预构建 React，验证 OCR CPU 推理，输出随 APK 发布的 rootfs 与构建清单。
 - `.github/workflows/rootfs.yml`：推送 `main` 或每小时第 7 分钟触发完整 rootfs 与 APK 构建；rootfs 上传至正式 Latest release。发布签名 Secret 齐备时上传正式 APK，否则只将 debug APK 留在 Actions 构建产物中。
-- `provision/RootfsProvisioner.kt`：冷启动先部署内置包，再检查 GitHub Latest 的 rootfs；下载并校验后，在 proot 启动前原子替换，保留实例配置与日志。离线或更新失败继续使用现有 rootfs。
-- `update/AppUpdateManager.kt`：App 启动时检查 APK 更新清单，下载并校验 SHA-256，随后调用系统安装器覆盖安装。
+- `provision/RootfsProvisioner.kt`：首次安装部署内置包；后续冷启动只检查 GitHub Latest 的 rootfs，用户确认后才下载、校验并在 proot 启动前原子替换。轻量 APK 不内置 rootfs，复用已安装运行时。
+- `update/AppUpdateManager.kt`：App 只按宿主版本号检查轻量 APK 更新，下载并校验 SHA-256，随后调用系统安装器覆盖安装。AP 上游提交不参与 APK 版本判定。
 - AzurPilot Android 设备后端、控制 API 和 proot 进程兼容位于 `C:\Users\AzurLane\Desktop\Projects\AzurLaneAutoScript` 的 `dev` 分支；AOS 构建直接钉住对应提交，不维护源码覆盖补丁。
 - `rootfs/seeds/`：Android deploy 配置及实例种子；`rootfs/overlays/`：单进程入口及 Android 专用进程枚举兼容层等宿主自有文件。兼容层通过虚拟环境的 `sitecustomize` 加载，不改 AP 上游跟踪文件。
 - `tools/watch-android-logs.ps1`：通过 adb 实时查看 App logcat 或 proot `session.log`，支持传入设备序列号和 adb 路径。

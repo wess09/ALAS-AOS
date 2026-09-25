@@ -20,7 +20,6 @@ import java.security.MessageDigest
 data class AppUpdateInfo(
     val versionCode: Int,
     val versionName: String,
-    val azurPilotCommit: String,
     val apkUrl: String,
     val apkSha256: String,
     val apkSize: Long,
@@ -53,7 +52,6 @@ class AppUpdateManager(
                 AppUpdateInfo(
                     versionCode = json.getInt("versionCode"),
                     versionName = json.getString("versionName"),
-                    azurPilotCommit = json.getString("azurpilotCommit"),
                     apkUrl = json.getString("apkUrl"),
                     apkSha256 = json.getString("apkSha256"),
                     apkSize = json.getLong("apkSize"),

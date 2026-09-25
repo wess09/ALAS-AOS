@@ -2,6 +2,7 @@
 
 ## 最新进度
 
+- 2026-09-25 后续变更：运行时更新改为启动时提示、确认后才下载；CI 将生成 full 与 update 两种同签名 APK，应用内更新使用轻量版；APK 版本脱离 AP 提交，rootfs 版本改用 AP 提交 + rootfs 构建输入指纹。轻量版本地无签名打包验证通过、大小约 8.2 MB，不含 rootfs。需提交推送并以 CI 验证两种正式产物。
 - 2026-09-25 新增 Android 专用 psutil 子进程枚举兼容层，针对用户 15:59 的停止失败日志；文件放在本仓 `rootfs/overlays/`，构建时写入 rootfs venv 的 site-packages，AP 上游跟踪文件保持原样。后续须通过 CI 构建并真机验证 WebUI/宿主两个停止入口。
 - GitHub 正式签名 Secret 已配置；`main` 的 30be839 构建成功并向 Latest 发布了正式 APK。发布 APK 经本地下载校验：SHA-256 与 `latest.json` 一致，`apksigner` v2 验证通过。
 - 后续修复集包含：CI 发布前签名验证；应用内更新使用按 SHA 命名的不可变 APK；运行时版本显示与 Latest 手动检查；关于页项目、许可和组件链接；切页动画误弹 WebUI 修复。

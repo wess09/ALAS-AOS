@@ -56,8 +56,10 @@ val verifyBundledAzurPilotRuntime = tasks.register("verifyBundledAzurPilotRuntim
     }
 }
 
-tasks.matching { it.name.startsWith("package") || it.name.startsWith("assemble") }
-    .configureEach { dependsOn(verifyBundledAzurPilotRuntime) }
+if (providers.gradleProperty("azurpilot.slimApk").orNull != "true") {
+    tasks.matching { it.name.startsWith("package") || it.name.startsWith("assemble") }
+        .configureEach { dependsOn(verifyBundledAzurPilotRuntime) }
+}
 
 dependencies {
     compileOnly(project(":hidden-api"))

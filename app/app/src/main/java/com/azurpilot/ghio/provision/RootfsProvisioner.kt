@@ -2,7 +2,6 @@ package com.azurpilot.ghio.provision
 
 import android.app.Application
 import android.system.Os
-import com.azurpilot.ghio.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,7 +72,7 @@ class RootfsProvisioner(
     private val _updateCheck = MutableStateFlow(RuntimeUpdateCheck())
     val updateCheck: StateFlow<RuntimeUpdateCheck> = _updateCheck.asStateFlow()
 
-    /** 手动查询 Latest；实际替换仍在下次冷启动、proot 启动前进行。 */
+    /** 只查询 Latest，不下载或替换运行时。 */
     fun checkForUpdates() {
         if (_updateCheck.value.checking) return
         _updateCheck.value = RuntimeUpdateCheck(checking = true)
@@ -88,6 +87,9 @@ class RootfsProvisioner(
                     val info = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
                     val version = info.getString("rootfsVersion")
                     require(version.isNotBlank()) { "运行时版本缺失" }
+                    require(info.getString("rootfsUrl").startsWith(RELEASE_BASE)) { "运行时下载地址无效" }
+                    require(info.getString("rootfsSha256").matches(Regex("[0-9a-f]{64}"))) { "运行时校验值无效" }
+                    require(info.getLong("rootfsSize") > 0) { "运行时大小无效" }
                     version
                 } finally {
                     connection.disconnect()
@@ -100,12 +102,30 @@ class RootfsProvisioner(
         }
     }
 
+    /** 用户确认后调用；AppRoot 在结果出来前不会启动 proot。 */
+    fun applyUpdate() {
+        if (!running.compareAndSet(false, true)) return
+        _state.value = ProvisionState.Checking
+        scope.launch(Dispatchers.IO) {
+            try {
+                updateFromRelease()
+                _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = installedVersion())
+            } catch (error: Exception) {
+                Timber.w(error, "rootfs update failed")
+                _updateCheck.value = _updateCheck.value.copy(error = error.message ?: "更新失败")
+            } finally {
+                tmpDir.deleteRecursively()
+                _state.value = ProvisionState.Ready
+                running.set(false)
+            }
+        }
+    }
+
     private val running = AtomicBoolean(false)
 
     private val rootDir: File get() = File(app.filesDir, "rootfs")
     private val tmpDir: File get() = File(app.filesDir, "rootfs.tmp")
     private val markerFile: File get() = File(rootDir, MARKER_NAME)
-    private val sourceCodeFile: File get() = File(rootDir, SOURCE_CODE_NAME)
 
     fun start() {
         if (running.compareAndSet(false, true)) {
@@ -127,22 +147,18 @@ class RootfsProvisioner(
             if (!rootDir.exists() && previous.exists()) {
                 check(previous.renameTo(rootDir)) { "cannot restore previous rootfs" }
             }
-            val bundled = bundledVersion()
-            if (bundled == null) {
-                Timber.w("rootfs archive not bundled in this build")
-                _state.value = ProvisionState.NotBundled
-                return@withContext
-            }
-            val installedCode = sourceCodeFile.takeIf { it.isFile }?.readText()?.trim()?.toIntOrNull() ?: 0
-            if (!isInstalled() || (installedVersion() != bundled && installedCode < BuildConfig.VERSION_CODE)) {
+            if (!isInstalled()) {
+                val bundled = bundledVersion()
+                if (bundled == null) {
+                    Timber.w("rootfs archive not bundled and no installed runtime exists")
+                    _state.value = ProvisionState.NotBundled
+                    return@withContext
+                }
                 checkDisk()
-                extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled, BuildConfig.VERSION_CODE)
+                extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled)
             }
-            // 发布通道只在冷启动时检查，Ready 之前不启动 proot，避免替换正在使用的 rootfs。
-            runCatching { updateFromRelease() }.onFailure {
-                tmpDir.deleteRecursively()
-                Timber.w(it, "rootfs update skipped")
-            }
+            // 启动时只查询并提示；用户确认前不能下载或替换。
+            checkForUpdates()
             _state.value = ProvisionState.Ready
         } catch (e: Exception) {
             Timber.e(e, "rootfs provision failed")
@@ -190,10 +206,7 @@ class RootfsProvisioner(
         // 旧版 latest.json 只有 APK 字段，等下一次发布同时带上 rootfs 资产。
         if (!info.has("rootfsVersion")) return
         val version = info.getString("rootfsVersion")
-        val code = info.getInt("versionCode")
-        val currentCode = sourceCodeFile.takeIf { it.isFile }?.readText()?.trim()?.toIntOrNull()
-            ?: if (installedVersion() == bundledVersion()) BuildConfig.VERSION_CODE else 0
-        if (version == installedVersion() || code < currentCode) return
+        if (version == installedVersion()) return
         val url = info.getString("rootfsUrl")
         val sha = info.getString("rootfsSha256")
         val size = info.getLong("rootfsSize")
@@ -227,14 +240,14 @@ class RootfsProvisioner(
                     "rootfs 下载校验失败"
                 }
             } finally { connection.disconnect() }
-            extract({ archive.inputStream() }, size, version, code)
+            extract({ archive.inputStream() }, size, version)
             Timber.i("rootfs updated to $version")
         } finally { archive.delete() }
     }
 
     // ── 解压 ──
 
-    private fun extract(openArchive: () -> InputStream, total: Long, expectedVersion: String, sourceCode: Int) {
+    private fun extract(openArchive: () -> InputStream, total: Long, expectedVersion: String) {
         tmpDir.deleteRecursively()
         check(tmpDir.mkdirs()) { "cannot create $tmpDir" }
 
@@ -262,7 +275,6 @@ class RootfsProvisioner(
         val python = File(tmpDir, PYTHON_REL)
         check(python.isFile || java.nio.file.Files.isSymbolicLink(python.toPath())) { "$PYTHON_REL missing" }
         File(tmpDir, MARKER_NAME).writeText(expectedVersion)
-        File(tmpDir, SOURCE_CODE_NAME).writeText(sourceCode.toString())
 
         // APK 升级重铺 rootfs 时保留用户实例与日志。
         val oldPilot = File(rootDir, "opt/azurpilot")
@@ -373,7 +385,6 @@ class RootfsProvisioner(
         const val MANIFEST_REL = "opt/azurpilot/BUILD_MANIFEST"
         const val PYTHON_REL = "opt/azurpilot/.venv/bin/python"
         const val MARKER_NAME = ".provisioned"
-        const val SOURCE_CODE_NAME = ".source-version-code"
         /**
          * 发布通道根地址。仓库名必须与 CI 的 `${{ github.repository }}` 一致——
          * 写成别的名字会让索引 404、整个 rootfs 更新链静默失效（异常在 runCatching 里被吞）。
