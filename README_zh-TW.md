@@ -8,6 +8,8 @@
 
 全功能《碧藍航線》自動化助手 [AzurPilot](https://github.com/wess09/AzurPilot) 專用的 Android 行動端一體化執行環境
 
+本倉庫 fork 自 [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS)，繼承其宿主架構、PRoot 容器化路線與免 Root 提權設計，以及 AGPL-3.0 授權。
+
 <p align="center">
   <a href="README.md">简体中文</a> |
   <a href="README_en.md">English</a> |
@@ -161,8 +163,6 @@
 **AzurPilot for Android** 致力於將桌面端功能成熟的《碧藍航線》自動化助手完整移植至 Android 行動端原生執行。
 
 透過在 APK 安裝包內預置完整的 Linux 執行階段容器（Ubuntu 24.04 ARM64），結合輕量級 PRoot 容器隔離技術，實現了在 **完全免 Root** 條件下穩定執行 CPython、預編譯 OCR 演算法模型及本地 Web 控制台服務。借助背景虛擬螢幕與無障礙互動服務，使用者可以在手機主螢幕正常聊天、遊戲或辦公的同時，無感完成各項自動化巡航與出擊任務。
-
-本倉庫 fork 自 [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS)：宿主架構、PRoot 容器化路線與免 Root 提權設計均由此繼承，程式碼歷史與 AGPL-3.0 授權一併延續。
 
 ---
 

@@ -8,6 +8,8 @@
 
 多機能『アズールレーン』自動化ツール [AzurPilot](https://github.com/wess09/AzurPilot) 専用の Android モバイル統合実行環境
 
+本リポジトリは [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS) からのフォークで、ホストアーキテクチャ、PRoot によるコンテナ化路線、Root 不要の権限昇格設計、および AGPL-3.0 ライセンスを継承しています。
+
 <p align="center">
   <a href="README.md">简体中文</a> |
   <a href="README_en.md">English</a> |
@@ -161,8 +163,6 @@
 **AzurPilot for Android** は、デスクトップ環境で成熟した『アズールレーン』自動化アシスタントを、Android モバイル端末上で完全ネイティブ動作させることを目的としたプロジェクトです。
 
 APK パッケージ内に完全な Linux 実行環境（Ubuntu 24.04 ARM64）を内蔵し、軽量な PRoot コンテナ分離技術と組み合わせることで、**完全 Root 不要**の条件下で CPython、ビルド済み OCR モデル、およびローカル Web コンソールサービスを安定稼働させます。バックグラウンドの仮想ディスプレイとアクセシビリティを活用することで、スマートフォンのメイン画面でチャットやゲーム、日常操作を行いながら、バックグラウンドで何ら干渉されることなく自動出撃・巡航タスクを完了できます。
-
-本リポジトリは [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS) からのフォークです。ホストアーキテクチャ、PRoot によるコンテナ化路線、Root 不要の権限昇格設計をそのまま継承し、git 履歴と AGPL-3.0 ライセンスも引き継いでいます。
 
 ---
 

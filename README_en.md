@@ -8,6 +8,8 @@
 
 An all-in-one integrated Android runtime environment tailored for the full-featured *Azur Lane* automation tool [AzurPilot](https://github.com/wess09/AzurPilot)
 
+This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS), inheriting its host architecture, its PRoot containerization approach, its rootless privilege escalation design, and the AGPL-3.0 license.
+
 <p align="center">
   <a href="README.md">简体中文</a> |
   <b>English</b> |
@@ -161,8 +163,6 @@ An all-in-one integrated Android runtime environment tailored for the full-featu
 **AzurPilot for Android** is dedicated to bringing the mature, desktop-grade *Azur Lane* automation assistant directly to native Android devices.
 
 By embedding a full Linux runtime container (Ubuntu 24.04 ARM64) inside the APK package, coupled with lightweight PRoot container isolation, it achieves **completely Root-free** and reliable execution of CPython, precompiled OCR models, and local WebUI services. Leveraging background virtual displays and accessibility services, users can chat, play games, or work on their device's main screen without interruption while automated sortie tasks run seamlessly in the background.
-
-This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS): the host architecture, the PRoot containerization approach and the rootless privilege escalation design are inherited directly, along with the git history and the AGPL-3.0 license.
 
 ---
 
