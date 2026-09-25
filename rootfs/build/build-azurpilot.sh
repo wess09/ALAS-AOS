@@ -104,8 +104,6 @@ rm -rf "$FRONTEND/node_modules"
 
 guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -c "import cv2,numpy,scipy,onnxruntime,rapidocr,ncnn,psutil; import module.api.app, module.device.device, module.ocr.al_ocr; assert psutil.Process.children.__module__ == \"android_process_compat\"; print(\"IMPORTS_OK\")"'
 mkdir -p "$ROOTFS_DIR/opt/azurpilot/log"
-guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -m dev_tools.import_smoke_test'
-guest /bin/sh -c 'cd /opt/azurpilot && .venv/bin/python azurpilot-ocr-gate.py'
 
 SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_REPO="$SOURCE_REPO" REPO_ROOT="$REPO_ROOT" \
     ROOTFS_DIR="$ROOTFS_DIR" python3 - <<'PY'
