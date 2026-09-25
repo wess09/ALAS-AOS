@@ -1,0 +1,13 @@
+name: cron probe
+
+# 临时诊断用：确认本仓库的 schedule 触发是否工作。定位完即可删除。
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "schedule trigger works at $(date -u +%FT%TZ)"

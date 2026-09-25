@@ -18,6 +18,11 @@ on:
         required: false
         default: false
         type: boolean
+      force:
+        description: Rebuild even when upstream AP and host commits are unchanged
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: '7 * * * *'
 
@@ -47,6 +52,7 @@ jobs:
         env:
           INPUT_REF: ${{ inputs.azurpilot_ref }}
           INPUT_PUBLISH: ${{ inputs.publish_update }}
+          INPUT_FORCE: ${{ inputs.force }}
           EVENT_NAME: ${{ github.event_name }}
           SIGNING_KEY: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
           SIGNING_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
@@ -68,8 +74,9 @@ jobs:
           elif [[ "$publish" == true ]]; then
             echo 'Release signing secrets are incomplete: build debug APK and publish rootfs only.'
           fi
-          # 每小时定时构建：上游 AP 与宿主都没有新提交时整轮跳过，不空转 CI。
-          # push 事件本身就代表宿主持仓有了新提交，始终构建。
+          # 上游 AP 与宿主都没有新提交时整轮跳过，不空转 CI。不能只在 schedule 事件下判定：
+          # 本仓库的 schedule 触发不工作，定时靠外部 workflow_dispatch 驱动，那条路径同样要能跳过。
+          # force 输入用于强制完整构建。
           should_build=true
           mkdir -p .tmp/previous-release
           build_apk=true
@@ -78,8 +85,8 @@ jobs:
             previous_ap_commit="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
             previous_host_commit="$(jq -r '.androidHostCommit // empty' .tmp/previous-release/latest.json)"
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
-            if [[ "$EVENT_NAME" == schedule && "$previous_ap_commit" == "$ref" &&
-                "$previous_host_commit" == "$GITHUB_SHA" ]]; then
+            if [[ "$INPUT_FORCE" != true && -n "$previous_host_commit" &&
+                "$previous_ap_commit" == "$ref" && "$previous_host_commit" == "$GITHUB_SHA" ]]; then
               should_build=false
             fi
             if [[ "$app_commit" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "${app_commit}^{commit}" 2>/dev/null &&
