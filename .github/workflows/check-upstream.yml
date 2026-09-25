@@ -1,0 +1,40 @@
+name: Check AzurPilot upstream
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: azurpilot-upstream-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Compare upstream dev with published release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ref="$(git ls-remote https://github.com/wess09/AzurPilot.git refs/heads/dev | awk '{print $1}')"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid AzurPilot dev ref: $ref" >&2; exit 1; }
+          published=''
+          mkdir -p .tmp/previous-release
+          if gh release view azurpilot-android-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
+              --pattern latest.json --dir .tmp/previous-release
+            published="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
+          fi
+          if [[ "$ref" == "$published" ]]; then
+            echo "AzurPilot dev is unchanged ($ref); skipping build."
+            exit 0
+          fi
+          echo "AzurPilot dev changed: ${published:-<no release>} -> $ref"
+          gh workflow run rootfs.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
+            -f azurpilot_ref="$ref" -f publish_update=true

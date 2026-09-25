@@ -1,8 +1,6 @@
 name: AzurPilot Android build
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       azurpilot_ref:
@@ -23,8 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-  schedule:
-    - cron: '7 * * * *'
 
 permissions:
   actions: read
@@ -44,6 +40,9 @@ jobs:
       publish: ${{ steps.resolve.outputs.publish }}
       signing_ready: ${{ steps.resolve.outputs.signing_ready }}
       build_apk: ${{ steps.resolve.outputs.build_apk }}
+      version_code: ${{ steps.resolve.outputs.version_code }}
+      version_name: ${{ steps.resolve.outputs.version_name }}
+      app_commit: ${{ steps.resolve.outputs.app_commit }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,7 +52,6 @@ jobs:
           INPUT_REF: ${{ inputs.azurpilot_ref }}
           INPUT_PUBLISH: ${{ inputs.publish_update }}
           INPUT_FORCE: ${{ inputs.force }}
-          EVENT_NAME: ${{ github.event_name }}
           SIGNING_KEY: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_BASE64 }}
           SIGNING_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEYSTORE_PASSWORD }}
           SIGNING_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
@@ -67,41 +65,60 @@ jobs:
           fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid AzurPilot ref: $ref" >&2; exit 1; }
           publish=false
-          if [[ "$EVENT_NAME" != workflow_dispatch || "$INPUT_PUBLISH" == true ]]; then publish=true; fi
+          if [[ "$INPUT_PUBLISH" == true ]]; then publish=true; fi
           signing_ready=false
           if [[ -n "$SIGNING_KEY" && -n "$SIGNING_PASSWORD" && -n "$SIGNING_ALIAS" && -n "$SIGNING_KEY_PASSWORD" ]]; then
             signing_ready=true
           elif [[ "$publish" == true ]]; then
-            echo 'Release signing secrets are incomplete: build debug APK and publish rootfs only.'
+            echo 'Release signing secrets are incomplete; cannot publish all APKs.' >&2
+            exit 1
           fi
-          # 上游 AP 与宿主都没有新提交时整轮跳过，不空转 CI。不能只在 schedule 事件下判定：
-          # 本仓库的 schedule 触发不工作，定时靠外部 workflow_dispatch 驱动，那条路径同样要能跳过。
-          # force 输入用于强制完整构建。
+          # Dispatch may have waited for an earlier build. Recheck the published release here.
           should_build=true
           mkdir -p .tmp/previous-release
-          build_apk=true
-          if gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
-              --pattern latest.json --dir .tmp/previous-release >/dev/null 2>&1; then
+          previous_version_code=''
+          previous_version_name=''
+          app_commit=''
+          if gh release view azurpilot-android-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download azurpilot-android-latest --repo "$GITHUB_REPOSITORY" \
+              --pattern latest.json --dir .tmp/previous-release
             previous_ap_commit="$(jq -r '.azurpilotCommit // empty' .tmp/previous-release/latest.json)"
-            previous_host_commit="$(jq -r '.androidHostCommit // empty' .tmp/previous-release/latest.json)"
             app_commit="$(jq -r '.appCommit // empty' .tmp/previous-release/latest.json)"
-            if [[ "$INPUT_FORCE" != true && -n "$previous_host_commit" &&
-                "$previous_ap_commit" == "$ref" && "$previous_host_commit" == "$GITHUB_SHA" ]]; then
+            previous_version_code="$(jq -r '.versionCode // empty' .tmp/previous-release/latest.json)"
+            previous_version_name="$(jq -r '.versionName // empty' .tmp/previous-release/latest.json)"
+            if [[ "$INPUT_FORCE" != true && "$previous_ap_commit" == "$ref" ]]; then
               should_build=false
             fi
-            if [[ "$app_commit" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "${app_commit}^{commit}" 2>/dev/null &&
-                git merge-base --is-ancestor "$app_commit" HEAD; then
-              if [[ -z "$(git diff --name-only "$app_commit" HEAD -- app .github/workflows/rootfs.yml)" ]]; then
-                build_apk=false
-              fi
-            fi
           fi
-          if [[ "$should_build" == false ]]; then build_apk=false; fi
+          # Rebuild both APK variants with every new rootfs, but keep their package version
+          # unless a Kotlin source file changed since the last versioned APK.
+          version_code="$(git log -1 --format=%ct HEAD)"
+          version_name="1.0.$(git rev-list --count HEAD)"
+          if [[ "$previous_version_code" =~ ^[0-9]+$ && "$previous_version_name" =~ ^1\.0\.([0-9]+)$ &&
+                "$app_commit" =~ ^[0-9a-f]{40}$ ]] &&
+              git cat-file -e "${app_commit}^{commit}" 2>/dev/null &&
+              git merge-base --is-ancestor "$app_commit" HEAD; then
+            previous_patch="${previous_version_name##*.}"
+            if [[ -z "$(git diff --name-only "$app_commit" HEAD -- '*.kt')" ]]; then
+              version_code="$previous_version_code"
+              version_name="$previous_version_name"
+            else
+              version_code="$((previous_version_code + 1))"
+              version_name="1.0.$((previous_patch + 1))"
+              app_commit="$GITHUB_SHA"
+            fi
+          else
+            app_commit="$GITHUB_SHA"
+          fi
+          (( version_code > 0 && version_code <= 2147483647 )) || { echo 'Invalid APK version code' >&2; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "signing_ready=$signing_ready" >> "$GITHUB_OUTPUT"
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
-          echo "build_apk=$build_apk" >> "$GITHUB_OUTPUT"
+          echo "build_apk=$should_build" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "app_commit=$app_commit" >> "$GITHUB_OUTPUT"
 
   build:
     needs: resolve
@@ -173,6 +190,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.AZURPILOT_ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.AZURPILOT_ANDROID_KEY_PASSWORD }}
           SIGNING_READY: ${{ needs.resolve.outputs.signing_ready }}
+          APP_VERSION_CODE: ${{ needs.resolve.outputs.version_code }}
+          APP_VERSION_NAME: ${{ needs.resolve.outputs.version_name }}
         run: |
           mkdir -p app/app/src/main/assets/rootfs
           cp .tmp/azurpilot-artifact/rootfs.tar.xz app/app/src/main/assets/rootfs/
@@ -223,7 +242,7 @@ jobs:
 
   publish:
     needs: [resolve, build, apk]
-    if: ${{ always() && needs.resolve.outputs.publish == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') && (needs.apk.result == 'success' || needs.apk.result == 'skipped') }}
+    if: ${{ always() && needs.resolve.outputs.should_build == 'true' && needs.resolve.outputs.publish == 'true' && (needs.build.result == 'success' || inputs.reuse_rootfs_run_id != '') && needs.apk.result == 'success' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -246,6 +265,7 @@ jobs:
           VERSION_NAME: ${{ needs.apk.outputs.version_name }}
           SIGNING_READY: ${{ needs.resolve.outputs.signing_ready }}
           APK_BUILT: ${{ needs.apk.result == 'success' }}
+          APP_COMMIT: ${{ needs.resolve.outputs.app_commit }}
         run: |
           set -euo pipefail
           if [[ "$SIGNING_READY" == true && "$APK_BUILT" == true ]]; then
@@ -278,7 +298,7 @@ jobs:
           mv latest.tmp.json latest.json
           if [[ "$SIGNING_READY" == true && "$APK_BUILT" == true ]]; then
             jq --argjson versionCode "$VERSION_CODE" --arg versionName "$VERSION_NAME" \
-              --arg appCommit "$GITHUB_SHA" \
+              --arg appCommit "$APP_COMMIT" \
               '. + {versionCode:$versionCode,versionName:$versionName,appCommit:$appCommit}' latest.json > latest.tmp.json
             mv latest.tmp.json latest.json
             jq --arg apkUrl "$url" --arg apkSha256 "$sha" --argjson apkSize "$size" \
@@ -288,7 +308,7 @@ jobs:
           gh release view azurpilot-android-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create azurpilot-android-latest --repo "$GITHUB_REPOSITORY" --draft \
               --title 'AzurPilot Android 自动构建' \
-              --notes '每小时及 main 更新时自动构建。包含 rootfs 和校验清单；配置正式签名后同时提供 APK。'
+              --notes '每小时检查 AzurPilot dev 更新；更新后构建 rootfs 和两种签名 APK。'
           assets=(rootfs.tar.xz BUILD_MANIFEST latest.json)
           if [[ "$SIGNING_READY" == true && "$APK_BUILT" == true ]]; then assets+=("$asset" "$full_asset"); fi
           gh release upload azurpilot-android-latest "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
