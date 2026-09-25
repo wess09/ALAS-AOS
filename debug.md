@@ -6,6 +6,12 @@
 > **历史坑点（m0 阶段，全真机实证）见 `m0-archive/docs/debug.md` 与 `m0-archive/docs/devlog/`。** 高频索引：
 > WebView `vh` 塌缩（注入 innerHeight 修复）｜幻影进程查杀（`max_phantom_processes` / `settings_enable_monitor_phantom_procs`）｜mDNS `_adb-tls-connect` 端口过期但广播残留｜AzurPilot PP-OCR 对 2D 单通道静默返空（堆叠 3ch）｜AzurPilot 截图 BGR↔AzurPilot RGB 翻转｜RUN_COMMAND 权限只授清单声明方｜`am force-stop` 杀不掉 shell uid 残留（须显式 kill）｜桥 30s 无流量判死（10s 心跳）。
 
+## [2026-09-25] 切换语言与返回挂机页时出现短暂错误页面或启动提示
+
+- **现象**：设置页切换语言后偶尔落到 WebUI 页；运行中的挂机从其他页返回时，预览短暂提示启动 Runtime，随后自行恢复。
+- **根本原因**：AppCompat 语言切换重建 Activity，Pager 恢复可能停在切页过程中的页；预览把桥接探测与虚拟屏状态合为一个“环境已启动”条件，桥短暂不可达便错误显示启动按钮。
+- **解决方案**：单独保存用户选定的标签页，重建后直接滚动至该页，底栏切换直接定位；预览以虚拟屏 ID 判断可显示画面，任务运行或重建虚拟屏时展示恢复提示。
+
 ## [2026-09-25] Android proot 中 AP WebUI 与宿主均无法停止调度器
 
 - **现象**：WebUI 提示“尚未确认全部工作进程停止”；宿主 `/android/stop?config=ap` 返回 400。AP 日志反复出现“无法确认worker ap进程树身份”和“worker 未完全停止”，PID 27345 无法结束。

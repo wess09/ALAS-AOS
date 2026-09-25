@@ -238,6 +238,10 @@ private fun OtherCard(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit
 private fun AboutCard() {
     val uriHandler = LocalUriHandler.current
     AppCard(title = stringResource(R.string.settings_about), collapsible = true) {
+        Text(
+            text = stringResource(R.string.settings_about_description),
+            style = MaterialTheme.typography.bodyMedium,
+        )
         AppInfoRow(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME)
         AppInfoRow(stringResource(R.string.settings_build), BuildConfig.VERSION_CODE.toString())
         AppNavigationRow(

@@ -74,11 +74,13 @@ fun HangarScreen(
     val snapshot by hostState.snapshot.collectAsStateWithLifecycle()
     val run by runController.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    var starting by remember { mutableStateOf(false) }
 
     // 本页可见且特权连接就绪时自动补一次「开始」链路建虚拟屏（HostState 内幂等）
     LaunchedEffect(active, snapshot.privilegedConnected) {
         if (active && snapshot.privilegedConnected) {
-            hostState.ensureEnvironmentStarted()
+            starting = true
+            try { hostState.ensureEnvironmentStarted() } finally { starting = false }
         }
     }
 
@@ -100,8 +102,12 @@ fun HangarScreen(
             verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
         ) {
             VdPreview(
-                envUp = snapshot.environmentUp,
-                onStartEnv = { scope.launch { hostState.ensureEnvironmentStarted() } },
+                envUp = snapshot.vdDisplayId != DefaultDisplayConfig.DISPLAY_NONE,
+                reconnecting = starting || run.runnerAlive || run.toolAlive,
+                onStartEnv = { scope.launch {
+                    starting = true
+                    try { hostState.ensureEnvironmentStarted() } finally { starting = false }
+                } },
                 content = previewContent,
                 onEnterFullscreen = onEnterFullscreen,
                 modifier = Modifier.fillMaxWidth(),
@@ -139,6 +145,7 @@ fun HangarScreen(
 @Composable
 private fun VdPreview(
     envUp: Boolean,
+    reconnecting: Boolean,
     onStartEnv: () -> Unit,
     content: (@Composable () -> Unit)?,
     onEnterFullscreen: () -> Unit,
@@ -165,6 +172,8 @@ private fun VdPreview(
             envUp -> PreviewPlaceholder(
                 textRes = R.string.hangar_preview_moved,
             )
+
+            reconnecting -> PreviewPlaceholder(textRes = R.string.hangar_env_reconnecting)
 
             else -> {
                 Column(

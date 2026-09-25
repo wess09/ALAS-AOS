@@ -56,6 +56,8 @@ class ProotHost(
     @Volatile
     private var wantRunning = false
 
+    val startRequested: Boolean get() = wantRunning
+
     private val rootfsDir: File get() = File(app.filesDir, "rootfs")
     private val installDir: File get() = File(rootfsDir, "opt/azurpilot")
     private val prootTmpDir: File get() = File(app.filesDir, "proot-tmp")

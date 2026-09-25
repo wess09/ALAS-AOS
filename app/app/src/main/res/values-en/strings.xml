@@ -115,6 +115,7 @@
     <string name="settings_resource_hint">Switching resources affects task applicability; unavailable while running</string>
     <string name="settings_reload_project">Reload project</string>
     <string name="settings_about">About</string>
+    <string name="settings_about_description">AzurPilot Android brings AzurPilot to Android, with run controls, a virtual display preview, WebUI, and logs. The app and Runtime update separately.</string>
     <string name="settings_version">Version</string>
     <string name="settings_build">Build</string>
     <string name="settings_telemetry">Help improve this project</string>
@@ -129,15 +130,15 @@
     <string name="welcome_title">Welcome</string>
 
     <!-- Notifications -->
-    <string name="notification_channel_run">AzurPilot runtime guard</string>
+    <string name="notification_channel_run">AzurPilot Runtime guard</string>
     <string name="notification_channel_run_desc">Guards the virtual display and bridge so the system does not reclaim the process</string>
     <string name="notification_channel_focus">Project messages</string>
     <string name="notification_channel_focus_desc">Alerts the PI project asks to push to you during a run</string>
     <string name="notification_focus_title">Project message</string>
-    <string name="notification_host_title">Guarding AzurPilot environment</string>
+    <string name="notification_host_title">Guarding AzurPilot Runtime</string>
     <string name="notification_host_content_ok">Virtual display #%1$d · bridge OK</string>
     <string name="notification_host_content_degraded">Virtual display #%1$d · bridge unreachable</string>
-    <string name="notification_host_content_proot">Built-in AzurPilot environment running (no virtual display)</string>
+    <string name="notification_host_content_proot">Built-in AzurPilot Runtime running (no virtual display)</string>
 
     <!-- Floating control layer -->
     <string name="accessibility_service_description">Press volume up and down together to open the control panel in primary-display mode. Only key events are filtered; screen content is never read.</string>
@@ -147,17 +148,17 @@
     <string name="overlay_unlock">Unlock position</string>
     <string name="overlay_ball_idle">Idle</string>
     <string name="overlay_ball_running">Running</string>
-    <string name="overlay_host_start">Start environment</string>
-    <string name="overlay_host_stop">Stop environment</string>
+    <string name="overlay_host_start">Start Runtime</string>
+    <string name="overlay_host_stop">Stop Runtime</string>
     <string name="overlay_host_privileged">Privileged process: %1$s</string>
     <string name="overlay_host_bridge">Bridge: %1$s</string>
     <string name="overlay_host_display">Virtual display: %1$s</string>
     <string name="overlay_azurpilot_status">AzurPilot scheduler: %1$s</string>
     <string name="overlay_azurpilot_running">Running · pid %1$d</string>
     <string name="overlay_azurpilot_stopped">Stopped</string>
-    <string name="overlay_azurpilot_unreachable">Environment not ready</string>
-    <string name="overlay_azurpilot_preparing">Preparing environment · %1$s</string>
-    <string name="overlay_azurpilot_preparing_generic">Preparing environment…</string>
+    <string name="overlay_azurpilot_unreachable">Runtime not ready</string>
+    <string name="overlay_azurpilot_preparing">Preparing Runtime · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">Preparing Runtime…</string>
     <string name="overlay_azurpilot_start_failed">Start failed: %1$s</string>
     <string name="overlay_azurpilot_start">Start AzurPilot</string>
     <string name="overlay_azurpilot_stop">Stop AzurPilot</string>
@@ -180,7 +181,7 @@
     <string name="settings_screen_saver_auto">Turn the screen off while running</string>
     <string name="settings_screen_saver_hint">Blacks out the screen while a background run is in progress, leaving only the clock, battery and the latest log line; swipe right to unlock, and it is removed automatically when the run ends</string>
     <string name="settings_screen_saver_show">Turn off now</string>
-    <string name="screensaver_idle">Guarding environment…</string>
+    <string name="screensaver_idle">Guarding Runtime…</string>
     <string name="screensaver_swipe_to_unlock">Swipe right to unlock</string>
 
     <!-- Schedules -->
@@ -277,18 +278,19 @@
     <string name="dialog_ok">OK</string>
 
     <!-- AzurPilot tab: WebUI container -->
-    <string name="azurpilot_webui_not_running">AzurPilot is served by the app\'s built-in environment. The first launch needs initialization; if it stays down, check the runtime environment and retry</string>
+    <string name="azurpilot_webui_not_running">AzurPilot is served by the app\'s built-in Runtime. The first launch needs initialization; if it stays down, check Runtime and retry</string>
     <string name="azurpilot_webui_retry">Retry connection</string>
     <string name="azurpilot_webui_loading">Loading console…</string>
-    <string name="proot_phase_preparing">Preparing runtime environment…</string>
+    <string name="proot_phase_preparing">Preparing Runtime…</string>
     <string name="proot_phase_updating">Hot-updating AzurPilot…</string>
     <string name="proot_phase_starting">Starting AzurPilot service…</string>
-    <string name="proot_phase_failed">Failed to start AzurPilot environment: %1$s</string>
+    <string name="proot_phase_failed">Failed to start AzurPilot Runtime: %1$s</string>
 
     <!-- Hangar tab: virtual display preview + run config + control panel -->
     <string name="nav_hangar">Farming</string>
-    <string name="hangar_env_down">Environment not started — no preview</string>
-    <string name="hangar_env_start">Start environment</string>
+    <string name="hangar_env_down">Runtime not started — no preview</string>
+    <string name="hangar_env_reconnecting">Restoring Runtime preview…</string>
+    <string name="hangar_env_start">Start Runtime</string>
     <string name="hangar_preview_waiting">Connecting preview…</string>
     <string name="hangar_config_label">Run config</string>
     <string name="hangar_config_switch">Switch</string>
@@ -319,8 +321,8 @@
     <string name="msg_cannot_start">Cannot start: %1$s</string>
     <string name="msg_launch_in_progress">Launch already in progress</string>
     <string name="msg_precheck_ignored_confirmation">A start check ignored the confirmation; aborted</string>
-    <string name="msg_hook_timeout">Run environment setup timed out: %1$s</string>
-    <string name="msg_hook_failed">Run environment setup failed: %1$s</string>
+    <string name="msg_hook_timeout">Runtime setup timed out: %1$s</string>
+    <string name="msg_hook_failed">Runtime setup failed: %1$s</string>
     <string name="msg_cannot_stop">Cannot stop: %1$s</string>
 
     <!-- Runner reject/failure reasons: reason is now UiText, no longer interpolated as %s -->
@@ -490,7 +492,7 @@
     <string name="diagnostic_none">none</string>
     <string name="diagnostic_active_configuration_missing">activeConfigurationId points to a missing configuration</string>
     <string name="diagnostic_configured_task_missing">Task "%1$s" is no longer in the project</string>
-    <string name="diagnostic_runtime_no_resource">No resource is available to build the runtime environment</string>
+    <string name="diagnostic_runtime_no_resource">No resource is available to build Runtime</string>
     <string name="diagnostic_enabled_task_missing_definition">Enabled task "%1$s" has no definition</string>
     <string name="diagnostic_option_unset_without_default">Option "%1$s" is unset and has no default</string>
     <string name="diagnostic_selected_case_missing">Option "%1$s" selects missing case "%2$s"</string>
@@ -646,18 +648,18 @@
     <string name="notification_err_webhook_url_empty">Webhook URL is empty</string>
     <string name="notification_err_webhook_body_empty">Webhook body template is empty</string>
     <!-- First-launch rootfs provisioning -->
-    <string name="provision_title">Setting up runtime</string>
-    <string name="provision_subtitle">The first launch extracts about 1 GB of runtime files. This takes a minute or two and happens only once</string>
-    <string name="provision_checking">Checking runtime environment…</string>
+    <string name="provision_title">Setting up Runtime</string>
+    <string name="provision_subtitle">The first launch extracts about 1 GB of Runtime files. This takes a minute or two and happens only once</string>
+    <string name="provision_checking">Checking Runtime…</string>
     <string name="provision_extracting">Extracting %1$d%% (%2$d / %3$d MB)</string>
-    <string name="provision_downloading">Downloading runtime from GitHub %1$d%%…</string>
+    <string name="provision_downloading">Downloading Runtime from GitHub %1$d%%…</string>
     <string name="provision_low_disk">Not enough storage: only %1$d MB left, at least 2 GB required</string>
-    <string name="provision_not_bundled">No runtime is installed. Install the full APK that includes the runtime first</string>
+    <string name="provision_not_bundled">No Runtime is installed. Install the full APK that includes Runtime first</string>
     <string name="provision_failed">Setup failed: %1$s</string>
     <string name="provision_retry">Retry</string>
     <string name="provision_skip">Skip (debug only)</string>
     <string name="app_update_title">AzurPilot Android update</string>
-    <string name="app_update_message">App version %1$s is ready. Your app data and installed runtime will be preserved.</string>
+    <string name="app_update_message">App version %1$s is ready. Your app data and installed Runtime will be preserved.</string>
     <string name="app_update_downloading">Downloading and verifying the APK…</string>
     <string name="app_update_error">Update failed: %1$s</string>
     <string name="app_update_install">Download and install</string>
@@ -671,14 +673,14 @@
     <string name="settings_runtime">Runtime</string>
     <string name="settings_runtime_commit">AzurPilot commit</string>
     <string name="settings_runtime_unknown">Unknown</string>
-    <string name="settings_runtime_installed">Installed runtime version</string>
-    <string name="settings_runtime_latest">Latest runtime version</string>
+    <string name="settings_runtime_installed">Installed Runtime version</string>
+    <string name="settings_runtime_latest">Latest Runtime version</string>
     <string name="runtime_update_title">Runtime update available</string>
-    <string name="runtime_update_message">Installed: %1$s\nLatest: %2$s\nDownload and update the runtime now?</string>
+    <string name="runtime_update_message">Installed: %1$s\nLatest: %2$s\nDownload and update Runtime now?</string>
     <string name="runtime_update_now">Update now</string>
-    <string name="settings_runtime_managed">The app checks GitHub Latest on launch and asks before downloading or updating the runtime. A manual check shows the available version; restart the app to choose an update.</string>
-    <string name="settings_runtime_check">Check runtime update</string>
-    <string name="settings_runtime_checking">Checking runtime…</string>
+    <string name="settings_runtime_managed">The app checks GitHub Latest on launch and asks before downloading or updating Runtime. A manual check shows the available version; restart the app to choose an update.</string>
+    <string name="settings_runtime_check">Check Runtime update</string>
+    <string name="settings_runtime_checking">Checking Runtime…</string>
     <string name="settings_runtime_current">Runtime is up to date with Latest</string>
     <string name="settings_runtime_new_version">New version available; restart the app to choose an update</string>
     <string name="settings_runtime_check_failed">Check failed: %1$s</string>

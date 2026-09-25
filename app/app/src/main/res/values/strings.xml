@@ -111,6 +111,7 @@
     <string name="settings_resource_hint">切换资源会影响任务适用性，运行期间不可切换</string>
     <string name="settings_reload_project">重新加载项目</string>
     <string name="settings_about">关于</string>
+    <string name="settings_about_description">AzurPilot Android 是 AzurPilot 的安卓客户端。它提供挂机控制、虚拟屏预览、WebUI 和日志查看；App 与 Runtime 分开更新。</string>
     <string name="settings_version">版本</string>
     <string name="settings_build">构建</string>
     <string name="settings_telemetry">帮助改进本项目</string>
@@ -125,15 +126,15 @@
     <string name="welcome_title">欢迎</string>
 
     <!-- 通知 -->
-    <string name="notification_channel_run">AzurPilot 运行环境守护</string>
+    <string name="notification_channel_run">AzurPilot Runtime 守护</string>
     <string name="notification_channel_run_desc">守护虚拟屏与桥服务，避免应用被系统回收</string>
     <string name="notification_channel_focus">项目消息</string>
     <string name="notification_channel_focus_desc">PI 项目在运行中要求推送给你的提示</string>
     <string name="notification_focus_title">项目消息</string>
-    <string name="notification_host_title">AzurPilot 运行环境守护中</string>
+    <string name="notification_host_title">AzurPilot Runtime 守护中</string>
     <string name="notification_host_content_ok">虚拟屏 #%1$d · 桥服务正常</string>
     <string name="notification_host_content_degraded">虚拟屏 #%1$d · 桥服务不可达</string>
-    <string name="notification_host_content_proot">内置 AzurPilot 环境运行中（未建虚拟屏）</string>
+    <string name="notification_host_content_proot">内置 AzurPilot Runtime 运行中（未建虚拟屏）</string>
 
     <!-- 悬浮控制层 -->
     <string name="accessibility_service_description">前台模式下同时按音量 + 与音量 − 唤起控制面板。只拦按键，不读取屏幕内容</string>
@@ -143,17 +144,17 @@
     <string name="overlay_unlock">解除锁定</string>
     <string name="overlay_ball_idle">空闲</string>
     <string name="overlay_ball_running">运行中</string>
-    <string name="overlay_host_start">启动环境</string>
-    <string name="overlay_host_stop">停止环境</string>
-    <string name="overlay_host_privileged">特权进程：%1$s</string>
-    <string name="overlay_host_bridge">桥服务：%1$s</string>
-    <string name="overlay_host_display">虚拟屏：%1$s</string>
+    <string name="overlay_host_start">启动 Runtime</string>
+    <string name="overlay_host_stop">停止 Runtime</string>
+    <string name="overlay_host_privileged">Main 进程：%1$s</string>
+    <string name="overlay_host_bridge">Bridge：%1$s</string>
+    <string name="overlay_host_display">Virtual Display：%1$s</string>
     <string name="overlay_azurpilot_status">AzurPilot 调度器：%1$s</string>
     <string name="overlay_azurpilot_running">运行中 · pid %1$d</string>
     <string name="overlay_azurpilot_stopped">已停止</string>
-    <string name="overlay_azurpilot_unreachable">环境未就绪</string>
-    <string name="overlay_azurpilot_preparing">环境准备中 · %1$s</string>
-    <string name="overlay_azurpilot_preparing_generic">环境准备中…</string>
+    <string name="overlay_azurpilot_unreachable">Runtime 未就绪</string>
+    <string name="overlay_azurpilot_preparing">Runtime 准备中 · %1$s</string>
+    <string name="overlay_azurpilot_preparing_generic">Runtime 准备中…</string>
     <string name="overlay_azurpilot_start_failed">启动失败：%1$s</string>
     <string name="overlay_azurpilot_start">开始挂机</string>
     <string name="overlay_azurpilot_stop">停止挂机</string>
@@ -176,7 +177,7 @@
     <string name="settings_screen_saver_auto">运行时自动熄屏</string>
     <string name="settings_screen_saver_hint">后台运行时将屏幕显示为全黑，仅保留时钟、电量与最新一条日志；向右滑动解锁，任务结束后自动关闭</string>
     <string name="settings_screen_saver_show">立即熄屏</string>
-    <string name="screensaver_idle">环境守护中…</string>
+    <string name="screensaver_idle">Runtime 守护中…</string>
     <string name="screensaver_swipe_to_unlock">向右滑动解锁</string>
 
     <!-- 定时任务 -->
@@ -273,18 +274,19 @@
     <string name="dialog_ok">知道了</string>
 
     <!-- AzurPilot tab：WebUI 容器 -->
-    <string name="azurpilot_webui_not_running">AzurPilot 服务由 App 内置环境提供，首次启动需完成初始化；若长时间未恢复，请检查运行环境后重试</string>
+    <string name="azurpilot_webui_not_running">AzurPilot 服务由 App 内置 Runtime 提供，首次启动需完成初始化；若长时间未恢复，请检查 Runtime 后重试</string>
     <string name="azurpilot_webui_retry">重试连接</string>
     <string name="azurpilot_webui_loading">正在载入控制台…</string>
-    <string name="proot_phase_preparing">正在准备运行环境…</string>
+    <string name="proot_phase_preparing">正在准备 Runtime…</string>
     <string name="proot_phase_updating">正在热更新 AzurPilot…</string>
     <string name="proot_phase_starting">正在启动 AzurPilot 服务…</string>
-    <string name="proot_phase_failed">AzurPilot 环境启动失败：%1$s</string>
+    <string name="proot_phase_failed">AzurPilot Runtime 启动失败：%1$s</string>
 
     <!-- 挂机 tab：虚拟屏画面 + 运行配置 + 控制面板 -->
     <string name="nav_hangar">挂机</string>
-    <string name="hangar_env_down">环境未启动，暂无画面</string>
-    <string name="hangar_env_start">启动环境</string>
+    <string name="hangar_env_down">Runtime 未启动，暂无画面</string>
+    <string name="hangar_env_reconnecting">正在恢复 Runtime 画面…</string>
+    <string name="hangar_env_start">启动 Runtime</string>
     <string name="hangar_preview_waiting">正在接入画面…</string>
     <string name="hangar_config_label">运行配置</string>
     <string name="hangar_config_switch">切换</string>
@@ -315,8 +317,8 @@
     <string name="msg_cannot_start">无法开始：%1$s</string>
     <string name="msg_launch_in_progress">正在启动中，请稍候</string>
     <string name="msg_precheck_ignored_confirmation">启动检查未处理确认结果，已中止</string>
-    <string name="msg_hook_timeout">运行环境准备超时：%1$s</string>
-    <string name="msg_hook_failed">运行环境准备失败：%1$s</string>
+    <string name="msg_hook_timeout">Runtime 准备超时：%1$s</string>
+    <string name="msg_hook_failed">Runtime 准备失败：%1$s</string>
     <string name="msg_cannot_stop">无法停止：%1$s</string>
 
     <!-- Runner 拒绝/失败原因：reason 现为 UiText，不再当 %s 拼接 -->
@@ -486,7 +488,7 @@
     <string name="diagnostic_none">无</string>
     <string name="diagnostic_active_configuration_missing">activeConfigurationId 指向不存在的配置</string>
     <string name="diagnostic_configured_task_missing">任务 "%1$s" 已不在项目中</string>
-    <string name="diagnostic_runtime_no_resource">没有可用的 resource，无法构造运行环境</string>
+    <string name="diagnostic_runtime_no_resource">没有可用的 resource，无法构造 Runtime</string>
     <string name="diagnostic_enabled_task_missing_definition">已启用任务 "%1$s" 缺少 definition</string>
     <string name="diagnostic_option_unset_without_default">option "%1$s" 未设置且没有默认值</string>
     <string name="diagnostic_selected_case_missing">option "%1$s" 选择的 case "%2$s" 不存在</string>
@@ -641,18 +643,18 @@
     <string name="notification_err_webhook_url_empty">Webhook 地址未填写</string>
     <string name="notification_err_webhook_body_empty">Webhook 请求体模板未填写</string>
     <!-- 首启 rootfs 部署 -->
-    <string name="provision_title">部署运行环境</string>
-    <string name="provision_subtitle">首次启动需要解压约 1GB 运行环境，通常一到三分钟，只需一次</string>
-    <string name="provision_checking">正在检查运行环境…</string>
+    <string name="provision_title">部署 Runtime</string>
+    <string name="provision_subtitle">首次启动需要解压约 1GB Runtime，通常一到三分钟，只需一次</string>
+    <string name="provision_checking">正在检查 Runtime…</string>
     <string name="provision_extracting">解压中 %1$d%%（%2$d / %3$d MB）</string>
-    <string name="provision_downloading">正在从 GitHub 下载运行环境 %1$d%%…</string>
+    <string name="provision_downloading">正在从 GitHub 下载 Runtime %1$d%%…</string>
     <string name="provision_low_disk">磁盘空间不足：仅剩 %1$d MB，需要至少 2 GB 余量</string>
-    <string name="provision_not_bundled">尚未安装运行环境。请先安装包含运行时的完整版 APK</string>
+    <string name="provision_not_bundled">尚未安装 Runtime。请先安装包含 Runtime 的完整版 APK</string>
     <string name="provision_failed">部署失败：%1$s</string>
     <string name="provision_retry">重试</string>
     <string name="provision_skip">跳过（仅调试用）</string>
     <string name="app_update_title">AzurPilot Android 有新版本</string>
-    <string name="app_update_message">App 版本 %1$s 已就绪，安装后会保留 App 数据和已安装的运行时。</string>
+    <string name="app_update_message">App 版本 %1$s 已就绪，安装后会保留 App 数据和已安装的 Runtime。</string>
     <string name="app_update_downloading">正在下载并校验安装包…</string>
     <string name="app_update_error">更新失败：%1$s</string>
     <string name="app_update_install">下载并安装</string>
@@ -663,18 +665,18 @@
     <string name="gateway_startup_auto">启动后自动开始挂机</string>
     <string name="gateway_overview_empty">暂无调度任务</string>
     <string name="gateway_overview_next">下一个任务：%1$s · %2$s（共 %3$d 个）</string>
-    <string name="settings_runtime">运行时</string>
+    <string name="settings_runtime">Runtime</string>
     <string name="settings_runtime_commit">AzurPilot 提交</string>
     <string name="settings_runtime_unknown">未知</string>
-    <string name="settings_runtime_installed">已安装运行时版本</string>
-    <string name="settings_runtime_latest">Latest 运行时版本</string>
-    <string name="runtime_update_title">发现运行时更新</string>
-    <string name="runtime_update_message">已安装：%1$s\nLatest：%2$s\n现在下载并更新运行时吗？</string>
+    <string name="settings_runtime_installed">已安装 Runtime 版本</string>
+    <string name="settings_runtime_latest">Latest Runtime 版本</string>
+    <string name="runtime_update_title">发现 Runtime 更新</string>
+    <string name="runtime_update_message">已安装：%1$s\nLatest：%2$s\n现在下载并更新 Runtime 吗？</string>
     <string name="runtime_update_now">立即更新</string>
-    <string name="settings_runtime_managed">启动时检查 GitHub Latest；发现新版本会先询问，只有确认后才下载并更新运行时。手动检查可查看版本，重启 App 时可选择更新。</string>
-    <string name="settings_runtime_check">检查运行时更新</string>
-    <string name="settings_runtime_checking">正在检查运行时…</string>
-    <string name="settings_runtime_current">运行时已是 Latest 版本</string>
+    <string name="settings_runtime_managed">启动时检查 GitHub Latest；发现新版本会先询问，只有确认后才下载并更新 Runtime。手动检查可查看版本，重启 App 时可选择更新。</string>
+    <string name="settings_runtime_check">检查 Runtime 更新</string>
+    <string name="settings_runtime_checking">正在检查 Runtime…</string>
+    <string name="settings_runtime_current">Runtime 已是 Latest 版本</string>
     <string name="settings_runtime_new_version">发现新版本；重启 App 时可选择更新</string>
     <string name="settings_runtime_check_failed">检查失败：%1$s</string>
     <string name="settings_app_check">检查 App 更新</string>

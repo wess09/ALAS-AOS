@@ -3,6 +3,17 @@
 > 倒序排列，最新在上；按发版版本号分段。
 > 说明：本文件的历史条目中，指代本产品的名称已统一为当前命名（AzurPilot）；各代旧名见 Git 历史与 release 记录。
 >
+### 2026-09-25 · 未发版：App 更新、界面状态与 Runtime 命名
+- App 启动即独立检查 GitHub Latest 的 APK 版本；发现新版本弹出安装选择，检查不再等待 Runtime 启动。
+- 切换语言后恢复原标签页，避免重建 Activity 时落入中途的 WebUI 页；挂机页返回时若任务仍运行或画面正在恢复，显示恢复状态而非误提示“启动 Runtime”。
+- 关于页新增 App 功能简介；中文和英文界面凡指 AzurPilot 运行环境的名称统一显示 Runtime。
+- CI 依据已发布 APK 的 App 源码提交判断是否需要重新编译；每小时 Runtime 构建若 App 源码未变，只更新 Runtime 资产并保留原 APK 元数据。
+
+### 2026-09-25 · 未发版：README 重写为产品介绍
+- README 全面重写：去掉全部沿革与来源叙述，改成正经的项目介绍——产品定位、功能特性、使用条件、安装启动、页面说明、更新机制、开发入口、许可证。
+- 新增「致谢」章节，按使用位置列全依赖：项目与授权来源（ALAS-AOS、MaaFwApp、AzurPilot）、rootfs（Ubuntu Base、PRoot、BusyBox、uv、CPython、AzurPilot 的 Python 直接依赖、React 前端依赖、运行时分发的其他第三方组件）、Android 宿主（AndroidX 全套、OkHttp、Koin、Timber、kotlinx.serialization、Shizuku、libsu、XXPermissions、FloatingX、Commons Compress、XZ for Java、SnakeYAML Engine、构建期与测试依赖），并注明完整传递依赖清单位于设备内 `/opt/azurpilot/licenses`（152 项）。
+- 更新机制一节改为面向用户叙述，移除 CI runner 对比等内部细节；补上完整版/轻量版 APK 的分工说明。
+
 ### 2026-09-25 · 未发版：运行时更新确认与轻量 APK
 - 启动时只检查 GitHub Latest 的 rootfs 版本；发现新版先弹出确认，只有用户同意后才在启动 proot 前下载和替换。设置页手动检查继续展示已安装与 Latest 版本。
 - APK 版本号和版本名只随 Android 宿主提交变化，不再纳入 AP 上游提交；AP 更新独立提示 rootfs，不再触发 APK 更新。

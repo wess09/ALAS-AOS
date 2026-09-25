@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,6 +61,7 @@ import com.azurpilot.ghio.domain.ThemeMode
 import com.azurpilot.ghio.log.LogExportKind
 import com.azurpilot.ghio.privileged.PermissionManager
 import com.azurpilot.ghio.proot.ProotHost
+import com.azurpilot.ghio.proot.ProotPhase
 import com.azurpilot.ghio.provision.ProvisionState
 import com.azurpilot.ghio.provision.RootfsProvisioner
 import com.azurpilot.ghio.settings.SettingsIntent
@@ -132,21 +134,27 @@ fun AppRoot(
     var provisionSkipped by remember { mutableStateOf(false) }
     var runtimePromptDismissed by rememberSaveable { mutableStateOf(false) }
     var applyingRuntimeUpdate by remember { mutableStateOf(false) }
-    var prootStarted by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { provisioner.start() }
+    val prootHost: ProotHost = koinInject()
+    var prootStarted by remember { mutableStateOf(prootHost.state.value.phase != ProotPhase.IDLE) }
+    LaunchedEffect(Unit) {
+        if (provisioner.state.value !is ProvisionState.Ready) provisioner.start()
+    }
     val appUpdateState by appUpdateManager.state.collectAsStateWithLifecycle()
-    LaunchedEffect(prootStarted) {
-        if (prootStarted) appUpdateManager.check()
+    var appUpdateChecked by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!appUpdateChecked) {
+            appUpdateChecked = true
+            appUpdateManager.check()
+        }
     }
     val showProvision = provisionState !is ProvisionState.Ready && !provisionSkipped
 
     // 启动时只查版本，先等用户决定是否更新，再启动 proot。
-    val prootHost: ProotHost = koinInject()
     val installedRuntime = provisioner.installedVersion()
     val runtimeAvailable = runtimeCheck.checked && runtimeCheck.error == null &&
         runtimeCheck.latestVersion != null && runtimeCheck.latestVersion != installedRuntime
     LaunchedEffect(provisionState, runtimeCheck, runtimePromptDismissed, applyingRuntimeUpdate) {
-        if (provisionState is ProvisionState.Ready && runtimeCheck.checked && !runtimeCheck.checking &&
+        if (!prootStarted && provisionState is ProvisionState.Ready && runtimeCheck.checked && !runtimeCheck.checking &&
             !applyingRuntimeUpdate && (!runtimeAvailable || runtimePromptDismissed)
         ) {
             prootHost.ensureStarted()
@@ -190,7 +198,10 @@ fun AppRoot(
                 applyingRuntimeUpdate = false
             }
         }
-        appUpdateState.available?.let { update ->
+        appUpdateState.available?.takeUnless {
+            provisionState is ProvisionState.Ready && runtimeAvailable &&
+                !runtimePromptDismissed && !applyingRuntimeUpdate
+        }?.let { update ->
             AlertDialog(
                 onDismissRequest = appUpdateManager::dismiss,
                 title = { Text(stringResource(R.string.app_update_title)) },
@@ -221,7 +232,13 @@ fun AppRoot(
         // 首帧 backStackEntry 还没就绪，那时必然停在 startDestination
         val currentRoute = navBackStackEntry?.destination?.route
         val onSubPage = currentRoute != null && currentRoute !in Routes.mainTabs
-        val pagerState = rememberPagerState(pageCount = { TopDestination.entries.size })
+        // AppCompat 切换语言会重建 Activity；显式保存目标页，避免恢复到中途页。
+        var selectedPage by rememberSaveable { mutableStateOf(TopDestination.Hangar.ordinal) }
+        val pagerState = rememberPagerState(initialPage = selectedPage, pageCount = { TopDestination.entries.size })
+        LaunchedEffect(pagerState) {
+            pagerState.scrollToPage(selectedPage)
+            snapshotFlow { pagerState.settledPage }.collect { selectedPage = it }
+        }
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
         var exportKind by remember { mutableStateOf<LogExportKind?>(null) }
@@ -282,7 +299,10 @@ fun AppRoot(
                         val selected = pagerState.currentPage == index
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            onClick = {
+                                selectedPage = index
+                                scope.launch { pagerState.scrollToPage(index) }
+                            },
                             icon = {
                                 Icon(
                                     imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
