@@ -8,6 +8,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.azurpilot.ghio.theme.AppTokens
 
@@ -25,12 +26,13 @@ fun <T> AppSingleChoiceFlow(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    arrangement: Alignment.Horizontal = Alignment.Start,
 ) {
     FlowRow(
         modifier = modifier
             .fillMaxWidth()
             .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm, arrangement),
         verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
     ) {
         options.forEach { (value, label) ->

@@ -649,15 +649,19 @@
     <string name="notification_err_webhook_body_empty">Webhook body template is empty</string>
     <!-- First-launch rootfs provisioning -->
     <string name="provision_title">Setting up Runtime</string>
-    <string name="provision_subtitle">The first launch extracts about 1 GB of Runtime files. This takes a minute or two and happens only once</string>
+    <string name="provision_subtitle">The first launch installs about 1 GB of Runtime: the full APK unpacks it locally, the incremental APK downloads it from GitHub. It happens only once</string>
     <string name="provision_checking">Checking Runtime…</string>
     <string name="provision_extracting">Extracting %1$d%% (%2$d / %3$d MB)</string>
     <string name="provision_downloading">Downloading Runtime from GitHub %1$d%%…</string>
     <string name="provision_low_disk">Not enough storage: only %1$d MB left, at least 2 GB required</string>
-    <string name="provision_not_bundled">No Runtime is installed. Install the full APK that includes Runtime first</string>
+    <string name="provision_not_bundled">The GitHub release has no Runtime available. Check your connection and retry, or use the full APK that bundles Runtime</string>
     <string name="provision_failed">Setup failed: %1$s</string>
     <string name="provision_retry">Retry</string>
     <string name="provision_skip">Skip (debug only)</string>
+    <string name="provision_source">Download source</string>
+    <string name="provision_source_direct">Direct GitHub</string>
+    <string name="provision_source_mirror">ghproxy mirror</string>
+    <string name="provision_source_desc">Switch to the mirror if direct access fails; switching restarts the download right away</string>
     <string name="app_update_title">AzurPilot Android update</string>
     <string name="app_update_message">App version %1$s is ready. Your app data and installed Runtime will be preserved.</string>
     <string name="app_update_downloading">Downloading and verifying the APK…</string>

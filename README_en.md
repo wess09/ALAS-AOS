@@ -424,7 +424,7 @@ graph TD
 > **Shizuku-m** is highly recommended: it operates without wireless debugging and works reliably even in environments without external Wi-Fi networks.
 
 > [!IMPORTANT]
-> The **Full APK** is required for initial installation. For subsequent host updates, download the lightweight **Incremental APK** (~10–20MB) to upgrade directly without re-extracting the rootfs.
+> The **Full APK** bundles Runtime and unpacks it locally on first launch, with no network needed; the **Incremental APK** carries no Runtime and downloads about 1GB from GitHub on first launch (Wi-Fi recommended). For later host-only updates, install the incremental APK over the existing app to reuse the Runtime already on disk.
 
 ---
 

@@ -424,7 +424,7 @@ graph TD
 > 推薦使用 **Shizuku-m**，該分支支援免開啟無線偵錯模式、無外部 WLAN 網路環境下亦能正常啟動，大幅提升行動情境下的穩定性。
 
 > [!IMPORTANT]
-> 初次安裝務必選擇**完整版 APK**。後續若僅有 Android 宿主程式碼更新，可下載僅十餘 MB 的**輕量增量 APK**，直接覆蓋安裝即可，無需重新解壓 Runtime。
+> **完整版 APK** 內建 Runtime，首次啟動直接在本機解壓縮，無需連網；**輕量增量 APK** 不含 Runtime，首次啟動會自動從 GitHub 下載約 1GB 的 Runtime（建議在 Wi-Fi 環境下進行）。後續若僅有 Android 宿主程式碼更新，下載輕量增量 APK 直接覆蓋安裝即可，無需重新解壓 Runtime。
 
 ---
 

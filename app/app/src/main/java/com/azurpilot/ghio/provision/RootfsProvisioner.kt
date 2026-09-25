@@ -30,7 +30,7 @@ sealed interface ProvisionState {
     /** 刚启动，正在比对内置版本与已装版本 */
     data object Checking : ProvisionState
 
-    /** 安装包未内置 rootfs.tar.xz（开发构建走 M1-d 的 /data/local/tmp 通道时可跳过） */
+    /** 未内置 rootfs.tar.xz，且 Release 清单也没有可部署的 Runtime */
     data object NotBundled : ProvisionState
 
     /** 磁盘余量不足（roadmap 硬校验：≥2GB） */
@@ -60,6 +60,8 @@ data class RuntimeUpdateCheck(
  *   且 noexec；内部 filesDir 是 Spike A 实证 proot 可用的位置（targetSdk 35）。
  * - 版本闸门：assets 侧 `rootfs/BUILD_MANIFEST` 与 marker `files/rootfs/.provisioned`
  *   对版本号；不一致（或 python3  sanity 不过）就重解。升级=换新包重解，不做增量。
+ * - 安装包未内置 rootfs（轻量 APK）时不报错，改为从 Release 拉 `rootfs.tar.xz`
+ *   自动部署；两者共用同一条解压流水线。
  * - 落盘走 `rootfs.tmp` 解完再换名，半途失败不留半拉子正式目录。
  * - busybox tar 解 ubuntu-base 硬链接前向引用必炸（M1-d 坑②），故用纯 Java
  *   commons-compress + tukaani xz 流式解；硬链接物化成副本，符号链接走 [Os.symlink]。
@@ -80,30 +82,42 @@ class RootfsProvisioner(
         if (_updateCheck.value.checking) return
         _updateCheck.value = RuntimeUpdateCheck(checking = true)
         scope.launch(Dispatchers.IO) {
-            runCatching {
-                val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
-                val connection = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
-                try {
-                    connection.connectTimeout = 12_000
-                    connection.readTimeout = 12_000
-                    connection.setRequestProperty("Cache-Control", "no-cache")
-                    check(connection.responseCode == 200) { "HTTP ${connection.responseCode}" }
-                    val info = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-                    val version = info.getString("rootfsVersion")
-                    require(version.isNotBlank()) { "运行时版本缺失" }
-                    require(info.getString("rootfsUrl").startsWith(ReleaseUrls.BASE)) { "运行时下载地址无效" }
-                    require(info.getString("rootfsSha256").matches(Regex("[0-9a-f]{64}"))) { "运行时校验值无效" }
-                    require(info.getLong("rootfsSize") > 0) { "运行时大小无效" }
-                    version
-                } finally {
-                    connection.disconnect()
+            runCatching { parseRuntime(fetchIndex()).version }
+                .onSuccess { version ->
+                    _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = version)
+                }.onFailure { error ->
+                    _updateCheck.value = RuntimeUpdateCheck(checked = true, error = error.message ?: "检查失败")
                 }
-            }.onSuccess { version ->
-                _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = version)
-            }.onFailure { error ->
-                _updateCheck.value = RuntimeUpdateCheck(checked = true, error = error.message ?: "检查失败")
-            }
         }
+    }
+
+    /** Latest 清单；镜像开关与缓存绕过集中在这里。 */
+    private fun fetchIndex(): JSONObject {
+        val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+        val connection = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+        return try {
+            connection.connectTimeout = 12_000
+            connection.readTimeout = 12_000
+            connection.setRequestProperty("Cache-Control", "no-cache")
+            check(connection.responseCode == 200) { "HTTP ${connection.responseCode}" }
+            JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private data class ReleaseRuntime(val version: String, val url: String, val sha256: String, val size: Long)
+
+    private fun parseRuntime(info: JSONObject): ReleaseRuntime {
+        val version = info.getString("rootfsVersion")
+        require(version.isNotBlank()) { "运行时版本缺失" }
+        val url = info.getString("rootfsUrl")
+        require(url.startsWith(ReleaseUrls.BASE)) { "运行时下载地址无效" }
+        val sha = info.getString("rootfsSha256")
+        require(sha.matches(SHA256)) { "运行时校验值无效" }
+        val size = info.getLong("rootfsSize")
+        require(size > 0) { "运行时大小无效" }
+        return ReleaseRuntime(version, url, sha, size)
     }
 
     /** 用户确认后调用；AppRoot 在结果出来前不会启动 proot。 */
@@ -112,7 +126,7 @@ class RootfsProvisioner(
         _state.value = ProvisionState.Checking
         scope.launch(Dispatchers.IO) {
             try {
-                updateFromRelease()
+                installFromRelease()
                 _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = installedVersion())
             } catch (error: Exception) {
                 Timber.w(error, "rootfs update failed")
@@ -153,15 +167,17 @@ class RootfsProvisioner(
             }
             if (!isInstalled()) {
                 val bundled = bundledVersion()
-                if (bundled == null) {
-                    Timber.w("rootfs archive not bundled and no installed runtime exists")
+                if (bundled != null) {
+                    checkDisk()
+                    extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled)
+                } else if (!installFromRelease()) {
+                    // 轻量包没内置 Runtime，Release 也没有可用的：只能等下一次发布或换完整版 APK。
+                    Timber.w("rootfs archive not bundled and release has no runtime")
                     _state.value = ProvisionState.NotBundled
                     return@withContext
                 }
-                checkDisk()
-                extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled)
             }
-            // 启动时只查询并提示；用户确认前不能下载或替换。
+            // Runtime 已在位时只查询并提示；用户确认前不替换。
             checkForUpdates()
             _state.value = ProvisionState.Ready
         } catch (e: Exception) {
@@ -198,57 +214,76 @@ class RootfsProvisioner(
         if (free < MIN_FREE_BYTES) throw IOException("磁盘空间不足：剩余 ${free / 1_000_000} MB，需要至少 2 GB")
     }
 
-    private fun updateFromRelease() {
-        val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
-        val index = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
-        val info = try {
-            index.connectTimeout = 12_000
-            index.readTimeout = 12_000
-            index.setRequestProperty("Cache-Control", "no-cache")
-            check(index.responseCode == 200) { "更新检查 HTTP ${index.responseCode}" }
-            JSONObject(index.inputStream.bufferedReader().use { it.readText() })
-        } finally { index.disconnect() }
-        // 旧版 latest.json 只有 APK 字段，等下一次发布同时带上 rootfs 资产。
-        if (!info.has("rootfsVersion")) return
-        val version = info.getString("rootfsVersion")
-        if (version == installedVersion()) return
-        val url = info.getString("rootfsUrl")
-        val sha = info.getString("rootfsSha256")
-        val size = info.getLong("rootfsSize")
-        require(url.startsWith(ReleaseUrls.BASE))
-        require(sha.matches(Regex("[0-9a-f]{64}")) && size > 0)
+    /**
+     * 从 Release 下载并部署 Runtime。
+     *
+     * 清单里还没有 Runtime 字段（旧版 latest.json 只发布 APK）、或版本已与已装一致时
+     * 返回 false，调用方据此区分「没有可装的 Runtime」与「装了/失败了」。
+     */
+    private fun installFromRelease(): Boolean {
+        val info = fetchIndex()
+        if (!info.has("rootfsVersion")) return false
+        val runtime = parseRuntime(info)
+        if (runtime.version == installedVersion()) return false
         checkDisk()
         val archive = File(app.filesDir, "rootfs-update.tar.xz")
         try {
-            val downloadUrl = ReleaseUrls.selected(url, settings.useGithubMirror.value)
-            val connection = URL(downloadUrl).openConnection() as HttpURLConnection
-            try {
-                connection.connectTimeout = 20_000
-                connection.readTimeout = 120_000
-                check(connection.responseCode == 200) { "rootfs 下载 HTTP ${connection.responseCode}" }
-                val digest = MessageDigest.getInstance("SHA-256")
-                var done = 0L
-                connection.inputStream.use { input ->
-                    archive.outputStream().buffered().use { output ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        while (true) {
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            done += count
-                            check(done <= size) { "rootfs 下载大小超出清单" }
-                            digest.update(buffer, 0, count)
-                            output.write(buffer, 0, count)
-                            _state.value = ProvisionState.Downloading(done, size)
-                        }
+            // 下载途中换源就从零重来：两端内容同源，按清单大小/SHA 校验，重下没有额外风险。
+            while (true) {
+                val useMirror = settings.useGithubMirror.value
+                try {
+                    downloadArchive(runtime, useMirror, archive)
+                    break
+                } catch (changed: SourceChanged) {
+                    Timber.i("runtime download source changed, restarting")
+                    archive.delete()
+                    _state.value = ProvisionState.Downloading(0, runtime.size)
+                }
+            }
+            extract({ archive.inputStream() }, runtime.size, runtime.version)
+            Timber.i("rootfs installed from release: ${runtime.version}")
+        } finally { archive.delete() }
+        return true
+    }
+
+    /** 当前连接上的源已被切换；调用方换新源重下。 */
+    private class SourceChanged : Exception("下载源已切换")
+
+    private fun sourceSwitched(useMirror: Boolean) = settings.useGithubMirror.value != useMirror
+
+    private fun downloadArchive(runtime: ReleaseRuntime, useMirror: Boolean, target: File) {
+        val downloadUrl = ReleaseUrls.selected(runtime.url, useMirror)
+        val connection = URL(downloadUrl).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = 20_000
+            connection.readTimeout = 120_000
+            check(connection.responseCode == 200) { "rootfs 下载 HTTP ${connection.responseCode}" }
+            val digest = MessageDigest.getInstance("SHA-256")
+            var done = 0L
+            connection.inputStream.use { input ->
+                target.outputStream().buffered().use { output ->
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    while (true) {
+                        // 连接卡住时 read 会阻塞到超时，这里保证用户一换源就尽快放弃当前连接
+                        if (sourceSwitched(useMirror)) throw SourceChanged()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        done += count
+                        check(done <= runtime.size) { "rootfs 下载大小超出清单" }
+                        digest.update(buffer, 0, count)
+                        output.write(buffer, 0, count)
+                        _state.value = ProvisionState.Downloading(done, runtime.size)
                     }
                 }
-                check(done == size && digest.digest().joinToString("") { "%02x".format(it) } == sha) {
-                    "rootfs 下载校验失败"
-                }
-            } finally { connection.disconnect() }
-            extract({ archive.inputStream() }, size, version)
-            Timber.i("rootfs updated to $version")
-        } finally { archive.delete() }
+            }
+            check(done == runtime.size && digest.digest().joinToString("") { "%02x".format(it) } == runtime.sha256) {
+                "rootfs 下载校验失败"
+            }
+        } catch (error: IOException) {
+            // 读超时多半是卡在连不上的源上；这期间用户换了源就按换源处理，别报成失败
+            if (sourceSwitched(useMirror)) throw SourceChanged()
+            throw error
+        } finally { connection.disconnect() }
     }
 
     // ── 解压 ──
@@ -394,5 +429,6 @@ class RootfsProvisioner(
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024
         val VERSION_KEY = Regex(""""rootfs_version"\s*:\s*"([^"]+)"""")
+        val SHA256 = Regex("[0-9a-f]{64}")
     }
 }

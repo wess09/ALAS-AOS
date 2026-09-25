@@ -644,15 +644,19 @@
     <string name="notification_err_webhook_body_empty">Webhook 请求体模板未填写</string>
     <!-- 首启 rootfs 部署 -->
     <string name="provision_title">部署 Runtime</string>
-    <string name="provision_subtitle">首次启动需要解压约 1GB Runtime，通常一到三分钟，只需一次</string>
+    <string name="provision_subtitle">首次启动需要部署约 1GB Runtime：完整版直接解压内置包，轻量版从 GitHub 下载，只需一次</string>
     <string name="provision_checking">正在检查 Runtime…</string>
     <string name="provision_extracting">解压中 %1$d%%（%2$d / %3$d MB）</string>
     <string name="provision_downloading">正在从 GitHub 下载 Runtime %1$d%%…</string>
     <string name="provision_low_disk">磁盘空间不足：仅剩 %1$d MB，需要至少 2 GB 余量</string>
-    <string name="provision_not_bundled">尚未安装 Runtime。请先安装包含 Runtime 的完整版 APK</string>
+    <string name="provision_not_bundled">GitHub 发布中暂无可用 Runtime。请检查网络后重试，或改用内置 Runtime 的完整版 APK</string>
     <string name="provision_failed">部署失败：%1$s</string>
     <string name="provision_retry">重试</string>
     <string name="provision_skip">跳过（仅调试用）</string>
+    <string name="provision_source">下载源</string>
+    <string name="provision_source_direct">直连 GitHub</string>
+    <string name="provision_source_mirror">ghproxy 镜像</string>
+    <string name="provision_source_desc">直连不通时切到镜像，切换后会立即重新下载</string>
     <string name="app_update_title">AzurPilot Android 有新版本</string>
     <string name="app_update_message">App 版本 %1$s 已就绪，安装后会保留 App 数据和已安装的 Runtime。</string>
     <string name="app_update_downloading">正在下载并校验安装包…</string>

@@ -20,17 +20,21 @@ import androidx.compose.ui.text.style.TextAlign
 import com.azurpilot.ghio.R
 import com.azurpilot.ghio.provision.ProvisionState
 import com.azurpilot.ghio.theme.AppTokens
+import com.azurpilot.ghio.ui.components.AppSingleChoiceFlow
 
 /**
  * 首启 rootfs 部署页：未完成时整屏接管（AppRoot 的门）
  *
- * 全程唯一动作是「等」；失败/低磁盘/未内置给原因与重试，跳过只留给开发包
+ * 「等」之外只有两件事：下载源可选（直连 / 镜像，切换即重下），失败给重试；
+ * 跳过只留给开发包
  */
 @Composable
 fun ProvisionScreen(
     state: ProvisionState,
     onRetry: () -> Unit,
     onSkip: (() -> Unit)?,
+    useMirror: Boolean,
+    onUseMirrorChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -103,12 +107,6 @@ fun ProvisionScreen(
                         isError = true,
                     )
                     RetryButton(onRetry)
-                    if (onSkip != null) {
-                        Spacer(Modifier.height(AppTokens.Spacing.sm))
-                        Button(onClick = onSkip) {
-                            Text(stringResource(R.string.provision_skip))
-                        }
-                    }
                 }
 
                 is ProvisionState.Failed -> {
@@ -120,6 +118,41 @@ fun ProvisionScreen(
                 }
 
                 ProvisionState.Ready -> Unit // 门已开，本页不再渲染
+            }
+
+            // 开发包（未内置资产）的逃生门：下载不下来也得能进外壳
+            if (onSkip != null) {
+                Spacer(Modifier.height(AppTokens.Spacing.sm))
+                Button(onClick = onSkip) {
+                    Text(stringResource(R.string.provision_skip))
+                }
+            }
+
+            // 磁盘不足与下载源无关，别在那里堆选项
+            if (state !is ProvisionState.LowDisk) {
+                Spacer(Modifier.height(AppTokens.Spacing.xl))
+                Text(
+                    text = stringResource(R.string.provision_source),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(AppTokens.Spacing.sm))
+                AppSingleChoiceFlow(
+                    options = listOf(
+                        false to stringResource(R.string.provision_source_direct),
+                        true to stringResource(R.string.provision_source_mirror),
+                    ),
+                    selected = useMirror,
+                    onSelect = onUseMirrorChange,
+                    arrangement = Alignment.CenterHorizontally,
+                )
+                Spacer(Modifier.height(AppTokens.Spacing.sm))
+                Text(
+                    text = stringResource(R.string.provision_source_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

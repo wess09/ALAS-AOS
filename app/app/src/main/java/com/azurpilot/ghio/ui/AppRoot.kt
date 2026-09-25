@@ -64,6 +64,7 @@ import com.azurpilot.ghio.proot.ProotHost
 import com.azurpilot.ghio.proot.ProotPhase
 import com.azurpilot.ghio.provision.ProvisionState
 import com.azurpilot.ghio.provision.RootfsProvisioner
+import com.azurpilot.ghio.settings.AppSettingsManager
 import com.azurpilot.ghio.settings.SettingsIntent
 import com.azurpilot.ghio.settings.SettingsViewModel
 import com.azurpilot.ghio.service.HostState
@@ -123,6 +124,7 @@ fun AppRoot(
     permissionManager: PermissionManager = koinInject(),
     provisioner: RootfsProvisioner = koinInject(),
     appUpdateManager: AppUpdateManager = koinInject(),
+    appSettings: AppSettingsManager = koinInject(),
 ) {
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val readiness by permissionManager.readiness.collectAsStateWithLifecycle()
@@ -131,6 +133,7 @@ fun AppRoot(
     // 首启 rootfs 部署的门：未 Ready 时整屏接管，tab/二级页都在门内
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
+    val useGithubMirror by appSettings.useGithubMirror.collectAsStateWithLifecycle()
     var provisionSkipped by remember { mutableStateOf(false) }
     var runtimePromptDismissed by rememberSaveable { mutableStateOf(false) }
     var applyingRuntimeUpdate by remember { mutableStateOf(false) }
@@ -277,12 +280,17 @@ fun AppRoot(
             ProvisionScreen(
                 state = provisionState,
                 onRetry = { provisioner.retry() },
-                // 跳过只留给开发包（未内置资产）：跳过只能调外壳，AzurPilot 起不来
-                onSkip = if (BuildConfig.DEBUG && provisionState is ProvisionState.NotBundled) {
+                // 跳过只留给开发包：跳过只能调外壳，AzurPilot 起不来
+                onSkip = if (BuildConfig.DEBUG &&
+                    (provisionState is ProvisionState.NotBundled || provisionState is ProvisionState.Failed)
+                ) {
                     { provisionSkipped = true }
                 } else {
                     null
                 },
+                // 首启就得选源：直连不通的用户不该先撞一次超时
+                useMirror = useGithubMirror,
+                onUseMirrorChange = { enabled -> scope.launch { appSettings.setUseGithubMirror(enabled) } },
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
