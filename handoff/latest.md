@@ -2,6 +2,10 @@
 
 ## 最新进度
 
+- 2026-09-26 夜：**KDoc 双语注释 + 版本线切 1.2.0**。
+  - 核心链路 6 文件 KDoc 升级 Google 规范中英双语（7290f8c）：ReleaseDownloader/ReleaseUrls/RuntimeArch 全量；AppUpdateManager/RootfsProvisioner/ProotHost 类级补英文镜像。纯注释零行为差异，编译通过。
+  - 版本线：1.1.131（误把 X 钉在基线计数）→ 用户纠正为 X 从 0 起算 → 已发布 1.1.131 收不回，切 **1.2.0**（d110260）：`GitVersion.kt` X = max(0, 提交数−134)，升位提交为本仓第 134 个（X=0），此后每提交 +1；CI resolve 正则 `^1\.(1|2)\.$` 兼容过渡（上一发布名 1.1.131）。CI run 36234309988 全绿，发布核对 versionName=1.2.0 / versionCode=1790414947（=前值+1，更新链路不受版本名切换影响）/ appCommit=d110260。
+  - 插曲：推送 403 系 gh 活跃账号被切到无写权限的 AzurPilotBot，`gh auth switch --user wess09` 解决。
 - 2026-09-26 傍晚：**回退 okdownload 多线程下载（用户指令），rootfs 补 ssh；真机 E2E 全通**（c505225，已推送，CI run 36228430826 全绿）。
   - 并行子代理排障结论：报障设备跑的是 c357a87（okdownload 之前的代码），"下载卡住"=直连 github.com 被墙 + 镜像开关关闭（设备日志抓到 SocketTimeoutException: failed to connect to github.com），"不解压"=下载从未发生；UI 还把 applyUpdate 失败静默吞掉（error 只进 updateCheck，AppRoot 无渲染）。okdownload 本身未在任何用户设备上运行过。镜像实测：gh.ddlc.top 最快且并发稳；gh-proxy.net 对无 JS 下载器回挑战页（应剔除）；gh-proxy.com 约 1/6 概率无视 Range 回 200 全文件。
   - 回退内容：ReleaseDownloader 恢复单连接 HttpURLConnection（connect 20s/read 120s，大小与 SHA-256 仍由调用方完成后校验），删 okdownload 三件套依赖/Application 装配/R8 规则；多架构、镜像选择器、per-arch 发布全部保留。同时 rootfs 构建补 `openssh-client`（上游 module/base/ssh.py 直接 Popen 系统 ssh，此前 rootfs 无 ssh 导致远程访问不可用——arm64 时代就缺，本轮才被暴露）。
