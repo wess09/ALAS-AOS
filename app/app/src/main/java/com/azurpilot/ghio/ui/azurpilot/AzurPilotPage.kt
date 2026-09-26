@@ -1,5 +1,6 @@
 package com.azurpilot.ghio.ui.azurpilot
 
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -163,6 +166,11 @@ private fun AzurPilotContent(repository: AzurPilotRepository) {
     val isDetail = route != null && route in AzurPilotSection.DETAILS
     val instances by repository.instances.collectAsStateWithLifecycle()
     val selected by repository.selectedInstance.collectAsStateWithLifecycle()
+    // 任务配置页借顶栏放一个「找回搜索」的图标；离开任务页就收掉
+    val topBarAction = remember { ApTopBarAction() }
+    LaunchedEffect(route) {
+        if (route == null || !route.startsWith("ap/task/")) topBarAction.visible = false
+    }
 
     fun openSection(target: AzurPilotSection) {
         navController.navigate(target.route) {
@@ -193,6 +201,17 @@ private fun AzurPilotContent(repository: AzurPilotRepository) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.ap_back),
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    // 搜索条滚走之后，这里出现找回它的入口
+                    AnimatedVisibility(visible = topBarAction.visible) {
+                        IconButton(onClick = { topBarAction.onClick?.invoke() }) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.ap_bar_search),
                             )
                         }
                     }
@@ -230,6 +249,24 @@ private fun AzurPilotContent(repository: AzurPilotRepository) {
                 navController = navController,
                 startDestination = AzurPilotSection.Overview.route,
                 modifier = Modifier.fillMaxSize(),
+                // 分区之间是平级淡入淡出；进详情才是推进，走共享轴。方向按目标页判定：
+                // 用 initialState/targetState 的 route 区分「切标签」与「进任务页」
+                enterTransition = {
+                    if (AzurPilotSection.isDetailRoute(targetState.destination.route)) {
+                        detailEnterTransition()
+                    } else {
+                        sectionEnterTransition()
+                    }
+                },
+                exitTransition = {
+                    if (AzurPilotSection.isDetailRoute(targetState.destination.route)) {
+                        detailExitTransition()
+                    } else {
+                        sectionExitTransition()
+                    }
+                },
+                popEnterTransition = { detailPopEnterTransition() },
+                popExitTransition = { detailPopExitTransition() },
             ) {
                 composable(AzurPilotSection.Overview.route) { OverviewSection(repository) }
                 composable(AzurPilotSection.Config.route) {
@@ -256,6 +293,7 @@ private fun AzurPilotContent(repository: AzurPilotRepository) {
                     TaskConfigPage(
                         repository = repository,
                         task = entry.arguments?.getString(AzurPilotSection.TASK_ARG).orEmpty(),
+                        topBarAction = topBarAction,
                     )
                 }
                 composable(AzurPilotSection.INSTANCES) { InstancesPage(repository) }

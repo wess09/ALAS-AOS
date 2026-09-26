@@ -885,4 +885,8 @@
     <string name="ap_scheduler_start">Start scheduler</string>
     <string name="ap_scheduler_stop">Stop scheduler</string>
     <string name="ap_scheduler_processing">Working…</string>
+    <string name="ap_clear_search">Clear search</string>
+    <string name="ap_config_directory">Sections</string>
+    <string name="ap_bar_search">Search settings</string>
+    <string name="ap_field_notset">Not set</string>
 </resources>

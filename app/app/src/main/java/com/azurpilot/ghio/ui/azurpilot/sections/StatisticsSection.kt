@@ -1,6 +1,14 @@
 package com.azurpilot.ghio.ui.azurpilot.sections
 
+
 import androidx.compose.foundation.Canvas
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -63,6 +71,7 @@ import com.azurpilot.ghio.ui.azurpilot.ApErrorState
 import com.azurpilot.ghio.ui.azurpilot.ApMetricCard
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.prettyCell
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 
 private val DAY_CHOICES = listOf(1, 7, 30, 90, 365)
@@ -153,21 +162,37 @@ fun StatisticsSection(repository: AzurPilotRepository) {
                 },
             )
 
-            when {
-                selected == null -> AppCard {
+            // 加载 / 出错 / 有内容 是三种互斥状态，硬切会让人分不清「刚才是没数据还是没加载完」
+            AnimatedContent(
+                targetState = when {
+                    selected == null -> StatsStage.NoInstance
+                    loading && report == null -> StatsStage.Loading
+                    report == null -> StatsStage.Error
+                    else -> StatsStage.Content
+                },
+                transitionSpec = {
+                    fadeIn(ApMotion.effects(ApMotion.Medium2, ApMotion.EmphasizedDecelerate)) togetherWith
+                        fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate))
+                },
+                label = "statsStage",
+            ) { stage ->
+            when (stage) {
+                StatsStage.NoInstance -> AppCard {
                     Text(stringResource(R.string.ap_stats_no_instance))
                 }
 
-                loading && report == null -> AppCard {
+                StatsStage.Loading -> AppCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                     ) { CircularProgressIndicator() }
                 }
 
-                report == null -> AppCard { ApErrorState(error ?: stringResource(R.string.ap_waiting_data)) }
+                StatsStage.Error -> AppCard {
+                    ApErrorState(error ?: stringResource(R.string.ap_waiting_data))
+                }
 
-                else -> {
+                StatsStage.Content -> {
                     val data = report!!
                     val charted = data.series.filter { it.points.isNotEmpty() }
                     // 指标、曲线、表格全空时要说清「这一类还没有数据」：
@@ -185,24 +210,36 @@ fun StatisticsSection(repository: AzurPilotRepository) {
                         MetricsGrid(data)
                     }
                     if (charted.isNotEmpty()) {
-                        AppCard(title = stringResource(R.string.ap_stats_trend)) {
+                        AppCard(
+                            title = stringResource(R.string.ap_stats_trend),
+                            modifier = Modifier.apEnter(2),
+                        ) {
                             ApLineChart(charted)
                         }
                     }
-                    data.tables.forEach { table -> StatTableCard(table) }
+                    data.tables.forEachIndexed { index, table ->
+                        StatTableCard(table, Modifier.apEnter(index + 3))
+                    }
                     data.notes.forEach { note ->
                         AppCard { Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             }
+            }
         }
     }
 }
 
+/** 统计区的四种互斥状态；用枚举而不是散落的布尔组合，转场才能只盯一个值 */
+private enum class StatsStage { NoInstance, Loading, Error, Content }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MetricsGrid(report: AzurPilotStatisticsReport) {
-    AppCard(title = stringResource(R.string.ap_stats_summary)) {
+    AppCard(
+        title = stringResource(R.string.ap_stats_summary),
+        modifier = Modifier.apEnter(1),
+    ) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
@@ -245,7 +282,7 @@ private fun CategoryControls(
     val showsTask = category == AzurPilotStatCategory.Loot && taskOptions.isNotEmpty()
     if (!showsDays && !showsPeriod && !showsScope && !showsTask && onRefresh == null) return
 
-    AppCard {
+    AppCard(modifier = Modifier.apEnter(0)) {
         if (showsDays) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm)) {
                 DAY_CHOICES.forEach { choice ->
@@ -349,6 +386,16 @@ private fun CategoryControls(
 @Composable
 private fun ApLineChart(series: List<AzurPilotStatSeries>) {
     val colors = chartPalette()
+    // 数据换了就重播一次描线：曲线「画出来」比直接出现更容易看出是同一张图的延续。
+    // 签名只取形状（键 / 点数 / 末值），避免每来一帧就重画
+    val signature = remember(series) {
+        series.joinToString("|") { "${it.key}:${it.points.size}:${it.points.lastOrNull()?.value}" }
+    }
+    val progress = remember(signature) { Animatable(0f) }
+    LaunchedEffect(signature) {
+        progress.snapTo(0f)
+        progress.animateTo(1f, ApMotion.effects(ApMotion.Long2, ApMotion.EmphasizedDecelerate))
+    }
     val allValues = series.flatMap { line -> line.points.map { it.value } }
     val minValue = allValues.minOrNull() ?: 0.0
     val maxValue = allValues.maxOrNull() ?: 1.0
@@ -360,6 +407,8 @@ private fun ApLineChart(series: List<AzurPilotStatSeries>) {
                 .fillMaxWidth()
                 .height(180.dp),
         ) {
+            // 擦除式揭示：按进度裁掉右侧还没画到的部分
+            clipRect(right = size.width * progress.value) {
             series.forEachIndexed { index, line ->
                 val points = line.points
                 if (points.size < 2) {
@@ -381,6 +430,7 @@ private fun ApLineChart(series: List<AzurPilotStatSeries>) {
                     color = colors[index % colors.size],
                     style = Stroke(width = 3f, cap = StrokeCap.Round),
                 )
+            }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm)) {
@@ -449,8 +499,8 @@ private fun chartPalette(): List<Color> = listOf(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun StatTableCard(table: AzurPilotStatTable) {
-    AppCard(title = table.title) {
+private fun StatTableCard(table: AzurPilotStatTable, modifier: Modifier = Modifier) {
+    AppCard(title = table.title, modifier = modifier) {
         if (table.rows.isEmpty()) {
             Text(
                 text = stringResource(R.string.ap_stats_no_rows),

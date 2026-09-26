@@ -16,6 +16,7 @@ import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.ui.azurpilot.ApKeyValueRow
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.instanceStatusText
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 import com.azurpilot.ghio.ui.components.AppNavigationRow
 
@@ -41,7 +42,10 @@ fun SettingsSection(
     val deploy by repository.deploySettings.collectAsStateWithLifecycle()
 
     ApSectionColumn {
-        AppCard(title = stringResource(R.string.ap_title_instances)) {
+        AppCard(
+            title = stringResource(R.string.ap_title_instances),
+            modifier = Modifier.apEnter(0),
+        ) {
             AppNavigationRow(
                 label = stringResource(R.string.ap_settings_instances_manage),
                 description = stringResource(R.string.ap_settings_instances_count, instances.size),
@@ -58,7 +62,7 @@ fun SettingsSection(
             }
         }
 
-        AppCard {
+        AppCard(modifier = Modifier.apEnter(1)) {
             AppNavigationRow(
                 label = stringResource(R.string.ap_title_announcement),
                 description = announcement?.title ?: stringResource(R.string.ap_settings_announcement_empty),
@@ -72,7 +76,10 @@ fun SettingsSection(
             )
         }
 
-        AppCard(title = stringResource(R.string.ap_title_updater)) {
+        AppCard(
+            title = stringResource(R.string.ap_title_updater),
+            modifier = Modifier.apEnter(2),
+        ) {
             AppNavigationRow(
                 label = updater?.let { it.localHead?.take(10) ?: it.state } ?: stringResource(R.string.ap_waiting_data),
                 description = when {
@@ -85,7 +92,10 @@ fun SettingsSection(
             )
         }
 
-        AppCard(title = stringResource(R.string.ap_title_deploy)) {
+        AppCard(
+            title = stringResource(R.string.ap_title_deploy),
+            modifier = Modifier.apEnter(3),
+        ) {
             if (deploy == null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -880,4 +880,8 @@
     <string name="ap_scheduler_start">スケジューラーを開始</string>
     <string name="ap_scheduler_stop">スケジューラーを停止</string>
     <string name="ap_scheduler_processing">処理中…</string>
+    <string name="ap_clear_search">検索をクリア</string>
+    <string name="ap_config_directory">セクション一覧</string>
+    <string name="ap_bar_search">設定を検索</string>
+    <string name="ap_field_notset">未設定</string>
 </resources>

@@ -35,6 +35,7 @@ import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.ApStatusPill
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 import kotlinx.coroutines.delay
 
@@ -92,7 +93,10 @@ fun MeowfficerPage(repository: AzurPilotRepository) {
     }
 
     ApSectionColumn {
-        AppCard(title = stringResource(R.string.ap_title_meowfficer)) {
+        AppCard(
+            title = stringResource(R.string.ap_title_meowfficer),
+            modifier = Modifier.apEnter(0),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -137,15 +141,15 @@ fun MeowfficerPage(repository: AzurPilotRepository) {
                 )
             }
 
-            else -> cats.forEach { cat -> CatCard(cat) }
+            else -> cats.forEachIndexed { index, cat -> CatCard(cat, Modifier.apEnter(index + 1)) }
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CatCard(cat: AzurPilotCat) {
-    AppCard(title = cat.cat) {
+private fun CatCard(cat: AzurPilotCat, modifier: Modifier = Modifier) {
+    AppCard(title = cat.cat, modifier = modifier) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),

@@ -880,4 +880,8 @@
     <string name="ap_scheduler_start">启动调度器</string>
     <string name="ap_scheduler_stop">停止调度器</string>
     <string name="ap_scheduler_processing">处理中…</string>
+    <string name="ap_clear_search">清除搜索</string>
+    <string name="ap_config_directory">分组目录</string>
+    <string name="ap_bar_search">搜索配置项</string>
+    <string name="ap_field_notset">未设置</string>
 </resources>

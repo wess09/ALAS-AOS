@@ -1,6 +1,13 @@
 package com.azurpilot.ghio.ui.azurpilot.sections.settings
 
+
 import androidx.compose.foundation.layout.Arrangement
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,6 +57,7 @@ import com.azurpilot.ghio.proot.sameValueAs
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApErrorState
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 
 /**
@@ -78,7 +86,7 @@ fun DeploySettingsPage(repository: AzurPilotRepository) {
     Box(modifier = Modifier.fillMaxSize()) {
         ApSectionColumn {
             if (loading) {
-                AppCard {
+                AppCard(modifier = Modifier.apEnter(0)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         CircularProgressIndicator()
                     }
@@ -107,8 +115,12 @@ fun DeploySettingsPage(repository: AzurPilotRepository) {
                     )
                 }
             }
-            data.groups.forEach { group ->
-                AppCard(title = group.label, collapsible = true) {
+            data.groups.forEachIndexed { index, group ->
+                AppCard(
+                    title = group.label,
+                    collapsible = true,
+                    modifier = Modifier.apEnter(index + 1),
+                ) {
                     group.fields.forEach { field ->
                         DeployFieldRow(
                             field = field,
@@ -121,12 +133,25 @@ fun DeploySettingsPage(repository: AzurPilotRepository) {
             }
         }
 
-        if (draft.isNotEmpty()) {
+        // 有了待保存的改动才滑出来；直接出现会在底部「跳」一下
+        AnimatedVisibility(
+            visible = draft.isNotEmpty(),
+            // 定位与 inset 挂在 AnimatedVisibility 上：它才是 Box 的直接子项，
+            // 写在里面的 Surface 上等于让被包裹的那层去对齐外层的 Box，位移会跑偏
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .imePadding(),
+            enter = slideInVertically(
+                animationSpec = ApMotion.spatial(),
+                initialOffsetY = { it },
+            ) + fadeIn(ApMotion.effects(ApMotion.Short4)),
+            exit = slideOutVertically(
+                animationSpec = ApMotion.resize(),
+                targetOffsetY = { it },
+            ) + fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate)),
+        ) {
             Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .imePadding(),
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 3.dp,
             ) {

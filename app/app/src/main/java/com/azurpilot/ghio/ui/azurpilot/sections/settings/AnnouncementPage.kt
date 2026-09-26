@@ -24,6 +24,7 @@ import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 
 /**
@@ -44,6 +45,7 @@ fun AnnouncementPage(repository: AzurPilotRepository) {
         AppCard(
             title = announcement?.title ?: stringResource(R.string.ap_title_announcement),
             collapsible = false,
+            modifier = Modifier.apEnter(0),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

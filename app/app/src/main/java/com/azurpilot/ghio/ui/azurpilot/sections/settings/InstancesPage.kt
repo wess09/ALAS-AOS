@@ -47,6 +47,7 @@ import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.ApStatusPill
 import com.azurpilot.ghio.ui.azurpilot.instanceStatusColor
 import com.azurpilot.ghio.ui.azurpilot.instanceStatusText
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -109,6 +110,7 @@ fun InstancesPage(repository: AzurPilotRepository) {
     ApSectionColumn {
         if (creating) {
             CreateInstanceCard(
+                modifier = Modifier.apEnter(0),
                 sources = instances.map { it.name },
                 onCreate = { name, source ->
                     repository.createInstance(name, source)
@@ -117,7 +119,12 @@ fun InstancesPage(repository: AzurPilotRepository) {
                 onCancel = { creating = false },
             )
         } else {
-            Button(onClick = { creating = true }, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { creating = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .apEnter(0),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(AppTokens.IconSize.md))
                 Text(
                     text = stringResource(R.string.ap_instances_create),
@@ -126,7 +133,10 @@ fun InstancesPage(repository: AzurPilotRepository) {
             }
         }
 
-        AppCard(title = stringResource(R.string.ap_settings_instances_count, instances.size)) {
+        AppCard(
+            title = stringResource(R.string.ap_settings_instances_count, instances.size),
+            modifier = Modifier.apEnter(1),
+        ) {
             if (instances.isEmpty()) {
                 ApEmptyState(
                     icon = Icons.Filled.FolderOpen,
@@ -195,6 +205,7 @@ fun InstancesPage(repository: AzurPilotRepository) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateInstanceCard(
+    modifier: Modifier = Modifier,
     sources: List<String>,
     onCreate: (String, String?) -> Unit,
     onCancel: () -> Unit,
@@ -203,7 +214,7 @@ private fun CreateInstanceCard(
     var source by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
 
-    AppCard(title = stringResource(R.string.ap_instances_create)) {
+    AppCard(title = stringResource(R.string.ap_instances_create), modifier = modifier) {
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },

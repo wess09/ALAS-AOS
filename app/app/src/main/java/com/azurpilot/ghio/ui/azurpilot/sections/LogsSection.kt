@@ -1,7 +1,9 @@
 package com.azurpilot.ghio.ui.azurpilot.sections
 
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +53,7 @@ import com.azurpilot.ghio.proot.AzurPilotLogEntry
 import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -203,7 +206,14 @@ fun LogsSection(repository: AzurPilotRepository) {
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        if (ordered.isEmpty()) {
+        // 空态与列表之间交叉淡入；列表状态提到分支外面，换态时不会丢滚动位置
+        val listState = rememberLazyListState()
+        Crossfade(
+            targetState = ordered.isEmpty(),
+            animationSpec = ApMotion.effects(ApMotion.Medium2, ApMotion.EmphasizedDecelerate),
+            label = "logsEmpty",
+        ) { empty ->
+        if (empty) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (logs.isEmpty()) {
                     ApEmptyState(
@@ -216,7 +226,6 @@ fun LogsSection(repository: AzurPilotRepository) {
                 }
             }
         } else {
-            val listState = rememberLazyListState()
             LaunchedEffect(ordered.size, follow, ascending) {
                 // 只在「跟随 + 正序」时自动滚到底；反序时最新就在顶部，不用动
                 if (follow && ascending && ordered.isNotEmpty()) {
@@ -236,9 +245,16 @@ fun LogsSection(repository: AzurPilotRepository) {
                         entry = entry,
                         centered = entry.id in bannerIds,
                         search = query,
+                        // 新行淡入、既有行平滑落位。日志滚得快，硬插入会像画面在跳
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = ApMotion.effects(ApMotion.Medium2, ApMotion.EmphasizedDecelerate),
+                            placementSpec = ApMotion.resize(),
+                            fadeOutSpec = ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate),
+                        ),
                     )
                 }
             }
+        }
         }
     }
 }

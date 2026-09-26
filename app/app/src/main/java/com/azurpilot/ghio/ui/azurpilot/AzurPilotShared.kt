@@ -1,5 +1,6 @@
 package com.azurpilot.ghio.ui.azurpilot
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +54,17 @@ fun ApSectionColumn(
         verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
         content = content,
     )
+}
+
+/**
+ * 页面借顶栏的一个动作位
+ *
+ * 任务配置页的搜索条在内容里，上滑就跟着滚走；滚走之后要让顶栏出现一个搜索图标把它找回来。
+ * 那个图标画在顶栏上，而顶栏归外壳管，所以需要一处「页面写入、外壳读取」的位置。
+ */
+class ApTopBarAction {
+    var visible by mutableStateOf(false)
+    var onClick: (() -> Unit)? = null
 }
 
 /** 空态：说清「为什么是空的」，而不是只给一句「暂无数据」 */

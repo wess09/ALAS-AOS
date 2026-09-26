@@ -1,9 +1,8 @@
 package com.azurpilot.ghio.ui.azurpilot.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,23 +13,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +44,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,11 +56,14 @@ import com.azurpilot.ghio.proot.ApValue
 import com.azurpilot.ghio.proot.AzurPilotEditorState
 import com.azurpilot.ghio.proot.AzurPilotField
 import com.azurpilot.ghio.proot.AzurPilotRepository
+import com.azurpilot.ghio.proot.AzurPilotStartup
 import com.azurpilot.ghio.proot.toValueMap
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
 import com.azurpilot.ghio.ui.azurpilot.ApErrorState
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
+import com.azurpilot.ghio.ui.azurpilot.ApTopBarAction
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 import com.azurpilot.ghio.ui.components.AppLabeledControlRow
 import com.azurpilot.ghio.ui.components.AppNavigationRow
@@ -71,6 +78,8 @@ private const val STARTUP_TASK = "Alas"
 
 private val FLEET_ROLES = listOf("vanguard", "main", "submarine")
 private val FLEET_NUMBERS = listOf(1, 2, 3, 4, 5, 6)
+
+private const val TOOL_LOG_LINES = 60
 
 /**
  * 配置：任务目录
@@ -109,13 +118,14 @@ fun ConfigSection(repository: AzurPilotRepository, onOpenTask: (String) -> Unit)
 
             else -> {
                 val data = schema!!
-                data.menu.forEach { group ->
+                data.menu.forEachIndexed { index, group ->
                     AppCard(
                         title = data.menuTitle(group.key),
                         collapsible = true,
+                        modifier = Modifier.apEnter(index),
                     ) {
-                        group.tasks.forEachIndexed { index, task ->
-                            if (index > 0) {
+                        group.tasks.forEachIndexed { taskIndex, task ->
+                            if (taskIndex > 0) {
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
                             AppNavigationRow(
@@ -141,11 +151,16 @@ fun ConfigSection(repository: AzurPilotRepository, onOpenTask: (String) -> Unit)
  * 参数、分组、控件的形状全部由 schema 决定；界面只负责「渲染 + 提交」，
  * 所以 97 个任务、2500 多个参数不需要各写一遍。
  *
- * 布局：搜索框与分组跳转**钉在顶部**，下面才是可滚动的参数卡。一个任务动辄八九组、上百个参数，
- * 跳转栏跟着一起滚走就等于没有。
+ * 布局：搜索条是列表的**第一项**，上滑就跟着内容滚走——参数动辄八九组上百项，
+ * 把搜索和目录钉在顶上等于常驻吃掉一整行。滚走之后由顶栏的搜索图标把它找回来。
  */
 @Composable
-fun TaskConfigPage(repository: AzurPilotRepository, task: String) {
+fun TaskConfigPage(
+    repository: AzurPilotRepository,
+    task: String,
+    /** 搜索条滚走之后，外壳用它在顶栏显示「找回搜索」的入口 */
+    topBarAction: ApTopBarAction? = null,
+) {
     val schema by repository.schema.collectAsStateWithLifecycle()
     val editor by repository.configEditor.state.collectAsStateWithLifecycle()
     val selected by repository.selectedInstance.collectAsStateWithLifecycle()
@@ -154,6 +169,8 @@ fun TaskConfigPage(repository: AzurPilotRepository, task: String) {
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var pendingRun by remember { mutableStateOf<String?>(null) }
+    var wantSearchFocus by remember { mutableStateOf(false) }
+    val searchFocus = remember { FocusRequester() }
 
     LaunchedEffect(selected) { selected?.let { repository.configEditor.load(it) } }
 
@@ -165,7 +182,9 @@ fun TaskConfigPage(repository: AzurPilotRepository, task: String) {
 
     // 搜索按 分组名 / 参数显示名 / 原始 `Group.Arg` 匹配——中文翻译想不起来时可以直接敲参数名
     val groups = remember(data, taskValues, query, task, isFleetInfo) {
-        if (isFleetInfo) emptyList() else {
+        if (isFleetInfo) {
+            emptyList()
+        } else {
             data.groupsOf(task).mapNotNull { (group, fields) ->
                 val visible = fields.filter { (argument, field) ->
                     if (!isFieldVisible(argument, field, taskValues[group]?.get(argument))) {
@@ -210,171 +229,282 @@ fun TaskConfigPage(repository: AzurPilotRepository, task: String) {
 
     val listState = rememberLazyListState()
     val startupCard = task == STARTUP_TASK && query.isBlank()
-    // 跳转目标的列表下标：前面可能垫了自启卡
-    val groupIndex = remember(groups, startupCard) {
-        groups.mapIndexed { index, (group, _) -> group to index + if (startupCard) 1 else 0 }.toMap()
+    // 头部整项滚出屏幕之后，才由顶栏接管搜索入口
+    val headerGone = listState.firstVisibleItemIndex > 0
+
+    LaunchedEffect(topBarAction, listState) {
+        if (topBarAction == null) return@LaunchedEffect
+        topBarAction.onClick = {
+            if (listState.firstVisibleItemIndex == 0) {
+                runCatching { searchFocus.requestFocus() }
+            } else {
+                wantSearchFocus = true
+                scope.launch { listState.animateScrollToItem(0) }
+            }
+        }
+    }
+    LaunchedEffect(topBarAction, headerGone) { topBarAction?.visible = headerGone }
+    // 头部要等滚回顶部才重新组合出来，聚焦得等它到位
+    LaunchedEffect(headerGone) {
+        if (!headerGone && wantSearchFocus) {
+            runCatching { searchFocus.requestFocus() }
+            wantSearchFocus = false
+        }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AppTokens.Spacing.lg, vertical = AppTokens.Spacing.sm),
-            verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                singleLine = true,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(AppTokens.IconSize.md),
+    // 分组卡在列表里的起始下标：头部一项，加上可能出现的加载 / 错误 / 自启 / 空态
+    val groupsStart = 1 +
+        (if (editor.loading) 1 else 0) +
+        (if (editor.error != null) 1 else 0) +
+        (if (startupCard) 1 else 0) +
+        (if (groups.isEmpty()) 1 else 0)
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = AppTokens.Spacing.lg,
+            end = AppTokens.Spacing.lg,
+            top = AppTokens.Spacing.sm,
+            bottom = AppTokens.Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
+    ) {
+        item(key = "header") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppTokens.Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
+            ) {
+                ApCompactSearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = stringResource(R.string.ap_config_search),
+                    focusRequester = searchFocus,
+                    modifier = Modifier.weight(1f),
+                )
+                // 一个任务动辄八九组；目录值得有入口，但不值得常驻一整行 chip
+                if (groups.size > 1) {
+                    GroupDirectoryMenu(
+                        titles = groups.map { data.groupTitle(it.first) },
+                        onJump = { index ->
+                            scope.launch { listState.animateScrollToItem(groupsStart + index) }
+                        },
                     )
-                },
-                placeholder = { Text(stringResource(R.string.ap_config_search)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (groups.size > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
-                ) {
-                    groups.forEach { (group, _) ->
-                        FilterChip(
-                            selected = false,
-                            onClick = {
-                                groupIndex[group]?.let { target ->
-                                    scope.launch { listState.animateScrollToItem(target) }
-                                }
-                            },
-                            label = { Text(data.groupTitle(group), maxLines = 1) },
+                }
+            }
+        }
+
+        if (editor.loading) {
+            item {
+                AppCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) { CircularProgressIndicator() }
+                }
+            }
+        }
+        editor.error?.let { message ->
+            item {
+                AppCard {
+                    ApErrorState(message) {
+                        selected?.let { repository.configEditor.load(it, force = true) }
+                    }
+                }
+            }
+        }
+
+        if (isFleetInfo) {
+            item { FleetInfoCard(taskValues["FleetInfo"]?.get("Result")) }
+            return@LazyColumn
+        }
+
+        if (startupCard) {
+            item { StartupCard(repository, startup) }
+        }
+
+        if (groups.isEmpty()) {
+            item {
+                AppCard {
+                    // 「搜索没命中」与「这个任务本来就没有参数」是两件事，别用同一句话打发
+                    if (query.isNotBlank()) {
+                        ApEmptyState(
+                            icon = Icons.Filled.Search,
+                            title = stringResource(R.string.ap_config_no_match),
+                            hint = stringResource(R.string.ap_config_no_match_hint),
+                        )
+                    } else {
+                        ApEmptyState(
+                            icon = Icons.Filled.Tune,
+                            title = stringResource(R.string.ap_config_no_config),
+                            hint = stringResource(R.string.ap_config_no_config_hint),
                         )
                     }
                 }
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(AppTokens.Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
-        ) {
-            if (editor.loading) {
-                item {
-                    AppCard {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                        ) { CircularProgressIndicator() }
+        itemsIndexed(groups, key = { _, item -> item.first }) { _, (group, fields) ->
+            AppCard(title = data.groupTitle(group), collapsible = true) {
+                fields.entries.forEachIndexed { index, (argument, field) ->
+                    if (index > 0) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                }
-            }
-            editor.error?.let { message ->
-                item {
-                    AppCard {
-                        ApErrorState(message) {
-                            selected?.let { repository.configEditor.load(it, force = true) }
-                        }
-                    }
-                }
-            }
-
-            if (isFleetInfo) {
-                item { FleetInfoCard(taskValues["FleetInfo"]?.get("Result")) }
-                return@LazyColumn
-            }
-
-            if (startupCard) {
-                item { StartupCard(repository, startup) }
-            }
-
-            if (groups.isEmpty()) {
-                item {
-                    AppCard {
-                        // 「搜索没命中」与「这个任务本来就没有参数」是两件事，别用同一句话打发
-                        if (query.isNotBlank()) {
-                            ApEmptyState(
-                                icon = Icons.Filled.Search,
-                                title = stringResource(R.string.ap_config_no_match),
-                                hint = stringResource(R.string.ap_config_no_match_hint),
-                            )
+                    val path = "$task.$group.$argument"
+                    ApFieldRow(
+                        schema = data,
+                        group = group,
+                        argument = argument,
+                        field = field,
+                        value = taskValues[group]?.get(argument) ?: field.value,
+                        status = fieldStatus(path, editor),
+                        statusError = editor.failed[path],
+                        onChange = { repository.configEditor.update(task, group, argument, it) },
+                        onRetry = { repository.configEditor.retry(path) },
+                        // 「立刻运行」＝把调度时间回落到默认的过去时间（WebUI 用 prepareValue('')
+                        // 得到的是同一个值）；直接提交空串会被服务端的日期格式校验拒绝
+                        onRunNow = if (group == "Scheduler" && argument == "NextRun") {
+                            { repository.configEditor.update(task, group, argument, field.value) }
                         } else {
-                            ApEmptyState(
-                                icon = Icons.Filled.Tune,
-                                title = stringResource(R.string.ap_config_no_config),
-                                hint = stringResource(R.string.ap_config_no_config_hint),
-                            )
-                        }
-                    }
+                            null
+                        },
+                        onCheckScript = if (field.mode == "restricted_lua") {
+                            { script -> checkScript(repository, task, script) }
+                        } else {
+                            null
+                        },
+                    )
                 }
             }
+        }
 
-            itemsIndexed(groups, key = { _, item -> item.first }) { _, (group, fields) ->
-                AppCard(title = data.groupTitle(group), collapsible = true) {
-                    fields.entries.forEachIndexed { index, (argument, field) ->
-                        if (index > 0) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-                        val path = "$task.$group.$argument"
-                        ApFieldRow(
-                            schema = data,
-                            group = group,
-                            argument = argument,
-                            field = field,
-                            value = taskValues[group]?.get(argument) ?: field.value,
-                            status = fieldStatus(path, editor),
-                            statusError = editor.failed[path],
-                            onChange = { repository.configEditor.update(task, group, argument, it) },
-                            onRetry = { repository.configEditor.retry(path) },
-                            // 「立刻运行」＝把调度时间清空回落默认的过去时间；这是 WebUI 的做法
-                            onRunNow = if (group == "Scheduler" && argument == "NextRun") {
-                                { repository.configEditor.update(task, group, argument, "") }
-                            } else {
-                                null
-                            },
-                            onCheckScript = if (field.mode == "restricted_lua") {
-                                { script -> checkScript(repository, task, script) }
-                            } else {
-                                null
-                            },
+        if (isTool) {
+            item {
+                AppCard(title = stringResource(R.string.ap_tool_logs)) {
+                    Button(
+                        onClick = { pendingRun = task },
+                        enabled = !editor.loading,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(AppTokens.IconSize.md),
+                        )
+                        Text(
+                            text = stringResource(R.string.ap_config_run_tool),
+                            modifier = Modifier.padding(start = AppTokens.Spacing.sm),
                         )
                     }
+                    ApLogBoard(
+                        entries = logs.takeLast(TOOL_LOG_LINES),
+                        modifier = Modifier.height(220.dp),
+                        emptyHint = stringResource(R.string.ap_tool_logs_empty),
+                    )
                 }
             }
+        }
+    }
+}
 
-            if (isTool) {
-                item {
-                    AppCard(title = stringResource(R.string.ap_tool_logs)) {
-                        Button(
-                            onClick = { pendingRun = task },
-                            enabled = !editor.loading,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(AppTokens.IconSize.md),
-                            )
+/**
+ * 紧凑搜索条
+ *
+ * 自绘 Surface + BasicTextField，而不是 OutlinedTextField：后者带标签与 supportingText 的内边距，
+ * 单行也要 56dp 起步，在这个位置太贵。全圆角与 MD3 的 search bar 一致。
+ */
+@Composable
+private fun ApCompactSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
+) {
+    Surface(
+        modifier = modifier.height(44.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = AppTokens.Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(AppTokens.IconSize.md),
+            )
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                decorationBox = { inner ->
+                    Box {
+                        if (value.isEmpty()) {
                             Text(
-                                text = stringResource(R.string.ap_config_run_tool),
-                                modifier = Modifier.padding(start = AppTokens.Spacing.sm),
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        ApLogBoard(
-                            entries = logs.takeLast(TOOL_LOG_LINES),
-                            modifier = Modifier.height(220.dp),
-                            emptyHint = stringResource(R.string.ap_tool_logs_empty),
-                        )
+                        inner()
                     }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = AppTokens.Spacing.sm)
+                    .then(
+                        if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+                    ),
+            )
+            if (value.isNotEmpty()) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier = Modifier.size(AppTokens.IconSize.lg),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.ap_clear_search),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(AppTokens.IconSize.md),
+                    )
                 }
+            }
+        }
+    }
+}
+
+/** 分组目录：一眼看全分组，且不占配置区的高度 */
+@Composable
+private fun GroupDirectoryMenu(titles: List<String>, onJump: (Int) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = stringResource(R.string.ap_config_directory),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            titles.forEachIndexed { index, title ->
+                DropdownMenuItem(
+                    text = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    onClick = {
+                        expanded = false
+                        onJump(index)
+                    },
+                )
             }
         }
     }
@@ -387,10 +517,7 @@ fun TaskConfigPage(repository: AzurPilotRepository, task: String) {
  * 这里照做——只在别处给一个「自动运行」会让人以为记忆功能不存在。
  */
 @Composable
-private fun StartupCard(
-    repository: AzurPilotRepository,
-    startup: com.azurpilot.ghio.proot.AzurPilotStartup?,
-) {
+private fun StartupCard(repository: AzurPilotRepository, startup: AzurPilotStartup?) {
     val ready = startup != null
     AppCard(title = stringResource(R.string.ap_startup_title)) {
         AppLabeledControlRow(
@@ -467,7 +594,11 @@ private fun FleetInfoCard(value: ApValue) {
                 } else {
                     roles.forEach { (role, ships) ->
                         Column(verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.xxs)) {
-                            AppFieldLabelText(stringResource(fleetRoleLabel(role)))
+                            Text(
+                                text = stringResource(fleetRoleLabel(role)),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             ships.forEach { ship ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -495,16 +626,6 @@ private fun FleetInfoCard(value: ApValue) {
             }
         }
     }
-}
-
-/** 小队标题：比正文重一点、比卡标题轻一点 */
-@Composable
-private fun AppFieldLabelText(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 private fun fleetRoleLabel(role: String): Int = when (role) {
@@ -596,5 +717,3 @@ private fun isFieldVisible(argument: String, field: AzurPilotField, value: ApVal
     }
     return true
 }
-
-private const val TOOL_LOG_LINES = 60

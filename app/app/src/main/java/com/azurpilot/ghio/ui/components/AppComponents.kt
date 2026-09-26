@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import com.azurpilot.ghio.theme.AppTokens
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
 
 /**
  * 内容分组卡：M3 的 filled card（`surfaceContainerHighest` 底色 + 0 elevation），
@@ -86,6 +87,7 @@ fun AppCard(
                             // 朝向说的是"点下去会怎样"：收起时箭头朝下（展开），展开时朝上（收起）
                             val rotation by animateFloatAsState(
                                 targetValue = if (expanded) 180f else 0f,
+                                animationSpec = ApMotion.spatial(),
                                 label = "chevron",
                             )
                             Icon(
@@ -104,8 +106,16 @@ fun AppCard(
             }
             AnimatedVisibility(
                 visible = !canCollapse || expanded,
-                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+                // 尺寸用不回弹的弹簧：尺寸过冲看起来像控件在抽搐。
+                // 透明度另外给一档更快的缓动——淡入淡出没有惯性，跟着弹簧走会显得拖
+                enter = expandVertically(
+                    animationSpec = ApMotion.resize(),
+                    expandFrom = Alignment.Top,
+                ) + fadeIn(ApMotion.effects(ApMotion.Short4)),
+                exit = shrinkVertically(
+                    animationSpec = ApMotion.resize(),
+                    shrinkTowards = Alignment.Top,
+                ) + fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate)),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),

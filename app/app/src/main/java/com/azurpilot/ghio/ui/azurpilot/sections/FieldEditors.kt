@@ -1,6 +1,13 @@
 package com.azurpilot.ghio.ui.azurpilot.sections
 
+
 import androidx.compose.foundation.layout.Arrangement
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -59,8 +66,14 @@ enum class ApFieldStatus { Idle, Saving, Saved, Failed }
 /** 参数值的文本形式；嵌套结构给 pretty JSON，避免显示成 `{a=1}` 那种 toString */
 fun fieldTextOf(value: ApValue): String = value.prettyText()
 
-/** 本地校验结果：[payload] 为 null 表示这次输入还不能提交 */
-data class PreparedField(val payload: ApValue, val error: String?)
+/**
+ * 本地校验结果：[payload] 为 null 表示这次输入还不能提交
+ *
+ * [display] 是输入框该显示的文本；null 表示维持用户输入。
+ * 清空数字/时间字段回落默认值时，网关存的是默认值而输入框如果还空着，
+ * 看起来就像「没保存上」——WebUI 用 `text: String(fallback)` 解决，这里同理。
+ */
+data class PreparedField(val payload: ApValue, val display: String?, val error: String?)
 
 /**
  * 把输入框里的文本转成能提交的值
@@ -75,33 +88,33 @@ fun prepareFieldValue(field: AzurPilotField, text: String): PreparedField {
     if (trimmed.isEmpty() && !field.preserveEmpty) {
         val fallback = field.value
         if ((field.numeric || field.type == "datetime") && fallback != null) {
-            return PreparedField(fallback, null)
+            return PreparedField(fallback, fieldTextOf(fallback), null)
         }
-        if (!field.numeric) return PreparedField(text, null)
-        return PreparedField(null, null)
+        if (!field.numeric) return PreparedField(text, null, null)
+        return PreparedField(null, null, null)
     }
     if (field.type == "datetime") {
         if (trimmed.isNotEmpty() && !DATETIME.matches(trimmed)) {
-            return PreparedField(null, null)
+            return PreparedField(null, null, null)
         }
-        return PreparedField(text, null)
+        return PreparedField(text, null, null)
     }
     if (!field.numeric) {
         field.pattern?.let { pattern ->
             if (trimmed.isNotEmpty() && !Regex(pattern).matches(trimmed)) {
-                return PreparedField(null, null)
+                return PreparedField(null, null, null)
             }
         }
-        return PreparedField(text, null)
+        return PreparedField(text, null, null)
     }
-    val number = trimmed.toDoubleOrNull() ?: return PreparedField(null, null)
-    if (field.value is Int && number != number.toLong().toDouble()) return PreparedField(null, null)
+    val number = trimmed.toDoubleOrNull() ?: return PreparedField(null, null, null)
+    if (field.value is Int && number != number.toLong().toDouble()) return PreparedField(null, null, null)
     field.range?.let { (min, max) ->
-        if (number < min || number > max) return PreparedField(null, null)
+        if (number < min || number > max) return PreparedField(null, null, null)
     }
     // 默认值是整数的参数，网关要求 type(value) is int
     val payload: ApValue = if (field.value is Int) number.toLong().toInt() else number
-    return PreparedField(payload, null)
+    return PreparedField(payload, null, null)
 }
 
 private val DATETIME = Regex("""\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}""")
@@ -211,20 +224,40 @@ private val HELP_TAG = Regex("<[^>]*>")
 
 @Composable
 private fun StatusIndicator(status: ApFieldStatus) {
-    when (status) {
-        ApFieldStatus.Idle, ApFieldStatus.Failed -> Unit
-        ApFieldStatus.Saving -> Text(
-            text = stringResource(R.string.ap_field_saving),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    // 保存中 → 已保存 → 无 是同一处的三种态，交叉淡入才不会在行尾闪一下
+    AnimatedContent(
+        targetState = status,
+        transitionSpec = {
+            fadeIn(ApMotion.effects(ApMotion.Short4, ApMotion.EmphasizedDecelerate)) togetherWith
+                fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate))
+        },
+        label = "fieldStatus",
+    ) { state ->
+        when (state) {
+            ApFieldStatus.Idle, ApFieldStatus.Failed -> Unit
+            ApFieldStatus.Saving -> Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.xs),
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(12.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.ap_field_saving),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
-        ApFieldStatus.Saved -> Icon(
-            imageVector = Icons.Filled.CheckCircle,
-            contentDescription = stringResource(R.string.ap_field_saved),
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(AppTokens.IconSize.sm),
-        )
+            ApFieldStatus.Saved -> Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = stringResource(R.string.ap_field_saved),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(AppTokens.IconSize.sm),
+            )
+        }
     }
 }
 
@@ -312,8 +345,10 @@ private fun OptionSelect(
         expanded = expanded && enabled,
         onExpandedChange = { if (enabled) expanded = it },
     ) {
+        val notSet = stringResource(R.string.ap_field_notset)
         OutlinedTextField(
-            value = if (known) labelOf(value) else fieldTextOf(value),
+            // 值不在候选里（历史配置/未设置）时照样显示出来，别让下拉框看起来是空的
+            value = if (known) labelOf(value) else fieldTextOf(value).ifEmpty { notSet },
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
@@ -400,8 +435,12 @@ private fun TextControl(
         delay(DEBOUNCE_MS)
         val prepared = prepareFieldValue(field, text)
         invalid = prepared.payload == null
-        val payload = prepared.payload
-        if (payload != null && !payload.sameValueAs(value)) onCommit(payload)
+        val payload = prepared.payload ?: return@LaunchedEffect
+        // 清空回落默认值时，框里要立刻显示回落后的值——否则「看着是空的、存的是默认值」
+        prepared.display?.let { text = it }
+        if (!payload.sameValueAs(value)) onCommit(payload)
+        // 提交后以本地副本/服务端为准：放开 touched，值回同步才能接上（失败时值不变，输入照旧保留）
+        touched = false
     }
 
     OutlinedTextField(

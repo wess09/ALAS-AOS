@@ -36,6 +36,7 @@ import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApKeyValueRow
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.ApStatusPill
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 
 private const val COMMIT_PAGE = 50
@@ -66,7 +67,10 @@ fun UpdaterPage(repository: AzurPilotRepository) {
     }
 
     ApSectionColumn {
-        AppCard(title = stringResource(R.string.ap_updater_status)) {
+        AppCard(
+            title = stringResource(R.string.ap_updater_status),
+            modifier = Modifier.apEnter(0),
+        ) {
             val data = updater
             if (data == null) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -141,7 +145,10 @@ fun UpdaterPage(repository: AzurPilotRepository) {
         }
 
         if (commits.isNotEmpty()) {
-            AppCard(title = stringResource(R.string.ap_updater_commits, total)) {
+            AppCard(
+                title = stringResource(R.string.ap_updater_commits, total),
+                modifier = Modifier.apEnter(1),
+            ) {
                 commits.forEachIndexed { index, commit ->
                     if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     CommitRow(commit)

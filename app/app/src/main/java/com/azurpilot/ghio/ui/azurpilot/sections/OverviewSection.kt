@@ -1,7 +1,14 @@
 package com.azurpilot.ghio.ui.azurpilot.sections
 
 
+
 import androidx.compose.foundation.Image
+import com.azurpilot.ghio.ui.azurpilot.ApMotion
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +49,7 @@ import com.azurpilot.ghio.proot.AzurPilotStatus
 import com.azurpilot.ghio.proot.AzurPilotTask
 import com.azurpilot.ghio.proot.AzurPilotTaskState
 import com.azurpilot.ghio.theme.AppTokens
+import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
 import com.azurpilot.ghio.ui.azurpilot.ApKeyValueRow
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
@@ -76,7 +84,10 @@ fun OverviewSection(repository: AzurPilotRepository) {
         }
 
         val data = overview
-        AppCard(title = stringResource(R.string.ap_overview_scheduler)) {
+        AppCard(
+            title = stringResource(R.string.ap_overview_scheduler),
+            modifier = Modifier.apEnter(0),
+        ) {
             if (data == null) {
                 ApEmptyState(Icons.Filled.Schedule, stringResource(R.string.ap_waiting_data))
             } else {
@@ -85,11 +96,21 @@ fun OverviewSection(repository: AzurPilotRepository) {
                     horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ApStatusPill(
-                        text = instanceStatusText(data.status),
-                        container = instanceStatusColor(data.status).copy(alpha = 0.16f),
-                        content = instanceStatusColor(data.status),
-                    )
+                    // 状态是离散的几档，换档时交叉淡入而不是硬切，眼睛才跟得上「刚刚变了」
+                    AnimatedContent(
+                        targetState = data.status,
+                        transitionSpec = {
+                            fadeIn(ApMotion.effects(ApMotion.Medium2, ApMotion.EmphasizedDecelerate)) togetherWith
+                                fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate))
+                        },
+                        label = "schedulerStatus",
+                    ) { status ->
+                        ApStatusPill(
+                            text = instanceStatusText(status),
+                            container = instanceStatusColor(status).copy(alpha = 0.16f),
+                            content = instanceStatusColor(status),
+                        )
+                    }
                     TaskCounts(data.tasks)
                 }
                 ApKeyValueRow(stringResource(R.string.ap_overview_revision), data.revision.take(12))
@@ -107,15 +128,21 @@ fun OverviewSection(repository: AzurPilotRepository) {
         }
 
         if (data != null && data.resources.isNotEmpty()) {
-            AppCard(title = stringResource(R.string.ap_overview_resources)) {
+            AppCard(
+                title = stringResource(R.string.ap_overview_resources),
+                modifier = Modifier.apEnter(1),
+            ) {
                 ResourceGrid(data.resources)
             }
         }
 
-        PreviewCard(repository)
+        PreviewCard(repository, Modifier.apEnter(2))
 
         if (data != null) {
-            AppCard(title = stringResource(R.string.ap_overview_tasks)) {
+            AppCard(
+                title = stringResource(R.string.ap_overview_tasks),
+                modifier = Modifier.apEnter(3),
+            ) {
                 if (data.tasks.isEmpty()) {
                     ApEmptyState(
                         icon = Icons.Filled.TaskAlt,
@@ -149,16 +176,24 @@ private fun SchedulerButton(repository: AzurPilotRepository, running: Boolean) {
             contentDescription = null,
             modifier = Modifier.size(AppTokens.IconSize.md),
         )
-        Text(
-            text = stringResource(
-                when {
-                    busy -> R.string.ap_scheduler_processing
-                    running -> R.string.ap_scheduler_stop
-                    else -> R.string.ap_scheduler_start
-                },
-            ),
-            modifier = Modifier.padding(start = AppTokens.Spacing.sm),
-        )
+        // 文案与图标一起交叉淡入：同一颗按钮的三种态，硬切会闪一下「换了个按钮」
+        AnimatedContent(
+            targetState = when {
+                busy -> R.string.ap_scheduler_processing
+                running -> R.string.ap_scheduler_stop
+                else -> R.string.ap_scheduler_start
+            },
+            transitionSpec = {
+                fadeIn(ApMotion.effects(ApMotion.Short4, ApMotion.EmphasizedDecelerate)) togetherWith
+                    fadeOut(ApMotion.effects(ApMotion.Short2, ApMotion.StandardAccelerate))
+            },
+            label = "schedulerAction",
+        ) { label ->
+            Text(
+                text = stringResource(label),
+                modifier = Modifier.padding(start = AppTokens.Spacing.sm),
+            )
+        }
     }
 }
 
@@ -229,38 +264,44 @@ private fun ResourceGrid(resources: List<AzurPilotResource>) {
 
 /** 实时画面：网关只在订阅期间推帧，这里不做抓拍 */
 @Composable
-private fun PreviewCard(repository: AzurPilotRepository) {
+private fun PreviewCard(repository: AzurPilotRepository, modifier: Modifier = Modifier) {
     val preview by repository.preview.collectAsStateWithLifecycle()
-    AppCard(title = stringResource(R.string.ap_overview_preview)) {
-        val image = preview?.image
-        if (image == null) {
-            ApEmptyState(
-                icon = Icons.Filled.Image,
-                title = stringResource(R.string.ap_preview_waiting),
-                hint = stringResource(R.string.ap_preview_waiting_hint),
+    AppCard(title = stringResource(R.string.ap_overview_preview), modifier = modifier) {
+        // 逐帧硬换会闪；交叉淡入让「画面在动」这件事看起来是连续的
+        Crossfade(
+            targetState = preview?.image,
+            animationSpec = ApMotion.effects(ApMotion.Medium2, ApMotion.EmphasizedDecelerate),
+            label = "previewFrame",
+        ) { image ->
+            if (image == null) {
+                ApEmptyState(
+                    icon = Icons.Filled.Image,
+                    title = stringResource(R.string.ap_preview_waiting),
+                    hint = stringResource(R.string.ap_preview_waiting_hint),
+                )
+            } else {
+                // 虚拟屏是横屏 16:9，按同一比例留位，换帧时不会跳高度
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = stringResource(R.string.ap_overview_preview),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+        preview?.capturedAt?.let {
+            Text(
+                text = stringResource(R.string.ap_preview_captured_at, it),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
-            // 虚拟屏是横屏 16:9，按同一比例留位，换帧时不会跳高度
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    bitmap = image.asImageBitmap(),
-                    contentDescription = stringResource(R.string.ap_overview_preview),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            preview?.capturedAt?.let {
-                Text(
-                    text = stringResource(R.string.ap_preview_captured_at, it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }

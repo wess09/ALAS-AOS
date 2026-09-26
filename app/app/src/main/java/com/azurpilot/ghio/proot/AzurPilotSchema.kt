@@ -51,7 +51,9 @@ data class AzurPilotField(
         fun from(json: JSONObject): AzurPilotField = AzurPilotField(
             type = json.optString("type", "input"),
             value = json.opt("value").asApValue(),
-            option = (json.opt("option") as? List<*>)?.map { it.asApValue() },
+            // org.json 的 JSONArray 不实现 kotlin List，`as? List<*>` 会永远失败——
+            // 必须走 optJSONArray，否则所有 select/multiselect 都丢了候选，退化成裸值文本框
+            option = json.optJSONArray("option")?.toValueList()?.takeIf { it.isNotEmpty() },
             validate = json.opt("validate").asApValue(),
             display = json.optString("display").ifEmpty { null },
             mode = json.optString("mode").ifEmpty { null },

@@ -33,6 +33,9 @@ enum class AzurPilotSection(
             entries.firstOrNull { it.route == route }
 
         /** 详情页归属哪个分区，用来决定标签行停在哪儿 */
+        /** 详情页（推进来的）还是分区（平级的标签）——两者的转场语义完全不同 */
+        fun isDetailRoute(route: String?): Boolean = route != null && route in DETAILS
+
         fun parentOfRoute(route: String?): AzurPilotSection = when {
             route == null -> Overview
             route.startsWith(TASK_PREFIX) -> Config
