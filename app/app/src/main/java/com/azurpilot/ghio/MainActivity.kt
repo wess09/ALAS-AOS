@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.azurpilot.ghio.proot.AzurPilotRunController
 import com.azurpilot.ghio.settings.AppSettingsManager
+import com.azurpilot.ghio.theme.AppThemeState
 import com.azurpilot.ghio.ui.AppRoot
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -42,7 +43,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContent {
-            AppRoot(onDarkThemeChanged = ::applyEdgeToEdge)
+            AppRoot(
+                onDarkThemeChanged = { dark ->
+                    applyEdgeToEdge(dark)
+                    // 悬浮窗是独立窗口，拿不到这里的 Configuration，只能读播出来的结果
+                    AppThemeState.publish(dark)
+                },
+            )
         }
     }
 

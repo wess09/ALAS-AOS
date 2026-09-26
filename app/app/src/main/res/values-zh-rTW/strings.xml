@@ -285,14 +285,19 @@
 
     <!-- 首頁 tab：執行設定 + 控制面板 + 執行日誌 -->
     <string name="nav_hangar">首頁</string>
+    <string name="nav_screen">虛擬螢幕</string>
+    <string name="screen_waiting">正在接入畫面…</string>
+    <string name="screen_hint">在畫面上直接點按或滑動即可操作虛擬螢幕</string>
+    <string name="screen_idle_title">虛擬螢幕已就緒</string>
+    <string name="screen_idle_message">啟動掛機或工具後，畫面會出現在這裡</string>
     <string name="hangar_config_label">執行設定</string>
     <string name="hangar_config_switch">切換</string>
     <string name="hangar_config_running_hint">排程器執行中，停止後可切換設定</string>
-    <string name="hangar_tool_label">工具</string>
-    <string name="hangar_tool_semi_auto">半自動點擊</string>
-    <string name="hangar_tool_event_story">活動劇情</string>
-    <string name="hangar_tool_running">%1$s 執行中</string>
-    <string name="hangar_tool_stop">停止</string>
+    <string name="tool_label">工具</string>
+    <string name="tool_semi_auto">半自動點擊</string>
+    <string name="tool_event_story">活動劇情</string>
+    <string name="tool_running">%1$s 執行中</string>
+    <string name="tool_stop">停止</string>
 
     <!-- option 編輯器 -->
     <string name="option_input_invalid">輸入不合法</string>

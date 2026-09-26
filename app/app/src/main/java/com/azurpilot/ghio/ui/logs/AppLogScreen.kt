@@ -1,18 +1,20 @@
 package com.azurpilot.ghio.ui.logs
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -21,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +38,6 @@ import com.azurpilot.ghio.log.AppLogFileInfo
 import com.azurpilot.ghio.log.AppLogIntent
 import com.azurpilot.ghio.log.AppLogViewModel
 import com.azurpilot.ghio.theme.AppTokens
-import com.azurpilot.ghio.ui.components.AppCardSurface
 import com.azurpilot.ghio.ui.components.AppPromptDialog
 import org.koin.androidx.compose.koinViewModel
 
@@ -67,11 +69,17 @@ fun AppLogScreen(
             },
             onDismissRequest = { confirmClear = false },
             dismissOnOutsideClick = true,
+            destructive = true,
         )
     }
 
+    // M3 的顶栏滚动行为：列表滚起来时顶栏换成容器色并抬起，与主 tab 页同一套
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_log_title)) },
@@ -93,6 +101,7 @@ fun AppLogScreen(
                         }
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -119,10 +128,15 @@ fun AppLogScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(AppTokens.Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
+            contentPadding = PaddingValues(vertical = AppTokens.Spacing.sm),
         ) {
-            items(state.files, key = { it.name }) { file ->
+            // 同一批日志文件是一条列表，不是一堆并列的独立卡片：
+            // 逐行套卡会把「它们属于同一处」这层意思抹掉，还多出一圈没有信息量的框
+            itemsIndexed(state.files, key = { _, file -> file.name }) { index, file ->
+                if (index > 0) {
+                    // 分隔线向内缩到文字首列，是 M3 列表分隔线的取法
+                    HorizontalDivider(modifier = Modifier.padding(start = AppTokens.Spacing.lg))
+                }
                 AppLogFileRow(file = file, onClick = { onOpen(file.name) })
             }
         }
@@ -131,19 +145,26 @@ fun AppLogScreen(
 
 @Composable
 private fun AppLogFileRow(file: AppLogFileInfo, onClick: () -> Unit) {
-    AppCardSurface(modifier = Modifier.fillMaxWidth()) {
-        ListItem(
-            headlineContent = { Text(file.name) },
-            supportingContent = {
-                Text(
-                    stringResource(
-                        R.string.app_log_meta,
-                        formatFileSize(file.sizeBytes),
-                        logTimestamp(file.lastModified),
-                    ),
-                )
-            },
-            modifier = Modifier.clickable(onClick = onClick),
-        )
-    }
+    ListItem(
+        headlineContent = { Text(file.name) },
+        supportingContent = {
+            Text(
+                stringResource(
+                    R.string.app_log_meta,
+                    formatFileSize(file.sizeBytes),
+                    logTimestamp(file.lastModified),
+                ),
+            )
+        },
+        // 尾箭头：这一行通向别处，与设置页的导航行同一套提示
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(AppTokens.IconSize.md),
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick),
+    )
 }

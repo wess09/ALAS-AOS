@@ -285,14 +285,19 @@
 
     <!-- ホームタブ：実行構成 + 操作パネル + 実行ログ -->
     <string name="nav_hangar">ホーム</string>
+    <string name="nav_screen">仮想スクリーン</string>
+    <string name="screen_waiting">画面に接続中…</string>
+    <string name="screen_hint">画面を直接タップまたはスワイプすると仮想スクリーンを操作できます</string>
+    <string name="screen_idle_title">仮想スクリーンの準備ができました</string>
+    <string name="screen_idle_message">実行またはツールを開始すると、ここに画面が表示されます</string>
     <string name="hangar_config_label">実行構成</string>
     <string name="hangar_config_switch">切り替え</string>
     <string name="hangar_config_running_hint">スケジューラ実行中です。停止すると構成を切り替えられます</string>
-    <string name="hangar_tool_label">ツール</string>
-    <string name="hangar_tool_semi_auto">セミオートクリック</string>
-    <string name="hangar_tool_event_story">イベントストーリー</string>
-    <string name="hangar_tool_running">%1$s 実行中</string>
-    <string name="hangar_tool_stop">停止</string>
+    <string name="tool_label">ツール</string>
+    <string name="tool_semi_auto">セミオートクリック</string>
+    <string name="tool_event_story">イベントストーリー</string>
+    <string name="tool_running">%1$s 実行中</string>
+    <string name="tool_stop">停止</string>
 
     <!-- option エディター -->
     <string name="option_input_invalid">入力が不正です</string>

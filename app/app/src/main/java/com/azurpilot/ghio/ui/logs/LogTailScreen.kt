@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,8 +47,11 @@ fun LogTailScreen(
     file: File?,
     onBack: () -> Unit,
 ) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text(title) },
@@ -58,6 +63,7 @@ fun LogTailScreen(
                         )
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -100,7 +106,8 @@ fun LogTailContent(
         state.lines.isEmpty() -> LogTailMessage(textRes = R.string.log_tail_empty, modifier = modifier)
         else -> {
             // 在列表外算一次：给 Text 传 fontFamily 会每行每次重组合成一份新 TextStyle
-            val lineStyle = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace)
+            // 字号走 bodySmall：日志是要逐行读的正文，labelSmall 那档小得只剩模糊的灰点
+            val lineStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
             val errorColor = MaterialTheme.colorScheme.error
             val warningColor = AzurPilotTheme.palette.warning
 

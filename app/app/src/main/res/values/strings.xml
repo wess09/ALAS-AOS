@@ -288,14 +288,16 @@
     <string name="nav_screen">虚拟屏</string>
     <string name="screen_waiting">正在接入画面…</string>
     <string name="screen_hint">在画面上直接点按或滑动即可操作虚拟屏</string>
+    <string name="screen_idle_title">虚拟屏已就绪</string>
+    <string name="screen_idle_message">启动挂机或工具后，画面会出现在这里</string>
     <string name="hangar_config_label">运行配置</string>
     <string name="hangar_config_switch">切换</string>
     <string name="hangar_config_running_hint">调度器运行中，停止后可切换配置</string>
-    <string name="hangar_tool_label">工具</string>
-    <string name="hangar_tool_semi_auto">半自动点击</string>
-    <string name="hangar_tool_event_story">活动剧情</string>
-    <string name="hangar_tool_running">%1$s 运行中</string>
-    <string name="hangar_tool_stop">停止</string>
+    <string name="tool_label">工具</string>
+    <string name="tool_semi_auto">半自动点击</string>
+    <string name="tool_event_story">活动剧情</string>
+    <string name="tool_running">%1$s 运行中</string>
+    <string name="tool_stop">停止</string>
 
     <!-- option 编辑器 -->
     <string name="option_input_invalid">输入不合法</string>

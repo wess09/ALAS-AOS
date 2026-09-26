@@ -292,14 +292,16 @@
     <string name="nav_screen">Screen</string>
     <string name="screen_waiting">Connecting to the display…</string>
     <string name="screen_hint">Tap or swipe on the picture to drive the virtual display</string>
+    <string name="screen_idle_title">Virtual display ready</string>
+    <string name="screen_idle_message">The picture shows up here once a run or a tool starts</string>
     <string name="hangar_config_label">Run config</string>
     <string name="hangar_config_switch">Switch</string>
     <string name="hangar_config_running_hint">Stop the scheduler to switch config</string>
-    <string name="hangar_tool_label">Tools</string>
-    <string name="hangar_tool_semi_auto">Semi-Auto Click</string>
-    <string name="hangar_tool_event_story">Event Story</string>
-    <string name="hangar_tool_running">%1$s running</string>
-    <string name="hangar_tool_stop">Stop</string>
+    <string name="tool_label">Tools</string>
+    <string name="tool_semi_auto">Semi-Auto Click</string>
+    <string name="tool_event_story">Event Story</string>
+    <string name="tool_running">%1$s running</string>
+    <string name="tool_stop">Stop</string>
 
     <!-- Option editor -->
     <string name="option_input_invalid">Invalid input</string>

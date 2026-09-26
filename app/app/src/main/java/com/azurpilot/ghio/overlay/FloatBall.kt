@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,7 +45,9 @@ fun FloatBall(
     modifier: Modifier = Modifier,
 ) {
     val palette = AzurPilotTheme.palette
-    val target = if (running) palette.success else MaterialTheme.colorScheme.primary
+    val runningColor = palette.success
+    val target = if (running) runningColor else MaterialTheme.colorScheme.primary
+    val onTarget = if (running) palette.onSuccess else MaterialTheme.colorScheme.onPrimary
     val color by animateColorAsState(target.copy(alpha = 0.85f), tween(300))
 
     val breathing by rememberInfiniteTransition().animateFloat(
@@ -64,7 +65,11 @@ fun FloatBall(
         modifier = modifier
             .size(BALL_SIZE)
             .clip(CircleShape)
-            .border(AppTokens.Separator.thickness, Color.White.copy(alpha = 0.15f), CircleShape)
+            .border(
+                AppTokens.Separator.thickness,
+                onTarget.copy(alpha = 0.15f),
+                CircleShape,
+            )
             .then(if (running) Modifier.alpha(breathing) else Modifier)
             .semantics { contentDescription = description },
         shape = CircleShape,
@@ -76,7 +81,7 @@ fun FloatBall(
             Icon(
                 imageVector = if (running) Icons.Outlined.PlayArrow else Icons.Outlined.Check,
                 contentDescription = null,
-                tint = Color.White,
+                tint = onTarget,
                 modifier = Modifier.size(AppTokens.IconSize.sm),
             )
         }

@@ -20,19 +20,25 @@ import androidx.compose.ui.platform.LocalContext
 /**
  * MD3 的 colorScheme 只定义 primary / secondary / tertiary / error 四族，没有 success、warning
  * 这类业务语义角色。按 MD3 的自定义颜色角色（custom color role）约定补上，随明暗切换。
+ *
+ * 与内置角色一样成对给出：色是"容器"，[onSuccess] 是压在它上面的前景——
+ * 少了这一半，深色档下的浅绿底就只能配上纯白前景，对比度掉到读不出
  */
 data class AppPalette(
     val success: Color,
+    val onSuccess: Color,
     val warning: Color,
 )
 
 private val LightPalette = AppPalette(
     success = Color(0xFF146C2E),
+    onSuccess = Color(0xFFFFFFFF),
     warning = Color(0xFF8F4C00),
 )
 
 private val DarkPalette = AppPalette(
     success = Color(0xFF7FDA95),
+    onSuccess = Color(0xFF00391A),
     warning = Color(0xFFFFB86B),
 )
 

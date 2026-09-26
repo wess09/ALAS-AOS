@@ -49,4 +49,9 @@ object AppTokens {
         /** 锁定时的文字与图标 */
         const val disabledContent = 0.4f
     }
+
+    /** 状态指示件：一条状态行的成败靠它在一眼之内分出来 */
+    object Indicator {
+        val dot: Dp = 8.dp
+    }
 }

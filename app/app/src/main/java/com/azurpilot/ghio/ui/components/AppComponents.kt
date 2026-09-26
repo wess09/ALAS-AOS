@@ -19,13 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,23 +73,29 @@ fun AppCard(
                 AppLabeledControlRow(
                     label = title,
                     labelStyle = MaterialTheme.typography.titleMedium,
+                    // 整行是折叠热区，裸文本高度只有 30dp 上下，够不着 48dp 的最小可点尺寸
                     modifier = if (canCollapse) {
-                        Modifier.clickable { expanded = !expanded }
+                        Modifier
+                            .clickable { expanded = !expanded }
+                            .minimumInteractiveComponentSize()
                     } else {
                         Modifier
                     },
                     trailing = {
                         if (canCollapse) {
+                            // 朝向说的是"点下去会怎样"：收起时箭头朝下（展开），展开时朝上（收起）
                             val rotation by animateFloatAsState(
                                 targetValue = if (expanded) 180f else 0f,
                                 label = "chevron",
                             )
                             Icon(
-                                imageVector = Icons.Default.KeyboardArrowUp,
+                                imageVector = Icons.Default.KeyboardArrowDown,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                // 与 [AppNavigationRow] 的尾箭头同档：两个都是"点这里会走开"的指示，
+                                // 差一号会让人以为它们不是一类东西
                                 modifier = Modifier
-                                    .size(AppTokens.IconSize.sm)
+                                    .size(AppTokens.IconSize.md)
                                     .rotate(rotation),
                             )
                         }
@@ -154,8 +161,9 @@ fun AppNavigationRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
-            .padding(vertical = AppTokens.Spacing.sm),
+            .padding(vertical = AppTokens.Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
     ) {
@@ -182,8 +190,11 @@ fun AppNavigationRow(
 }
 
 /**
- * 列表行/缩略图的卡片配方：M3 的 outlined card（`surface` 底 + `outlineVariant` 描边），
- * 与内容分组用的 [AppCard] 拉开层级
+ * 孤件容器的卡片配方：M3 的 outlined card（`surface` 底 + `outlineVariant` 描边），
+ * 与内容分组用的 filled [AppCard] 拉开层级
+ *
+ * 只给缩略图这类单独成块的图元用。成列表的行不要套它——同一批内容逐行套卡会
+ * 把「它们属于同一处」这层意思抹掉，那是列表 + 分隔线的活
  */
 @Composable
 fun AppCardSurface(

@@ -260,6 +260,26 @@ fun AppRoot(
 
         val context = LocalContext.current
 
+        /**
+         * 切到第 [index] 页
+         *
+         * 进出虚拟屏页要换屏幕方向，而转动会让 pager 的像素偏移与旋转后的新页宽对不上：
+         * 动画跨旋转会停在"两页各露一半"的画面上（实测：画的是第 2、3 页的拼接，currentPage 却是 3）。
+         * 涉及虚拟屏页的两条边直接落位，其余切换照常走动画
+         */
+        fun goToPage(index: Int) {
+            selectedPage = index
+            scope.launch {
+                val touchesScreen = index == TopDestination.Screen.ordinal ||
+                    pagerState.currentPage == TopDestination.Screen.ordinal
+                if (touchesScreen) {
+                    pagerState.scrollToPage(index)
+                } else {
+                    pagerState.animateScrollToPage(index)
+                }
+            }
+        }
+
         // 底栏实际高度：snackbar 要停在它上面，而 M3 只给了 80dp 的私有常量
         val density = LocalDensity.current
         var bottomBarHeight by remember { mutableStateOf(0.dp) }
@@ -313,10 +333,7 @@ fun AppRoot(
                             val selected = pagerState.currentPage == index
                             NavigationBarItem(
                                 selected = selected,
-                                onClick = {
-                                    selectedPage = index
-                                    scope.launch { pagerState.scrollToPage(index) }
-                                },
+                                onClick = { goToPage(index) },
                                 icon = {
                                     Icon(
                                         imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
@@ -344,10 +361,7 @@ fun AppRoot(
                             val selected = pagerState.currentPage == index
                             NavigationRailItem(
                                 selected = selected,
-                                onClick = {
-                                    selectedPage = index
-                                    scope.launch { pagerState.scrollToPage(index) }
-                                },
+                                onClick = { goToPage(index) },
                                 icon = {
                                     Icon(
                                         imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,

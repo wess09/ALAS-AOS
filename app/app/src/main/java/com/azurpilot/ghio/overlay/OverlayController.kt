@@ -19,6 +19,9 @@ import com.azurpilot.ghio.proot.AzurPilotRunController
 import com.azurpilot.ghio.service.AccessibilityHelperService
 import com.azurpilot.ghio.service.HostState
 import com.azurpilot.ghio.settings.AppSettingsGateway
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import com.azurpilot.ghio.theme.AppThemeState
 import com.azurpilot.ghio.theme.AzurPilotTheme
 import com.petterp.floatingx.FloatingX
 import com.petterp.floatingx.assist.FxDisplayMode
@@ -152,7 +155,7 @@ class OverlayController(
     private fun createPanelView(): ComposeView = newComposeView().apply {
         panelLayout?.let { layoutParams = ViewGroup.LayoutParams(it.first, it.second) }
         setContent {
-            AzurPilotTheme {
+            OverlayTheme {
                 // 不用 collectAsStateWithLifecycle：悬浮窗隐藏时 owner 停在 CREATED，
                 // 那样收不到环境态变化，再显示出来就是过期数据
                 val snapshot by hostState.snapshot.collectAsState()
@@ -178,11 +181,24 @@ class OverlayController(
 
     private fun createBallView(): ComposeView = newComposeView().apply {
         setContent {
-            AzurPilotTheme {
+            OverlayTheme {
                 val snapshot by hostState.snapshot.collectAsState()
                 FloatBall(running = snapshot.environmentUp, onClick = ::onBallClick)
             }
         }
+    }
+
+    /**
+     * 悬浮窗主题：优先用 Activity 播出来的明暗档
+     *
+     * 面板视图只在尺寸变化时重建（见 configCallback），系统换深浅色不会重建它——
+     * 自己问系统就会停在旧配色，出现"App 已浅色、悬浮窗还是深色"。
+     * 进程里还没播过（App 没起来过）时退回系统判断
+     */
+    @Composable
+    private fun OverlayTheme(content: @Composable () -> Unit) {
+        val published by AppThemeState.darkTheme.collectAsState()
+        AzurPilotTheme(darkTheme = published ?: isSystemInDarkTheme(), content = content)
     }
 
     private fun newComposeView(): ComposeView = ComposeView(context).apply {
@@ -275,11 +291,17 @@ class OverlayController(
 
     // ── 布局 ──
 
-    /** 横屏时高度吃满一点：可用高度本来就少，按竖屏那个比例会挤成一条 */
+    /**
+     * 横屏时高度吃满一点：可用高度本来就少，按竖屏那个比例会挤成一条。
+     *
+     * 竖屏从 0.6 提到 0.72：面板里有状态卡、日志板、启停与工具槽，0.6 放不下，
+     * 中段得滚一下才看得见工具槽。底部按钮不随滚动消失是对的，
+     * 但"内容藏在下面"不该是常态——中段滚动留着给矮屏与横屏兜底
+     */
     private fun calculatePanelLayout(config: Configuration): Pair<Int, Int> {
         val density = context.resources.displayMetrics.density
         val heightRatio =
-            if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) 0.85f else 0.6f
+            if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) 0.85f else 0.72f
         return (config.screenWidthDp * density * 0.85f).toInt() to
                 (config.screenHeightDp * density * heightRatio).toInt()
     }

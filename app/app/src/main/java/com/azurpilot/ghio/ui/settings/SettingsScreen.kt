@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -62,16 +64,21 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        // M3 的顶栏滚动行为：内容滚起来时顶栏换成容器色并抬起
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         TopAppBar(
             title = { Text(stringResource(R.string.nav_settings)) },
             // AppRoot 的 Scaffold 已吃掉状态栏顶部 inset，这里不能再加一次
             windowInsets = WindowInsets(0, 0, 0, 0),
+            scrollBehavior = scrollBehavior,
         )
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .imePadding()
+                // nestedScroll 排在 verticalScroll 左边才是滚动节点的父级
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
                 .padding(
                     start = AppTokens.Spacing.lg,

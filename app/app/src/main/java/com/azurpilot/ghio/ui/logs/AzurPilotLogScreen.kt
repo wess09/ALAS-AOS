@@ -1,17 +1,19 @@
 package com.azurpilot.ghio.ui.logs
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -19,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,7 +33,6 @@ import com.azurpilot.ghio.log.AzurPilotDailyLogInfo
 import com.azurpilot.ghio.log.AzurPilotErrorDirInfo
 import com.azurpilot.ghio.log.AzurPilotLogViewModel
 import com.azurpilot.ghio.theme.AppTokens
-import com.azurpilot.ghio.ui.components.AppCardSurface
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -48,9 +50,12 @@ fun AzurPilotLogScreen(
     viewModel: AzurPilotLogViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.azurpilot_log_title)) },
@@ -62,6 +67,7 @@ fun AzurPilotLogScreen(
                         )
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -89,14 +95,18 @@ fun AzurPilotLogScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(AppTokens.Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.sm),
+            contentPadding = PaddingValues(vertical = AppTokens.Spacing.sm),
         ) {
             if (state.errorDirs.isNotEmpty()) {
                 item(key = "header_errors") {
                     AzurPilotLogSectionHeader(stringResource(R.string.azurpilot_log_section_errors))
                 }
-                items(state.errorDirs, key = { "error_${it.name}" }) { dir ->
+                // 同一批记录是一条列表，不是一堆并列的独立卡片：逐行套卡会把
+                // 「它们属于同一处」这层意思抹掉，还多出一圈没有信息量的框
+                itemsIndexed(state.errorDirs, key = { _, dir -> "error_${dir.name}" }) { index, dir ->
+                    if (index > 0) {
+                        HorizontalDivider(modifier = Modifier.padding(start = AppTokens.Spacing.lg))
+                    }
                     AzurPilotErrorDirRow(dir = dir, onClick = { onOpenError(dir.name) })
                 }
             }
@@ -104,7 +114,10 @@ fun AzurPilotLogScreen(
                 item(key = "header_daily") {
                     AzurPilotLogSectionHeader(stringResource(R.string.azurpilot_log_section_daily))
                 }
-                items(state.dailyLogs, key = { "daily_${it.name}" }) { file ->
+                itemsIndexed(state.dailyLogs, key = { _, file -> "daily_${file.name}" }) { index, file ->
+                    if (index > 0) {
+                        HorizontalDivider(modifier = Modifier.padding(start = AppTokens.Spacing.lg))
+                    }
                     AzurPilotDailyLogRow(file = file, onClick = { onOpenDaily(file.name) })
                 }
             }
@@ -112,13 +125,19 @@ fun AzurPilotLogScreen(
     }
 }
 
+/** 分区标题：与列表行的首列文字对齐，读的人才能把标题和它下面那批连起来 */
 @Composable
 private fun AzurPilotLogSectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = AppTokens.Spacing.sm),
+        modifier = Modifier.padding(
+            start = AppTokens.Spacing.lg,
+            end = AppTokens.Spacing.lg,
+            top = AppTokens.Spacing.md,
+            bottom = AppTokens.Spacing.xs,
+        ),
     )
 }
 
@@ -146,11 +165,18 @@ private fun AzurPilotDailyLogRow(file: AzurPilotDailyLogInfo, onClick: () -> Uni
 
 @Composable
 private fun AzurPilotLogRow(title: String, subtitle: String, onClick: () -> Unit) {
-    AppCardSurface(modifier = Modifier.fillMaxWidth()) {
-        ListItem(
-            headlineContent = { Text(title) },
-            supportingContent = { Text(subtitle) },
-            modifier = Modifier.clickable(onClick = onClick),
-        )
-    }
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        // 尾箭头：这一行通向别处，与设置页的导航行同一套提示
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(AppTokens.IconSize.md),
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick),
+    )
 }

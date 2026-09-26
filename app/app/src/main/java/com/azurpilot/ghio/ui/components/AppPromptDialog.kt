@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.window.DialogProperties
 
@@ -15,6 +16,9 @@ import androidx.compose.ui.window.DialogProperties
  *
  * [neutralText] 用于「换条路走」这类出口（如 Shizuku 引导里的切 Root），
  * M3 的 AlertDialog 只有 confirm 与 dismiss 两槽，中间出口挤在 dismiss 槽里
+ *
+ * [destructive] 给「删掉就没了」这类确认用：M3 里破坏性动作靠 error 角色标出来，
+ * 不上色就和普通「确定」长得一模一样，误点的代价却不是一个量级
  */
 @Composable
 fun AppPromptDialog(
@@ -28,6 +32,7 @@ fun AppPromptDialog(
     neutralText: String? = null,
     onNeutralClick: () -> Unit = {},
     dismissOnOutsideClick: Boolean = false,
+    destructive: Boolean = false,
 ) {
     AlertDialog(
         onDismissRequest = { if (dismissOnOutsideClick) onDismissRequest() },
@@ -39,7 +44,16 @@ fun AppPromptDialog(
         title = { Text(title) },
         text = { Text(message, style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(confirmText) }
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = confirmText,
+                    color = if (destructive) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        Color.Unspecified
+                    },
+                )
+            }
         },
         dismissButton = {
             if (neutralText != null || dismissText != null) {
