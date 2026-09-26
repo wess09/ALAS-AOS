@@ -23,7 +23,6 @@ koin = "4.2.1"
 
 # AzurPilot /api/v1/ws 网关客户端（WebSocket）
 okhttp = "5.2.1"
-okdownload = "1.0.7"
 
 datastore = "1.2.1"
 window = "1.5.1"
@@ -70,9 +69,6 @@ androidx-window = { group = "androidx.window", name = "window", version.ref = "w
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-okdownload = { group = "com.liulishuo.okdownload", name = "okdownload", version.ref = "okdownload" }
-okdownload-okhttp = { group = "com.liulishuo.okdownload", name = "okhttp", version.ref = "okdownload" }
-okdownload-sqlite = { group = "com.liulishuo.okdownload", name = "sqlite", version.ref = "okdownload" }
 
 koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }

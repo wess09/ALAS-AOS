@@ -306,13 +306,14 @@ class RootfsProvisioner(
         return true
     }
 
-    /** okdownload 多连接下载，进度直推状态机；SHA-256 由调用方在完成后统一校验 */
+    /** 单连接下载，进度直推状态机；SHA-256 由调用方在完成后统一校验 */
     private suspend fun downloadArchive(runtime: ReleaseRuntime, prefix: String, target: File) {
         val downloadUrl = ReleaseUrls.selected(runtime.url, prefix)
         ReleaseDownloader.download(
             url = downloadUrl,
             target = target,
             shouldAbort = { sourceSwitched(prefix) },
+            totalBytes = runtime.size,
         ) { done, total ->
             if (total > 0) _state.value = ProvisionState.Downloading(done, total)
         }

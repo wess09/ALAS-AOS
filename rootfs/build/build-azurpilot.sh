@@ -71,9 +71,11 @@ guest() {
 }
 
 guest apt-get update
+# 远程访问/模拟器隧道走上游 module/base/ssh.py，直接 Popen 系统 ssh（无捆绑二进制）
 guest apt-get install -y --no-install-recommends \
     ca-certificates curl git xz-utils libglib2.0-0t64 libgomp1 libgl1 \
-    libstdc++6 libatomic1 libsm6 libxext6 libsndfile1 libvulkan1 python3
+    libstdc++6 libatomic1 libsm6 libxext6 libsndfile1 libvulkan1 python3 \
+    openssh-client
 cp -L "$(command -v uv)" "$ROOTFS_DIR/usr/local/bin/uv"
 guest uv python install 3.14.6
 

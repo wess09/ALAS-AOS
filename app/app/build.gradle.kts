@@ -104,11 +104,6 @@ dependencies {
     // AzurPilot /api/v1/ws 网关：WebSocket 富接口（实例/总览/自启/热更新）
     implementation(libs.okhttp)
 
-    // Release/Runtime 下载引擎：多连接分段 + 断点续传；okhttp 组件复用同一 OkHttp 栈，
-    // sqlite 组件把断点信息落盘（三者都在，OkDownload.Builder 默认经反射自动接入）
-    implementation(libs.okdownload)
-    implementation(libs.okdownload.okhttp)
-    implementation(libs.okdownload.sqlite)
 
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)

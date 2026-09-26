@@ -1,26 +1,15 @@
 package com.azurpilot.ghio.update
 
-import android.content.Context
-import com.liulishuo.okdownload.DownloadListener
-import com.liulishuo.okdownload.DownloadTask
-import com.liulishuo.okdownload.OkDownload
-import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo
-import com.liulishuo.okdownload.core.cause.EndCause
-import com.liulishuo.okdownload.core.cause.ResumeFailedCause
-import com.liulishuo.okdownload.core.connection.DownloadOkHttp3Connection
-import kotlinx.coroutines.suspendCancellableCoroutine
-import okhttp3.OkHttpClient
 import java.io.File
 import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /** 下载被主动中止（换源）时抛出；调用方据此把「换源重来」与「真失败」区分开 */
 class DownloadAborted : Exception("download aborted")
 
-/** 整文件 SHA-256；下载校验在落盘完成后统一做 */
+/** 整文件 SHA-256；下载完成后由调用方统一校验 */
 internal fun sha256Hex(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
     file.inputStream().use { input ->
@@ -35,85 +24,55 @@ internal fun sha256Hex(file: File): String {
 }
 
 /**
- * Release 资产下载器：okdownload 引擎的薄封装（自己拼 Range 分段属于重复造轮子）。
+ * Release 下载器：单连接 HttpURLConnection 直下。
  *
- * - okdownload 按文件大小自动用 1~5 条连接并行分段（<1MB 单连接，>100MB 五连接），
- *   断点信息由 okdownload-sqlite 落盘，同一文件的续传/重试都归引擎管
- * - 连接层走 OkHttp（okdownload 的 okhttp 组件），超时按慢速镜像场景放宽
- * - 中止：[DownloadTask.cancel] 会让任务以 CANCELED 收尾，shouldAbort 轮询挂在
- *   进度回调上（约 200ms 一拍），换源后当前连接很快放弃
+ * 曾试过 okdownload 多连接分段：真机收益不稳（部分镜像对并发 Range 行为参差），
+ * 排障面也大，按产品决定回退单连接；大小与 SHA-256 由调用方在完成后统一校验。
  */
 object ReleaseDownloader {
 
-    /** Application 创建时调一次；显式装配 OkHttp 连接层，不依赖反射默认值 */
-    fun init(context: Context) {
-        val factory = DownloadOkHttp3Connection.Factory().setBuilder(
-            OkHttpClient.Builder()
-                .connectTimeout(20, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
-        )
-        OkDownload.setSingletonInstance(
-            OkDownload.Builder(context).connectionFactory(factory).build(),
-        )
-    }
-
     /**
-     * 挂起下载 url 到 target。同名旧文件沿用 okdownload 的断点续传；
-     * 不想续传（如换源）由调用方先删文件。
-     * onProgress 以约 200ms 节流回调 (doneBytes, totalBytes)。
+     * 阻塞下载 url 到 target（覆盖写）。
+     *
+     * - [shouldAbort] 在每个读块前检查（换源）→ [DownloadAborted]；连接阶段挂死时
+     *   最长 [CONNECT_TIMEOUT_MS]、读阶段最长 [READ_TIMEOUT_MS] 能脱身
+     * - [totalBytes] 传清单里的大小供进度显示；未知传 -1，[onProgress] 收到的
+     *   total 即该值
      */
-    suspend fun download(
+    fun download(
         url: String,
         target: File,
         shouldAbort: () -> Boolean = { false },
+        totalBytes: Long = -1L,
         onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
-    ) = suspendCancellableCoroutine { cont ->
-        val task = DownloadTask.Builder(url, target.parentFile ?: File("."))
-            .setFilename(target.name)
-            .setConnectionCount(CONNECTION_COUNT)
-            .setPreAllocateLength(true)
-            // 回调节流交给引擎；autoCallbackToUIThread 保持 false，协程恢复无需主循环
-            .setAutoCallbackToUIThread(false)
-            .setMinIntervalMillisCallbackProcess(PROGRESS_INTERVAL_MS)
-            .build()
-        // 外层协程被取消（用户离开/状态复位）时同样停掉引擎任务
-        cont.invokeOnCancellation { task.cancel() }
-        task.enqueue(object : DownloadListener {
-            override fun taskStart(task: DownloadTask) = Unit
-            override fun connectTrialStart(
-                task: DownloadTask,
-                requestHeaderFields: Map<String, List<String>>,
-            ) = Unit
-            override fun connectTrialEnd(
-                task: DownloadTask,
-                responseCode: Int,
-                responseHeaderFields: Map<String, List<String>>,
-            ) = Unit
-            override fun downloadFromBeginning(task: DownloadTask, info: BreakpointInfo, cause: ResumeFailedCause) = Unit
-            override fun downloadFromBreakpoint(task: DownloadTask, info: BreakpointInfo) = Unit
-            override fun connectStart(task: DownloadTask, blockIndex: Int, requestHeaderFields: Map<String, List<String>>) = Unit
-            override fun connectEnd(task: DownloadTask, blockIndex: Int, responseCode: Int, responseHeaderFields: Map<String, List<String>>) = Unit
-            override fun fetchStart(task: DownloadTask, blockIndex: Int, contentLength: Long) = Unit
-            override fun fetchEnd(task: DownloadTask, blockIndex: Int, contentLength: Long) = Unit
-
-            override fun fetchProgress(task: DownloadTask, blockIndex: Int, increaseBytes: Long) {
-                val info = task.getInfo()
-                onProgress(info?.totalOffset ?: 0L, info?.totalLength ?: 0L)
-                // 换源等中止诉求在下一拍回调上生效；cancel 让引擎尽快收尾
-                if (shouldAbort()) task.cancel()
-            }
-
-            override fun taskEnd(task: DownloadTask, cause: EndCause, realCause: Exception?) {
-                when {
-                    cause == EndCause.COMPLETED -> cont.resume(Unit)
-                    cause == EndCause.CANCELED && shouldAbort() -> cont.resumeWithException(DownloadAborted())
-                    cause == EndCause.CANCELED -> cont.resumeWithException(IOException("下载被取消"))
-                    else -> cont.resumeWithException(realCause ?: IOException("下载失败（$cause）"))
+    ) {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = CONNECT_TIMEOUT_MS
+            connection.readTimeout = READ_TIMEOUT_MS
+            connection.instanceFollowRedirects = true
+            check(connection.responseCode in 200..299) { "下载失败（HTTP ${connection.responseCode}）" }
+            connection.inputStream.use { input ->
+                target.outputStream().buffered(BUFFER_SIZE).use { output ->
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    var done = 0L
+                    while (true) {
+                        // 连接卡住时 read 会阻塞到超时，这里保证一换源就尽快放弃当前连接
+                        if (shouldAbort()) throw DownloadAborted()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        done += count
+                        output.write(buffer, 0, count)
+                        onProgress(done, totalBytes)
+                    }
                 }
             }
-        })
+        } finally {
+            connection.disconnect()
+        }
     }
 
-    private const val CONNECTION_COUNT = 4
-    private const val PROGRESS_INTERVAL_MS = 200
+    private const val CONNECT_TIMEOUT_MS = 20_000
+    private const val READ_TIMEOUT_MS = 120_000
+    private const val BUFFER_SIZE = 256 * 1024
 }
