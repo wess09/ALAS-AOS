@@ -39,26 +39,27 @@ internal fun Project.gitVersionCode(): Int {
 }
 
 /** 版本名的主干；外壳自身的语义版本线，与内置运行时无关 / The version-name stem; the shell's own semver line, independent of the bundled runtime. */
-private const val VERSION_BASE = "1.1"
+private const val VERSION_BASE = "1.2"
 
 /**
- * X 的提交基线：注释完善与版本升位两个提交之前的那一个（193e386，计 131）。
- * X 钉在基线计数、不随后续提交增长；下次升位时同时更新这两个常量。
+ * X 从版本方案切换的那个提交起算：该提交是本仓第 134 个（X=0 → 1.2.0），
+ * 此后每个提交 +1。
  *
- * The commit baseline for X: the commit before the KDoc pass and this bump
- * (193e386, 131 commits). X is pinned to the baseline count and does not grow
- * with later commits; bump both constants together on the next minor bump.
+ * X counts commits from the commit that switched the version scheme — that
+ * commit is #134 in this repository (X=0 → 1.2.0), and each later commit
+ * increments X by one.
  */
-private const val VERSION_BASELINE_REV = "193e386892b89a3bd4bdc86ddfab0da69ac7390b"
+private const val VERSION_SCHEME_START_COUNT = 134L
 
-/** 版本名 = `1.1.<基线提交数>`；运行时版本由 rootfs 清单独立记录。 / Version name = `1.1.<baseline commit count>`; the runtime version is tracked independently by the rootfs manifest. */
+/** 版本名 = `1.2.<X>`；运行时版本由 rootfs 清单独立记录。 / Version name = `1.2.<X>`; the runtime version is tracked independently by the rootfs manifest. */
 internal fun Project.gitVersionName(): String {
     System.getenv("APP_VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
     val commits = providers.exec {
         workingDir(versionGitWorkingDir())
-        commandLine("git", "rev-list", "--count", VERSION_BASELINE_REV)
+        commandLine("git", "rev-list", "--count", "HEAD")
         isIgnoreExitValue = true
-    }.standardOutput.asText.get().trim().ifEmpty { "0" }
+    }.standardOutput.asText.get().trim().toLongOrNull() ?: 0L
+    val x = (commits - VERSION_SCHEME_START_COUNT).coerceAtLeast(0L)
 
-    return "$VERSION_BASE.$commits"
+    return "$VERSION_BASE.$x"
 }

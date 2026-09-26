@@ -105,8 +105,9 @@ jobs:
           # Rebuild all APK variants with every new rootfs, but keep their package version
           # unless a Kotlin source file changed since the last versioned APK.
           version_code="$(git log -1 --format=%ct HEAD)"
-          version_name="1.1.$(git rev-list --count 193e386892b89a3bd4bdc86ddfab0da69ac7390b)"
-          if [[ "$previous_version_code" =~ ^[0-9]+$ && "$previous_version_name" =~ ^1\.1\.([0-9]+)$ &&
+          version_count="$(git rev-list --count HEAD)"
+          version_name="1.2.$(( version_count > 134 ? version_count - 134 : 0 ))"
+          if [[ "$previous_version_code" =~ ^[0-9]+$ && "$previous_version_name" =~ ^1\.(1|2)\.([0-9]+)$ &&
                 "$app_commit" =~ ^[0-9a-f]{40}$ ]] &&
               git cat-file -e "${app_commit}^{commit}" 2>/dev/null &&
               git merge-base --is-ancestor "$app_commit" HEAD; then
