@@ -4,6 +4,10 @@ import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
@@ -321,6 +325,9 @@ fun AppRoot(
         Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            // 挖孔屏避让：systemBars 不含孔洞（横屏时状态栏内缩可能小于孔径），
+            // 并上 displayCutout 后，横屏内容才会真正从摄像头孔旁边让开
+            contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout),
             bottomBar = {
                 // 横屏（虚拟屏页）时导航栏靠边竖排，不从底部吃掉本就紧张的高度
                 if (!isLandscape) {

@@ -54,10 +54,11 @@
              否则别的窗口也会顶着首屏底色起来 -->
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|screenLayout"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:label="${appLabel}"
             android:launchMode="singleTop"
+            android:resizeableActivity="true"
             android:theme="@style/Theme.AzurPilotApp.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import com.azurpilot.ghio.proot.AzurPilotLogEntry
 import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
+import com.azurpilot.ghio.ui.azurpilot.apContentWidth
 import com.azurpilot.ghio.ui.azurpilot.ApMotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,11 +72,12 @@ private val LOG_LEVELS = listOf("DEBUG", "INFO", "WARNING", "ERROR")
 @Composable
 fun LogsSection(repository: AzurPilotRepository) {
     val logs by repository.logs.collectAsStateWithLifecycle()
-    var level by remember { mutableStateOf<String?>(null) }
-    var query by remember { mutableStateOf("") }
-    var ascending by remember { mutableStateOf(true) }
-    var follow by remember { mutableStateOf(true) }
-    var floorId by remember { mutableLongStateOf(Long.MIN_VALUE) }
+    // rememberSaveable：分屏/深色切换会重建 Activity，筛选条件与游标不该丢（运行连续性）
+    var level by rememberSaveable { mutableStateOf<String?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var ascending by rememberSaveable { mutableStateOf(true) }
+    var follow by rememberSaveable { mutableStateOf(true) }
+    var floorId by rememberSaveable { mutableLongStateOf(Long.MIN_VALUE) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -97,12 +100,15 @@ fun LogsSection(repository: AzurPilotRepository) {
         }
     }
 
-    val filtered = logs.filter { entry ->
-        entry.id > floorId &&
-            (level == null || entry.level == level) &&
-            (query.isBlank() || entry.text.contains(query, ignoreCase = true))
+    // 跟随滚动时每帧都会重组；过滤 1000 条的开销只在输入真正变化时付一次
+    val filtered = remember(logs, level, query, floorId) {
+        logs.filter { entry ->
+            entry.id > floorId &&
+                (level == null || entry.level == level) &&
+                (query.isBlank() || entry.text.contains(query, ignoreCase = true))
+        }
     }
-    val ordered = if (ascending) filtered else filtered.asReversed()
+    val ordered = remember(filtered, ascending) { if (ascending) filtered else filtered.asReversed() }
     // 横幅的判定要用**源顺序**的上下邻居：倒序显示时视觉上的邻居恰好相反
     val bannerIds = remember(filtered) {
         filtered.mapIndexedNotNull { index, entry ->
@@ -114,7 +120,7 @@ fun LogsSection(repository: AzurPilotRepository) {
         }.toSet()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().apContentWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

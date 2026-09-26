@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,12 +86,13 @@ private val PERIOD_CHOICES = listOf("day", "week", "month")
  */
 @Composable
 fun StatisticsSection(repository: AzurPilotRepository) {
-    var category by remember { mutableStateOf(AzurPilotStatCategory.Resources) }
-    var days by remember { mutableStateOf(7) }
-    var period by remember { mutableStateOf("month") }
-    var scope by remember { mutableStateOf("series") }
-    var series by remember { mutableStateOf(0) }
-    var task by remember { mutableStateOf<String?>(null) }
+    // rememberSaveable：重建后停留在同一分类与口径（运行连续性）
+    var category by rememberSaveable { mutableStateOf(AzurPilotStatCategory.Resources) }
+    var days by rememberSaveable { mutableStateOf(7) }
+    var period by rememberSaveable { mutableStateOf("month") }
+    var scope by rememberSaveable { mutableStateOf("series") }
+    var series by rememberSaveable { mutableStateOf(0) }
+    var task by rememberSaveable { mutableStateOf<String?>(null) }
 
     var report by remember { mutableStateOf<AzurPilotStatisticsReport?>(null) }
     var loading by remember { mutableStateOf(false) }

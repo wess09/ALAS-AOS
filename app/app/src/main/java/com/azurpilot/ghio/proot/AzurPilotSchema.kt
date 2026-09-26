@@ -102,13 +102,21 @@ class AzurPilotSchema(
      *
      * 键是**分组**开头的扁平结构（`Emulator.*` 而不是 `Alas.Emulator.*`），与 WebUI 一致；
      * 取不到就退回键名本身，宁可显示生键也不要空标签。
+     *
+     * 查表结果进缓存：滚动配置页时每个可见字段每帧都要查 2~3 次，缓存把 split 与
+     * 逐级 Map 查找的分配全省掉。schema 换语言时整个实例被替换，缓存随之失效。
      */
+    private val translateCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     fun translate(path: String): String {
+        translateCache[path]?.let { return it }
         var node: ApValue = translations
         for (segment in path.split('.')) {
             node = (node as? Map<*, *>)?.get(segment) ?: return path
         }
-        return (node as? String)?.takeIf { it.isNotEmpty() } ?: path
+        val text = (node as? String)?.takeIf { it.isNotEmpty() } ?: path
+        translateCache[path] = text
+        return text
     }
 
     /** 有翻译就显示翻译，没有就显示原键——组标题、任务名、选项名都走它 */

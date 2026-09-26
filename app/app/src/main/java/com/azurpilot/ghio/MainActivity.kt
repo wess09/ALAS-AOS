@@ -29,6 +29,13 @@ class MainActivity : AppCompatActivity() {
         splash.setKeepOnScreenCondition { !appSettings.loaded.value }
         super.onCreate(savedInstanceState)
 
+        // 挖孔屏：edge-to-edge 下允许内容画进孔区两侧，**避让**由 Compose 的 displayCutout
+        // insets 做（默认模式在横屏会把整窗从孔洞处挤开，出现一条黑边，虚拟屏页面尤其难看）
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+
         // 挂机/工具运行期间保持屏幕唤醒（App 退到后台或用户手动息屏时仍允许锁屏）
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

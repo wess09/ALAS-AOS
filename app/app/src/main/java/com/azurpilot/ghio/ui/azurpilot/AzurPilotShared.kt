@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +37,20 @@ import com.azurpilot.ghio.proot.AzurPilotTaskState
 import com.azurpilot.ghio.theme.AppTokens
 import com.azurpilot.ghio.theme.AzurPilotTheme
 
+/**
+ * 宽屏（横屏/分屏/平板）下的内容最大宽度
+ *
+ * 全宽表单在大屏上行长失控、扫读困难；MD3 与小米大屏规范都要求列表/输入类组件有最大宽度。
+ * 手机竖屏（约 390dp）不受影响，横屏（约 870dp）起内容居中收窄。
+ */
+val ApMaxContentWidth = 640.dp
+
+/** 内容宽度上限 + 在剩余空间里居中；给分区级容器用 */
+fun Modifier.apContentWidth(): Modifier = this
+    .fillMaxWidth()
+    .wrapContentWidth(Alignment.CenterHorizontally)
+    .widthIn(max = ApMaxContentWidth)
+
 /** 分区内容的标准容器：统一内边距与行距，各分区不再各写一遍 */
 @Composable
 fun ApSectionColumn(
@@ -43,7 +59,7 @@ fun ApSectionColumn(
 ) {
     Column(
         modifier = modifier
-            .fillMaxWidth()
+            .apContentWidth()
             .verticalScroll(rememberScrollState())
             .padding(
                 start = AppTokens.Spacing.lg,

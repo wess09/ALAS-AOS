@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +65,7 @@ import com.azurpilot.ghio.ui.azurpilot.ApEmptyState
 import com.azurpilot.ghio.ui.azurpilot.ApErrorState
 import com.azurpilot.ghio.ui.azurpilot.ApSectionColumn
 import com.azurpilot.ghio.ui.azurpilot.ApTopBarAction
+import com.azurpilot.ghio.ui.azurpilot.apContentWidth
 import com.azurpilot.ghio.ui.azurpilot.apEnter
 import com.azurpilot.ghio.ui.components.AppCard
 import com.azurpilot.ghio.ui.components.AppLabeledControlRow
@@ -167,7 +170,8 @@ fun TaskConfigPage(
     val logs by repository.logs.collectAsStateWithLifecycle()
     val startup by repository.startup.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf("") }
+    // rememberSaveable：分屏 / 深色切换重建 Activity 后，搜索词不丢（运行连续性）
+    var query by rememberSaveable { mutableStateOf("") }
     var pendingRun by remember { mutableStateOf<String?>(null) }
     var wantSearchFocus by remember { mutableStateOf(false) }
     val searchFocus = remember { FocusRequester() }
@@ -261,7 +265,9 @@ fun TaskConfigPage(
 
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .apContentWidth(),
         contentPadding = PaddingValues(
             start = AppTokens.Spacing.lg,
             end = AppTokens.Spacing.lg,
@@ -425,7 +431,8 @@ private fun ApCompactSearchField(
     focusRequester: FocusRequester? = null,
 ) {
     Surface(
-        modifier = modifier.height(44.dp),
+        // min 而不是定高：系统字体放大档位下文字不能被裁掉（小米大屏规范：响应字体档位）
+        modifier = modifier.heightIn(min = 44.dp),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
