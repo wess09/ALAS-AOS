@@ -19,7 +19,7 @@ import com.azurpilot.ghio.overlay.OverlayController
 import com.azurpilot.ghio.overlay.screensaver.ScreenSaverOverlayManager
 import com.azurpilot.ghio.privileged.PermissionManager
 import com.azurpilot.ghio.privileged.RemoteServiceManager
-import com.azurpilot.ghio.proot.AzurPilotApi
+import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.proot.AzurPilotGateway
 import com.azurpilot.ghio.proot.AzurPilotRunController
 import com.azurpilot.ghio.service.HostState
@@ -85,15 +85,20 @@ class AzurPilotApp : Application() {
         koin.get<HostState>().start()
         val runController = koin.get<AzurPilotRunController>()
         runController.start()
-        // 富接口：与薄接口并存。实例选择由运行控制器持有，这里把它转给网关做订阅
+        // 富接口：与 /android/* 薄接口并存。实例选择归 repository 自己管，
+        // 首次进入时对齐运行控制器选的那个配置——否则原生界面一打开就是空实例。
         koin.get<AzurPilotGateway>().start()
-        val api = koin.get<AzurPilotApi>()
-        api.start()
+        val repository = koin.get<AzurPilotRepository>()
+        repository.start()
         koin.get<CoroutineScope>(named<AppCoroutineScope>()).launch {
             runController.state
                 .map { it.selectedConfig }
                 .distinctUntilChanged()
-                .collect { api.onInstanceSelected(it) }
+                .collect { config ->
+                    if (repository.selectedInstance.value == null) {
+                        repository.selectInstance(config)
+                    }
+                }
         }
         koin.get<OverlayController>().setup()
         koin.get<ScreenSaverOverlayManager>().setup()

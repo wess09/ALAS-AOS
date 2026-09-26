@@ -76,7 +76,7 @@ import com.azurpilot.ghio.settings.SettingsIntent
 import com.azurpilot.ghio.settings.SettingsViewModel
 import com.azurpilot.ghio.service.HostState
 import com.azurpilot.ghio.theme.AzurPilotTheme
-import com.azurpilot.ghio.ui.run.AzurPilotScreen
+import com.azurpilot.ghio.ui.azurpilot.AzurPilotPage
 import com.azurpilot.ghio.ui.components.ShizukuReadinessDialog
 import com.azurpilot.ghio.ui.hangar.HangarScreen
 import com.azurpilot.ghio.ui.navigation.Routes
@@ -392,9 +392,9 @@ fun AppRoot(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                        TopDestination.AzurPilot -> AzurPilotScreen(
-                            // 从主页直接动画切到设置时，currentPage 会短暂经过中间的 AzurPilot 页。
-                            // 只有动画真正停在该页后才允许自动弹 WebUI。
+                        TopDestination.AzurPilot -> AzurPilotPage(
+                            // 从主页直接动画切到设置时，currentPage 会短暂经过中间的 AzurPilot 页；
+                            // 只有动画真正停在该页后才做「补一次环境拉起」这类有副作用的事
                             active = pagerState.settledPage == TopDestination.AzurPilot.ordinal,
                             modifier = Modifier.fillMaxSize(),
                         )

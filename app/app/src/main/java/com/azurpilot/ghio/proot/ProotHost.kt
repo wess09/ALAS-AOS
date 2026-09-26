@@ -254,10 +254,10 @@ class ProotHost(
     }
 
     /**
-     * 轮询直到 wrapper(22400) 与 WebUI(22267) 双双可达（1s 一拍）
+     * 轮询直到 `/android/status`（薄接口，带控制口令）与 `/healthz` 双双可达（1s 一拍）
      *
-     * RUNNING 的语义必须是「WebUI 真的能服务」：gui.py 进程活着但 uvicorn 还在
-     * import 的几秒里，WebView 自动重载会吃 connection refused 卡进错误页
+     * RUNNING 的语义必须是「服务真的能答」：gui.py 进程活着但 uvicorn 还在 import 的几秒里，
+     * 两个端口都是 connection refused，此时报 RUNNING 会让界面拿着一个连不上的地址去发请求
      */
     private suspend fun awaitServices(timeoutMs: Long): Boolean {
         val deadline = System.currentTimeMillis() + timeoutMs
@@ -438,7 +438,7 @@ class ProotHost(
     }
 
     companion object {
-        /** WebUI 端口（deploy.yaml WebuiPort；AzurPilotScreen 与外部浏览器都打它） */
+        /** 网关端口（deploy.yaml WebuiPort）：WS 网关、Android 薄接口与应用内原生界面都打它 */
         const val WEBUI_PORT = 25548
 
         private const val GUEST_INSTALL_ROOT = "/opt/azurpilot"

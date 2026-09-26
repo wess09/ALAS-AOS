@@ -39,7 +39,7 @@ import com.azurpilot.ghio.settings.SettingsIntent
 import com.azurpilot.ghio.settings.SettingsUiState
 import com.azurpilot.ghio.theme.AppTokens
 import androidx.compose.material3.Button
-import com.azurpilot.ghio.proot.AzurPilotApi
+import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.provision.RootfsProvisioner
 import com.azurpilot.ghio.settings.AppSettingsManager
 import com.azurpilot.ghio.ui.components.AppCard
@@ -306,13 +306,13 @@ private fun AboutCard() {
  */
 @Composable
 private fun RuntimeCard(
-    api: AzurPilotApi = koinInject(),
+    repository: AzurPilotRepository = koinInject(),
     provisioner: RootfsProvisioner = koinInject(),
     updateManager: AppUpdateManager = koinInject(),
     settings: AppSettingsManager = koinInject(),
 ) {
     val scope = rememberCoroutineScope()
-    val apiState by api.state.collectAsStateWithLifecycle()
+    val updater by repository.updater.collectAsStateWithLifecycle()
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
     val updateState by updateManager.state.collectAsStateWithLifecycle()
@@ -321,7 +321,7 @@ private fun RuntimeCard(
     AppCard(title = stringResource(R.string.settings_runtime), collapsible = true) {
         AppInfoRow(
             stringResource(R.string.settings_runtime_commit),
-            apiState.runtimeCommit?.take(12)
+            updater?.localHead?.take(12)
                 ?: installedVersion?.substringBefore('-')
                 ?: stringResource(R.string.settings_runtime_unknown),
         )

@@ -21,17 +21,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * AzurPilot 调度器运行态：悬浮窗「开始/停止挂机」与日志板的数据源
  *
- * 数据全部来自 wrapper 薄 HTTP（127.0.0.1:22400，rootfs wrapper.py）：
- * - GET /status → runner_alive/pid/config/gui_alive/log_lines
- * - POST /start?config=N、POST /stop → 调度器启停（幂等；/stop 内部 SIGTERM→3s→SIGKILL，响应偏慢）
- * - GET /logs?tail=N → 纯文本日志尾。语义：按 mtime 取 log/ 下最新 *.txt——
- *   调度器在跑时是它的 {date}_azurpilot.txt，没跑时多半是 gui 启动日志，均够悬浮窗一瞥
- * - GET /configs → config/ 下的实例配置名列表（运行配置下拉的数据源）
+ * 数据全部来自网关的 Android 薄接口（`127.0.0.1:25548`，`module/api/android.py`，
+ * 需要 `X-AzurPilot-Android-Token`）：
+ * - GET `android/status` → runner_alive/pid/config/gui_alive/log_lines
+ * - POST `android/start?config=N`、`android/stop` → 调度器启停（幂等；stop 内部
+ *   SIGTERM→3s→SIGKILL，响应偏慢）
+ * - GET `android/logs?tail=N` → 纯文本日志尾。语义：按 mtime 取 log/ 下最新 txt——
+ *   调度器在跑时是它的当日文件，没跑时多半是 gui 启动日志，均够悬浮窗一瞥
+ * - GET `android/configs` → config/ 下的实例配置名列表（运行配置下拉的数据源）
  *
- * 4s 轮询；wrapper 不可达不视为错误（proot 会话没起/正在起，reachable=false 即可）。
- * 运行配置选择持久化在 SharedPreferences，/start 时透传给 runner；
- * 调度器在跑时 /status 回报的 config 才是生效配置，下拉选择下次启动生效。
- * 双头管理注意：WebUI 的启停按钮已被锁定补丁封死（只记 warning），本通道是唯一控制面。
+ * 4s 轮询；接口不可达不视为错误（proot 会话没起/正在起，reachable=false 即可）。
+ * 运行配置选择持久化在 SharedPreferences，start 时透传给 runner；
+ * 调度器在跑时 status 回报的 config 才是生效配置，下拉选择下次启动生效。
+ * 控制面分工：进程的启停只走这条薄接口，原生界面只做内容面（总览 / 配置 / 日志 / 统计 / 设置），
+ * 不再另开一条启停路径——两条控制面同时操作设备会互相打架。
  */
 data class AzurPilotRunState(
     val reachable: Boolean = false,

@@ -44,9 +44,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.azurpilot.ghio.R
 import com.azurpilot.ghio.constant.DefaultDisplayConfig
-import com.azurpilot.ghio.proot.AzurPilotApi
-import com.azurpilot.ghio.proot.AzurPilotApiState
+import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.proot.AzurPilotRunState
+import com.azurpilot.ghio.proot.AzurPilotTask
+import com.azurpilot.ghio.proot.AzurPilotTaskState
 import com.azurpilot.ghio.proot.ProotHost
 import com.azurpilot.ghio.proot.ProotPhase
 import com.azurpilot.ghio.service.HostSnapshot
@@ -58,8 +59,8 @@ import org.koin.compose.koinInject
  * AzurPilot 控制面板（共享组合件）：环境/调度器状态行 + 日志板 + 调度器启停
  *
  * 悬浮窗（OverlayPanel）与主页（HangarScreen）共用同一份。
- * 调度器控制面只此一处（wrapper 薄 HTTP）；WebUI 里的启停按钮已被锁定补丁封死，
- * 双头同用会抢设备——别用（见 AzurPilotRunController 头注）
+ * 进程启停只此一处（wrapper 薄 HTTP）；AzurPilot 页只做内容面，不再开第二条启停路径
+ * （见 AzurPilotRunController 头注）
  * [showTools]：悬浮窗要工具区；主页的工具按钮已并进运行配置行（ConfigToolRow），传 false
  * [showLog]：主页把日志单独渲染在启停按钮下方（要控高度），传 false；悬浮窗保持默认
  * [logBoardHeight]：日志板的固定高。null = 吃掉剩余空间（宿主是定高容器时用）；
@@ -84,8 +85,10 @@ fun AzurPilotControlPanel(
     // 准备链全程 2~5 分钟且 release 日志静默，状态行是唯一可见的进度面
     val prootHost: ProotHost = koinInject()
     val proot by prootHost.state.collectAsStateWithLifecycle()
-    val api: AzurPilotApi = koinInject()
-    val apiState by api.state.collectAsStateWithLifecycle()
+    val repository: AzurPilotRepository = koinInject()
+    val connected by repository.connected.collectAsStateWithLifecycle()
+    val overview by repository.overview.collectAsStateWithLifecycle()
+    val startup by repository.startup.collectAsStateWithLifecycle()
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppTokens.Spacing.md),
@@ -133,17 +136,17 @@ fun AzurPilotControlPanel(
                 labelRes = R.string.overlay_azurpilot_status,
                 value = azurPilotRunStatusText(run, proot.phase, proot.sessionActive, proot.detail),
             )
-            if (showGateway && apiState.connected) {
-                AzurPilotSchedulerOverview(apiState)
+            if (showGateway && connected && overview != null) {
+                AzurPilotSchedulerOverview(overview!!.tasks)
             }
             if (showGateway) {
                 AppLabeledControlRow(
                     label = stringResource(R.string.gateway_startup_auto),
                     trailing = {
                         Switch(
-                            checked = apiState.startupEnabled,
-                            enabled = apiState.connected && !apiState.busy,
-                            onCheckedChange = api::setStartupEnabled,
+                            checked = startup?.enabled == true,
+                            enabled = connected,
+                            onCheckedChange = { repository.setStartup(enabled = it) },
                         )
                     },
                 )
@@ -481,18 +484,18 @@ fun ToolSlotButton(
 /**
  * 调度总览：来自 `/api/v1/ws` 的 `overview` 主题（与日志板同源不同接口）
  *
- * 只显示「下一个要跑什么」这一件事——完整任务表在 WebUI 里，App 侧给一眼就够。
+ * 控制面板只给「下一个要跑什么」这一件事——完整任务表在 AzurPilot 页的总览里。
  */
 @Composable
-private fun AzurPilotSchedulerOverview(apiState: AzurPilotApiState) {
-    val next = apiState.tasks.firstOrNull { it.state != "running" } ?: apiState.tasks.firstOrNull()
+private fun AzurPilotSchedulerOverview(tasks: List<AzurPilotTask>) {
+    val next = tasks.firstOrNull { it.state != AzurPilotTaskState.Running } ?: tasks.firstOrNull()
     val text = when {
-        apiState.tasks.isEmpty() -> stringResource(R.string.gateway_overview_empty)
+        tasks.isEmpty() -> stringResource(R.string.gateway_overview_empty)
         next != null -> stringResource(
             R.string.gateway_overview_next,
             next.name,
             next.nextRun,
-            apiState.tasks.size,
+            tasks.size,
         )
         else -> stringResource(R.string.gateway_overview_empty)
     }
