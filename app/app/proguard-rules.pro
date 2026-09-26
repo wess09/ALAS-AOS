@@ -34,6 +34,10 @@
 -dontwarn android.**
 -dontwarn com.android.internal.**
 
+# ── okdownload ──
+# 库代码引用了 findbugs 的编译期注解（注解不随包携带，只是元数据），R8 缺类即拦
+-dontwarn edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+
 # ── kotlinx.serialization ──
 # 生成的 $$serializer 与 Companion.serializer() 没有静态调用点
 -keepclassmembers class com.azurpilot.ghio.** {
