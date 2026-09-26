@@ -45,8 +45,12 @@ data class AppSettings(
     @PrefKey(default = "true")
     val autoCleanLogs: String = "true",
 
-    /** Runtime and App release checks/downloads use ghproxy.net when enabled. */
-    @PrefKey(default = "false")
-    val useGithubMirror: String = "false",
+    /** Release 下载源：direct / 内置镜像前缀（见 [com.azurpilot.ghio.update.ReleaseUrls.MIRRORS]）/ custom */
+    @PrefKey(default = "direct")
+    val githubMirror: String = "direct",
+
+    /** 自定义镜像前缀（ghproxy 形态：前缀 + 完整 GitHub URL）；仅 githubMirror=custom 时生效 */
+    @PrefKey(default = "")
+    val githubMirrorCustom: String = "",
 
 )

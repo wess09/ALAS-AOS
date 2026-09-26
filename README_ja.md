@@ -23,7 +23,7 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=flat-square" alt="License: AGPL-3.0"></a>
   <a href="https://developer.android.com/about/versions/pie"><img src="https://img.shields.io/badge/Platform-Android%209.0%2B%20(API%2028%2B)-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Platform: Android 9.0+"></a>
-  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
+  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a%20%2F%20x86__64-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
   <a href="https://ubuntu.com/"><img src="https://img.shields.io/badge/Runtime-Ubuntu%2024.04%20LTS-E95420.svg?style=flat-square&logo=ubuntu&logoColor=white" alt="Runtime: Ubuntu 24.04"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.14-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python 3.14"></a>
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/badge/Packaging-uv-DE5FE9.svg?style=flat-square" alt="Packaging: uv"></a>
@@ -58,6 +58,7 @@
   <a href="#システムアーキテクチャ">アーキテクチャ</a> •
   <a href="#動作環境と互換性">環境仕様</a> •
   <a href="#クイックスタート">クイックスタート</a> •
+  <a href="#アプリプレビュー">プレビュー</a> •
   <a href="#機能インターフェース一覧">UI一覧</a> •
   <a href="#デュアルトラック独立アップデート機構">更新機構</a> •
   <a href="#開発アクティビティ">開発状況</a> •
@@ -91,7 +92,7 @@
       <td width="25%"><b>リポジトリ容量</b><br><img src="https://img.shields.io/github/repo-size/wess09/AzurPilot-for-Android?style=flat-square&color=586069" alt="Repo Size"></td>
       <td width="25%"><b>主要開発言語</b><br><img src="https://img.shields.io/badge/Language-Kotlin%20%7C%20Shell-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Language"></td>
       <td width="25%"><b>権限昇格バックエンド</b><br><img src="https://img.shields.io/badge/Backend-Shizuku--m%20%7C%20Root-brightgreen?style=flat-square" alt="Backend"></td>
-      <td width="25%"><b>対象プラットフォーム</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
+      <td width="25%"><b>対象プラットフォーム</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64%20%2F%20x86__64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
     </tr>
     <tr>
       <td colspan="4">
@@ -162,7 +163,7 @@
 
 **AzurPilot for Android** は、デスクトップ環境で成熟した『アズールレーン』自動化アシスタントを、Android モバイル端末上で完全ネイティブ動作させることを目的としたプロジェクトです。
 
-APK パッケージ内に完全な Linux 実行環境（Ubuntu 24.04 ARM64）を内蔵し、軽量な PRoot コンテナ分離技術と組み合わせることで、**完全 Root 不要**の条件下で CPython、ビルド済み OCR モデル、およびローカル Web コンソールサービスを安定稼働させます。バックグラウンドの仮想ディスプレイとアクセシビリティを活用することで、スマートフォンのメイン画面でチャットやゲーム、日常操作を行いながら、バックグラウンドで何ら干渉されることなく自動出撃・巡航タスクを完了できます。
+APK パッケージ内に完全な Linux 実行環境（Ubuntu 24.04、arm64-v8a / x86_64 の 2 種類の Runtime をデバイス構成別に提供）を内蔵し、軽量な PRoot コンテナ分離技術と組み合わせることで、**完全 Root 不要**の条件下で CPython、ビルド済み OCR モデル、およびローカル Web コンソールサービスを安定稼働させます。バックグラウンドの仮想ディスプレイとアクセシビリティを活用することで、スマートフォンのメイン画面でチャットやゲーム、日常操作を行いながら、バックグラウンドで何ら干渉されることなく自動出撃・巡航タスクを完了できます。
 
 ---
 
@@ -311,7 +312,7 @@ graph TD
         Bridge["Shizuku-m / Root su 権限中継"]
     end
 
-    subgraph Container ["PRoot コンテナ分離層 (Ubuntu 24.04 ARM64)"]
+    subgraph Container ["PRoot コンテナ分離層 (Ubuntu 24.04 · arm64 / x86_64)"]
         PROOT["PRoot 仮想化エンジン (Root不要システムコール変換)"]
         ENV["CPython 3.14 実行環境\n(OpenCV / RapidOCR / NumPy / uv)"]
         CORE["AzurPilot 自動化スケジューリングエンジン本体"]
@@ -360,7 +361,7 @@ graph TD
     </tr>
     <tr>
       <td><b>CPU アーキテクチャ</b></td>
-      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a-blue?style=flat-square" alt="ARM64"></td>
+      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a%20%2F%20x86__64-blue?style=flat-square" alt="ARM64"></td>
       <td><img src="https://img.shields.io/badge/CPU-高性能マルチコア-blue?style=flat-square" alt="Multi-core"></td>
       <td>64 ビット Linux バイナリに依存するため、32 ビット端末は非対応</td>
     </tr>
@@ -396,7 +397,7 @@ graph TD
         <img src="https://img.shields.io/badge/ステップ-01-blue?style=flat-square" alt="Step 1"><br>
         <h4>パッケージの入手</h4>
       </div>
-      <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">最新リリース</a>から<b>完全版 APK</b>（Runtime イメージ内蔵）をダウンロードします。
+      <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">最新リリース</a>から<b>デバイスのアーキテクチャに合った完全版 APK</b>（arm64-v8a / x86_64、対応する Runtime イメージを内蔵）をダウンロードします。
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -429,7 +430,39 @@ graph TD
 > **MediaTek 搭載端末では[修正版 Shizuku-m](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a) を使用し、公式の 13.6.x は使わないでください。** 13.6 以降 Shizuku は特権サービスプロセスを `Application` で初期化するようになり、MediaTek が `LoadedApk.makeApplication` に注入したリソース先読みコード（`procName` が null → NPE）を踏み、プロセスが即座に `System.exit(1)` します。症状は「Shizuku は認可済みで binder も到達可能なのに、特権サービスが必ずタイムアウトし、`debug/` 配下に `service_boot_debug.log` が生成されない」というものです。公式で確認済みですが未修正のままです（[#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)）。修正版は 13.6 以前の Context-only 経路へフォールバックします。
 
 > [!IMPORTANT]
-> **完全版 APK** は Runtime を内蔵しており、初回起動時にローカルで展開するためネットワークは不要です。**軽量差分 APK** は Runtime を含まず、初回起動時に GitHub から約 1GB を自動ダウンロードします（Wi-Fi 環境を推奨）。その後の Android アプリ本体のみの更新では、軽量差分 APK を上書きインストールするだけで、既存の Runtime を再利用できます。
+> **完全版 APK** は Runtime を内蔵しており、初回起動時にローカルで展開するためネットワークは不要です。**軽量差分 APK** は Runtime を含まず、初回起動時に GitHub からデバイスのアーキテクチャに対応した約 1GB の Runtime を自動ダウンロードします（Wi-Fi 環境を推奨。マルチミラー・マルチスレッド分割ダウンロードに対応し、設定でダウンロード元を選択できます）。その後の Android アプリ本体のみの更新では、軽量差分 APK を上書きインストールするだけで、既存の Runtime を再利用できます。
+
+---
+
+## アプリプレビュー
+
+#### 简体中文
+
+| | ホーム | AzurPilot | 設定 | 仮想スクリーン |
+|:---:|:---:|:---:|:---:|:---:|
+| **ダーク** | <img src="docs/screenshots/zh-CN-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-virtual-screen.jpg" width="260"/> |
+| **ライト** | <img src="docs/screenshots/zh-CN-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-virtual-screen.jpg" width="260"/> |
+
+#### 繁體中文
+
+| | ホーム | AzurPilot | 設定 | 仮想スクリーン |
+|:---:|:---:|:---:|:---:|:---:|
+| **ダーク** | <img src="docs/screenshots/zh-TW-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-virtual-screen.jpg" width="260"/> |
+| **ライト** | <img src="docs/screenshots/zh-TW-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-virtual-screen.jpg" width="260"/> |
+
+#### English
+
+| | ホーム | AzurPilot | 設定 | 仮想スクリーン |
+|:---:|:---:|:---:|:---:|:---:|
+| **ダーク** | <img src="docs/screenshots/en-dark-home.jpg" width="260"/> | <img src="docs/screenshots/en-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/en-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/en-dark-virtual-screen.jpg" width="260"/> |
+| **ライト** | <img src="docs/screenshots/en-light-home.jpg" width="260"/> | <img src="docs/screenshots/en-light-overview.jpg" width="260"/> | <img src="docs/screenshots/en-light-settings.jpg" width="260"/> | <img src="docs/screenshots/en-light-virtual-screen.jpg" width="260"/> |
+
+#### 日本語
+
+| | ホーム | AzurPilot | 設定 | 仮想スクリーン |
+|:---:|:---:|:---:|:---:|:---:|
+| **ダーク** | <img src="docs/screenshots/ja-dark-home.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-virtual-screen.jpg" width="260"/> |
+| **ライト** | <img src="docs/screenshots/ja-light-home.jpg" width="260"/> | <img src="docs/screenshots/ja-light-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-light-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-light-virtual-screen.jpg" width="260"/> |
 
 ---
 
@@ -464,9 +497,9 @@ graph TD
       <td><img src="https://img.shields.io/badge/状態-スケジューラ-purple?style=flat-square" alt="Schedule"></td>
     </tr>
     <tr>
-      <td><b>AzurPilot WebUI</b></td>
-      <td>React コンソールをそのまま内蔵。出撃海域、艦隊編成、委託・補給、建造などの詳細設定。</td>
-      <td>シームレスな WebView 直接連携</td>
+      <td><b>AzurPilot コンソール</b></td>
+      <td>アプリ内ネイティブ コンソール：タスク設定、インスタンス管理、リアルタイム ログ、統計ダッシュボード、Runtime 更新。UI は上流スキーマから自動生成。</td>
+      <td>ネイティブ描画、切り替え不要</td>
       <td><img src="https://img.shields.io/badge/状態-コアエンジン-61DAFB?style=flat-square" alt="Engine"></td>
     </tr>
     <tr>
@@ -559,7 +592,7 @@ graph TD
       <td width="33%">
         <b>自動ビルド (CI/CD)</b><br>
         <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="CI"><br>
-        <small>ARM64 Runner による自動検証</small>
+        <small>ネイティブ Runner マトリクスによる自動検証</small>
       </td>
       <td width="33%">
         <b>最新コミット</b><br>
@@ -604,7 +637,7 @@ graph TD
 ```
 
 - **開発ツール標準**：Android Gradle Plugin 8.x、Kotlin 2.x、Jetpack Compose Material 3。
-- **自動ビルドフロー**：GitHub Actions ARM64 Runner 上で Ubuntu 24.04 イメージの最適化、uv による依存ライブラリ導入、フロントエンドビルド、高圧縮 xz アーカイブ化を実行。
+- **自動ビルドフロー**：GitHub Actions のネイティブ Runner マトリクス（arm64 / x86_64）上で Ubuntu 24.04 イメージの最適化、uv による依存ライブラリ導入、フロントエンドビルド、高圧縮 xz アーカイブ化を実行し、構成ごとに成果物を出力・公開。
 - **署名セキュリティ**：本番 APK 署名は GitHub Actions Secrets で安全に管理され、改ざんを防止。
 
 ---
@@ -615,7 +648,7 @@ graph TD
 
 | コンポーネント | ライセンス | 役割 |
 | :--- | :--- | :--- |
-| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | ARM64 Linux コンテナ基本イメージ |
+| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | 構成別にビルドされた Linux コンテナ基本イメージ（arm64 / amd64） |
 | **PRoot** | <img src="https://img.shields.io/badge/License-GPL--2.0-blue?style=flat-square" alt="GPL-2.0"> | Root不要ユーザ空間システムコールエミュレーション |
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | 高速なモダン Python パッケージマネージャー |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | コアインタープリタ実行環境 |

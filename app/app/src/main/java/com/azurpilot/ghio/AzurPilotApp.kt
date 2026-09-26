@@ -24,6 +24,7 @@ import com.azurpilot.ghio.proot.AzurPilotGateway
 import com.azurpilot.ghio.proot.AzurPilotRunController
 import com.azurpilot.ghio.service.HostState
 import com.azurpilot.ghio.settings.AppSettingsManager
+import com.azurpilot.ghio.update.ReleaseDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,6 +50,8 @@ class AzurPilotApp : Application() {
         super.onCreate()
         AppPaths.init(this)
         CrashHandler().install()
+        // okdownload 下载引擎（Release/Runtime 下载共用）；首次下载前必须完成装配
+        ReleaseDownloader.init(this)
         val app = this
         val koin = startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.DEBUG else Level.NONE)

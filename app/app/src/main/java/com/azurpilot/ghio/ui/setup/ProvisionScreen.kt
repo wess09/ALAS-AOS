@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.azurpilot.ghio.R
 import com.azurpilot.ghio.provision.ProvisionState
 import com.azurpilot.ghio.theme.AppTokens
-import com.azurpilot.ghio.ui.components.AppSingleChoiceFlow
+import com.azurpilot.ghio.ui.components.MirrorSourcePicker
 
 /**
  * 首启 rootfs 部署页：未完成时整屏接管（AppRoot 的门）
@@ -33,8 +33,8 @@ fun ProvisionScreen(
     state: ProvisionState,
     onRetry: () -> Unit,
     onSkip: (() -> Unit)?,
-    useMirror: Boolean,
-    onUseMirrorChange: (Boolean) -> Unit,
+    mirrorId: String,
+    onMirrorChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -137,13 +137,9 @@ fun ProvisionScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(AppTokens.Spacing.sm))
-                AppSingleChoiceFlow(
-                    options = listOf(
-                        false to stringResource(R.string.provision_source_direct),
-                        true to stringResource(R.string.provision_source_mirror),
-                    ),
-                    selected = useMirror,
-                    onSelect = onUseMirrorChange,
+                MirrorSourcePicker(
+                    selected = mirrorId,
+                    onSelect = onMirrorChange,
                     arrangement = Alignment.CenterHorizontally,
                 )
                 Spacer(Modifier.height(AppTokens.Spacing.sm))

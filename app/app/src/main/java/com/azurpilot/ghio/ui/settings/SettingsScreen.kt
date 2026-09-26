@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,6 +40,8 @@ import com.azurpilot.ghio.settings.SettingsIntent
 import com.azurpilot.ghio.settings.SettingsUiState
 import com.azurpilot.ghio.theme.AppTokens
 import androidx.compose.material3.Button
+import com.azurpilot.ghio.ui.components.MirrorSourcePicker
+import com.azurpilot.ghio.update.ReleaseUrls
 import com.azurpilot.ghio.proot.AzurPilotRepository
 import com.azurpilot.ghio.provision.RootfsProvisioner
 import com.azurpilot.ghio.settings.AppSettingsManager
@@ -316,7 +319,8 @@ private fun RuntimeCard(
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
     val updateState by updateManager.state.collectAsStateWithLifecycle()
-    val useGithubMirror by settings.useGithubMirror.collectAsStateWithLifecycle()
+    val githubMirror by settings.githubMirror.collectAsStateWithLifecycle()
+    val githubMirrorCustom by settings.githubMirrorCustom.collectAsStateWithLifecycle()
     val installedVersion = provisioner.installedVersion()
     AppCard(title = stringResource(R.string.settings_runtime), collapsible = true) {
         AppInfoRow(
@@ -345,15 +349,32 @@ private fun RuntimeCard(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        AppLabeledControlRow(
-            label = stringResource(R.string.settings_github_mirror),
-            trailing = {
-                Switch(
-                    checked = useGithubMirror,
-                    onCheckedChange = { enabled -> scope.launch { settings.setUseGithubMirror(enabled) } },
-                )
-            },
+        Text(
+            text = stringResource(R.string.settings_github_mirror),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        MirrorSourcePicker(
+            selected = githubMirror,
+            onSelect = { mirror -> scope.launch { settings.setGithubMirror(mirror) } },
+        )
+        if (githubMirror == ReleaseUrls.CUSTOM) {
+            // 草稿以盘上值为准重新同步；点保存才落盘，避免每敲一个字符写一次 DataStore
+            var customDraft by remember(githubMirrorCustom) { mutableStateOf(githubMirrorCustom) }
+            OutlinedTextField(
+                value = customDraft,
+                onValueChange = { customDraft = it },
+                label = { Text(stringResource(R.string.settings_mirror_custom_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TextButton(
+                enabled = customDraft != githubMirrorCustom,
+                onClick = { scope.launch { settings.setGithubMirrorCustom(customDraft) } },
+            ) {
+                Text(stringResource(R.string.settings_mirror_custom_save))
+            }
+        }
         Text(
             text = stringResource(R.string.settings_github_mirror_desc),
             style = MaterialTheme.typography.bodySmall,

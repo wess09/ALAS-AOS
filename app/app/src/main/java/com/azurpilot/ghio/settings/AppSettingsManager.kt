@@ -4,11 +4,13 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.azurpilot.ghio.AppDispatchers
 import com.azurpilot.ghio.domain.OverlayControlMode
 import com.azurpilot.ghio.domain.RemoteBackend
 import com.azurpilot.ghio.domain.RunMode
+import com.azurpilot.ghio.update.ReleaseUrls
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -70,10 +72,14 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
     private val _autoCleanLogs = MutableStateFlow(defaults.autoCleanLogs.toBoolean())
     override val autoCleanLogs: StateFlow<Boolean> = _autoCleanLogs.asStateFlow()
 
-    private val _useGithubMirror = MutableStateFlow(defaults.useGithubMirror.toBoolean())
-    val useGithubMirror: StateFlow<Boolean> = _useGithubMirror.asStateFlow()
+    private val _githubMirror = MutableStateFlow(defaults.githubMirror)
+    val githubMirror: StateFlow<String> = _githubMirror.asStateFlow()
+
+    private val _githubMirrorCustom = MutableStateFlow(defaults.githubMirrorCustom)
+    val githubMirrorCustom: StateFlow<String> = _githubMirrorCustom.asStateFlow()
 
     init {
+        migrateLegacyMirrorSwitch()
         // 一处 collect 铺开到各字段，而不是每个字段各起一条 stateIn：
         // 那样 loaded 置位与各字段拿到首值是两件并发的事，早读的人仍可能读到默认值
         scope.launch {
@@ -85,9 +91,29 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
                 _overlayControlMode.value = parseOverlayMode(s.overlayControlMode)
                 _screenSaverEnabled.value = s.screenSaverEnabled.toBoolean()
                 _autoCleanLogs.value = s.autoCleanLogs.toBoolean()
-                _useGithubMirror.value = s.useGithubMirror.toBoolean()
+                _githubMirror.value = s.githubMirror
+                _githubMirrorCustom.value = s.githubMirrorCustom
                 // 必须是最后一行：置位即宣告上面全部就位
                 _loaded.value = true
+            }
+        }
+    }
+
+    /**
+     * 旧版是布尔镜像开关（useGithubMirror=true 即 ghproxy.net）；新键不存在而旧开关为 true
+     * 时迁到对应镜像。迁移先于上面的 collect 完成（同一 scope 顺序 launch）。
+     */
+    private fun migrateLegacyMirrorSwitch() {
+        scope.launch {
+            with(AppSettingsSchema) {
+                context.dataStore.edit { prefs ->
+                    // 生成键名走 camelToSnakeCase：旧字段 useGithubMirror 落盘为 use_github_mirror
+                    if (prefs[githubMirror] == null &&
+                        prefs[stringPreferencesKey("use_github_mirror")] == "true"
+                    ) {
+                        prefs[githubMirror] = ReleaseUrls.MIRRORS.first()
+                    }
+                }
             }
         }
     }
@@ -120,8 +146,12 @@ class AppSettingsManager(private val context: Context) : AppSettingsGateway {
         context.dataStore.edit { it[autoCleanLogs] = enabled.toString() }
     }
 
-    suspend fun setUseGithubMirror(enabled: Boolean): Unit = with(AppSettingsSchema) {
-        context.dataStore.edit { it[useGithubMirror] = enabled.toString() }
+    suspend fun setGithubMirror(mirror: String): Unit = with(AppSettingsSchema) {
+        context.dataStore.edit { it[githubMirror] = mirror }
+    }
+
+    suspend fun setGithubMirrorCustom(prefix: String): Unit = with(AppSettingsSchema) {
+        context.dataStore.edit { it[githubMirrorCustom] = prefix }
     }
 
     /** 盘上是历史遗留或手改的非法值时回落默认，不让设置读取本身抛异常 */

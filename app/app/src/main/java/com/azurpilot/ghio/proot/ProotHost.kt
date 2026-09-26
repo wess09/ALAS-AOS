@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.Build
 import com.azurpilot.ghio.AppDispatchers
 import com.azurpilot.ghio.constant.AppPaths
+import com.azurpilot.ghio.provision.RuntimeArch
 import com.azurpilot.ghio.service.RunForegroundService
 import com.azurpilot.ghio.settings.AppSettingsManager
 import kotlinx.coroutines.CoroutineScope
@@ -132,9 +133,12 @@ class ProotHost(
     }
 
     private fun sanityCheck(): Boolean {
-        val primaryAbi = Build.SUPPORTED_ABIS.firstOrNull().orEmpty()
-        if (primaryAbi != "arm64-v8a") {
-            fail("需要原生 ARM64 设备；当前为 $primaryAbi，模拟器转译环境不支持 proot")
+        val primaryAbi = RuntimeArch.deviceAbi()
+        if (primaryAbi == null) {
+            fail(
+                "设备架构不受支持（${Build.SUPPORTED_ABIS.firstOrNull()}）；" +
+                    "proot 不做指令翻译，需要 ${RuntimeArch.SUPPORTED.joinToString(" 或 ")}",
+            )
             return false
         }
         val python = File(installDir, ".venv/bin/python")

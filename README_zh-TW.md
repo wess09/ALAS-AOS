@@ -23,7 +23,7 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=flat-square" alt="License: AGPL-3.0"></a>
   <a href="https://developer.android.com/about/versions/pie"><img src="https://img.shields.io/badge/Platform-Android%209.0%2B%20(API%2028%2B)-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Platform: Android 9.0+"></a>
-  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
+  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a%20%2F%20x86__64-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
   <a href="https://ubuntu.com/"><img src="https://img.shields.io/badge/Runtime-Ubuntu%2024.04%20LTS-E95420.svg?style=flat-square&logo=ubuntu&logoColor=white" alt="Runtime: Ubuntu 24.04"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.14-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python 3.14"></a>
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/badge/Packaging-uv-DE5FE9.svg?style=flat-square" alt="Packaging: uv"></a>
@@ -58,6 +58,7 @@
   <a href="#系統架構全景">系統架構</a> •
   <a href="#環境規格與相容性">環境規格</a> •
   <a href="#快速開始">快速開始</a> •
+  <a href="#應用程式預覽">應用程式預覽</a> •
   <a href="#功能介面一覽">功能介面</a> •
   <a href="#雙軌獨立更新機制">雙軌更新</a> •
   <a href="#研發活躍度">研發活躍</a> •
@@ -91,7 +92,7 @@
       <td width="25%"><b>程式碼庫容量</b><br><img src="https://img.shields.io/github/repo-size/wess09/AzurPilot-for-Android?style=flat-square&color=586069" alt="Repo Size"></td>
       <td width="25%"><b>主要語言</b><br><img src="https://img.shields.io/badge/Language-Kotlin%20%7C%20Shell-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Language"></td>
       <td width="25%"><b>提權執行方式</b><br><img src="https://img.shields.io/badge/Backend-Shizuku--m%20%7C%20Root-brightgreen?style=flat-square" alt="Backend"></td>
-      <td width="25%"><b>目標系統</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
+      <td width="25%"><b>目標系統</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64%20%2F%20x86__64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
     </tr>
     <tr>
       <td colspan="4">
@@ -162,7 +163,7 @@
 
 **AzurPilot for Android** 致力於將桌面端功能成熟的《碧藍航線》自動化助手完整移植至 Android 行動端原生執行。
 
-透過在 APK 安裝包內預置完整的 Linux 執行階段容器（Ubuntu 24.04 ARM64），結合輕量級 PRoot 容器隔離技術，實現了在 **完全免 Root** 條件下穩定執行 CPython、預編譯 OCR 演算法模型及本地 Web 控制台服務。借助背景虛擬螢幕與無障礙互動服務，使用者可以在手機主螢幕正常聊天、遊戲或辦公的同時，無感完成各項自動化巡航與出擊任務。
+透過在 APK 安裝包內預置完整的 Linux 執行階段容器（Ubuntu 24.04，依裝置架構提供 arm64-v8a 與 x86_64 兩種 Runtime），結合輕量級 PRoot 容器隔離技術，實現了在 **完全免 Root** 條件下穩定執行 CPython、預編譯 OCR 演算法模型及本地 Web 控制台服務。借助背景虛擬螢幕與無障礙互動服務，使用者可以在手機主螢幕正常聊天、遊戲或辦公的同時，無感完成各項自動化巡航與出擊任務。
 
 ---
 
@@ -311,7 +312,7 @@ graph TD
         Bridge["Shizuku-m / Root su 權限接入中繼"]
     end
 
-    subgraph Container ["PRoot 容器隔離層 (Ubuntu 24.04 ARM64)"]
+    subgraph Container ["PRoot 容器隔離層 (Ubuntu 24.04 · arm64 / x86_64)"]
         PROOT["PRoot 虛擬化引擎 (免 Root 系統呼叫對映)"]
         ENV["CPython 3.14 執行環境\n(OpenCV / RapidOCR / NumPy / uv)"]
         CORE["AzurPilot 自動化調度引擎本體"]
@@ -360,7 +361,7 @@ graph TD
     </tr>
     <tr>
       <td><b>處理器架構</b></td>
-      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a-blue?style=flat-square" alt="ARM64"></td>
+      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a%20%2F%20x86__64-blue?style=flat-square" alt="ARM64"></td>
       <td><img src="https://img.shields.io/badge/CPU-高效能多核心架構-blue?style=flat-square" alt="Multi-core"></td>
       <td>依賴 64 位元 Linux 二進位檔，不支援 32 位元設備</td>
     </tr>
@@ -396,7 +397,7 @@ graph TD
         <img src="https://img.shields.io/badge/步驟-01-blue?style=flat-square" alt="Step 1"><br>
         <h4>取得安裝包</h4>
       </div>
-      前往 <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">Releases 最新版本</a> 下載<b>完整版 APK</b>（安裝包包含預置 Runtime 映像檔）。
+      前往 <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">Releases 最新版本</a> 下載<b>與裝置架構相符的完整版 APK</b>（arm64-v8a / x86_64，安裝包包含對應架構的預置 Runtime）。
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -429,7 +430,39 @@ graph TD
 > **聯發科（MediaTek）裝置請使用本專案維護的[修正版 Shizuku-m](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a)，不要使用官方 13.6.x。** 官方 13.6 起改用 `Application` 初始化特權服務處理程序，會踩到聯發科注入在 `LoadedApk.makeApplication` 的資源預載程式碼（`procName` 為空 → NPE），處理程序隨即 `System.exit(1)`；表現為 Shizuku 已授權、binder 可達，但特權服務始終連線逾時，且 `debug/` 下不會產生 `service_boot_debug.log`。該問題官方已確認但至今未修正（[#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)），修正版在此基礎上回退到 13.6 之前的 Context-only 路徑。
 
 > [!IMPORTANT]
-> **完整版 APK** 內建 Runtime，首次啟動直接在本機解壓縮，無需連網；**輕量增量 APK** 不含 Runtime，首次啟動會自動從 GitHub 下載約 1GB 的 Runtime（建議在 Wi-Fi 環境下進行）。後續若僅有 Android 宿主程式碼更新，下載輕量增量 APK 直接覆蓋安裝即可，無需重新解壓 Runtime。
+> **完整版 APK** 內建 Runtime，首次啟動直接在本機解壓縮，無需連網；**輕量增量 APK** 不含 Runtime，首次啟動會自動從 GitHub 下載與裝置架構對應的約 1GB Runtime（建議在 Wi-Fi 環境下進行；下載支援多鏡像與多執行緒分段，可於設定中選擇下載來源）。後續若僅有 Android 宿主程式碼更新，下載輕量增量 APK 直接覆蓋安裝即可，無需重新解壓 Runtime。
+
+---
+
+## 應用程式預覽
+
+#### 簡體中文
+
+| | 主頁 | AzurPilot 總覽 | 設定 | 虛擬螢幕 |
+|:---:|:---:|:---:|:---:|:---:|
+| **暗色** | <img src="docs/screenshots/zh-CN-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-virtual-screen.jpg" width="260"/> |
+| **亮色** | <img src="docs/screenshots/zh-CN-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-virtual-screen.jpg" width="260"/> |
+
+#### 繁體中文
+
+| | 主頁 | AzurPilot 總覽 | 設定 | 虛擬螢幕 |
+|:---:|:---:|:---:|:---:|:---:|
+| **暗色** | <img src="docs/screenshots/zh-TW-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-virtual-screen.jpg" width="260"/> |
+| **亮色** | <img src="docs/screenshots/zh-TW-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-virtual-screen.jpg" width="260"/> |
+
+#### English
+
+| | 主頁 | AzurPilot 總覽 | 設定 | 虛擬螢幕 |
+|:---:|:---:|:---:|:---:|:---:|
+| **暗色** | <img src="docs/screenshots/en-dark-home.jpg" width="260"/> | <img src="docs/screenshots/en-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/en-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/en-dark-virtual-screen.jpg" width="260"/> |
+| **亮色** | <img src="docs/screenshots/en-light-home.jpg" width="260"/> | <img src="docs/screenshots/en-light-overview.jpg" width="260"/> | <img src="docs/screenshots/en-light-settings.jpg" width="260"/> | <img src="docs/screenshots/en-light-virtual-screen.jpg" width="260"/> |
+
+#### 日本語
+
+| | 主頁 | AzurPilot 總覽 | 設定 | 虛擬螢幕 |
+|:---:|:---:|:---:|:---:|:---:|
+| **暗色** | <img src="docs/screenshots/ja-dark-home.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-virtual-screen.jpg" width="260"/> |
+| **亮色** | <img src="docs/screenshots/ja-light-home.jpg" width="260"/> | <img src="docs/screenshots/ja-light-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-light-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-light-virtual-screen.jpg" width="260"/> |
 
 ---
 
@@ -464,9 +497,9 @@ graph TD
       <td><img src="https://img.shields.io/badge/狀態-計畫排程-purple?style=flat-square" alt="Schedule"></td>
     </tr>
     <tr>
-      <td><b>AzurPilot WebUI</b></td>
-      <td>完整呈現 React 控制台前端，細化出擊關卡、編隊策略、委託與資源收集、建造管理。</td>
-      <td>內嵌無縫 WebView 直連</td>
+      <td><b>AzurPilot 控制台</b></td>
+      <td>應用程式內原生控制台：任務配置、實例管理、即時日誌、統計看板與 Runtime 更新，介面依上游 schema 自動生成。</td>
+      <td>原生渲染、免跳轉直連</td>
       <td><img src="https://img.shields.io/badge/狀態-引擎大腦-61DAFB?style=flat-square" alt="Engine"></td>
     </tr>
     <tr>
@@ -559,7 +592,7 @@ graph TD
       <td width="33%">
         <b>自動化建置 (CI/CD)</b><br>
         <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="CI"><br>
-        <small>ARM64 Runner 持續驗證</small>
+        <small>原生 Runner 矩陣持續驗證</small>
       </td>
       <td width="33%">
         <b>最新提交紀錄</b><br>
@@ -604,7 +637,7 @@ graph TD
 ```
 
 - **編譯環境規範**：Android Gradle Plugin 8.x、Kotlin 2.x、Jetpack Compose Material 3。
-- **自動化建置串流**：基於 GitHub Actions ARM64 Runner 執行 Ubuntu 24.04 映像檔裁剪、uv 相依預先安裝、前端打包與 xz 高壓縮封存。
+- **自動化建置串流**：基於 GitHub Actions 原生 Runner 矩陣（arm64 / x86_64）執行 Ubuntu 24.04 映像檔裁剪、uv 相依預先安裝、前端打包與 xz 高壓縮封存，並依架構分別出包與發布。
 - **發布簽名安全**：正式簽名金鑰妥善保管於 GitHub Actions Secrets 中，杜絕簽名外洩與未經授權之竄改。
 
 ---
@@ -615,7 +648,7 @@ graph TD
 
 | 依賴組件 | 授權識別標籤 | 職責定位 |
 | :--- | :--- | :--- |
-| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | ARM64 Linux 容器基礎映像檔 |
+| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | 依架構建置的 Linux 容器基礎映像檔（arm64 / amd64） |
 | **PRoot** | <img src="https://img.shields.io/badge/License-GPL--2.0-blue?style=flat-square" alt="GPL-2.0"> | 免 Root 使用者空間系統呼叫仿真引擎 |
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | 現代高效能 Python 套件管理工具 |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | 核心直譯器執行環境 |

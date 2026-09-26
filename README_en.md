@@ -23,7 +23,7 @@ This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS),
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=flat-square" alt="License: AGPL-3.0"></a>
   <a href="https://developer.android.com/about/versions/pie"><img src="https://img.shields.io/badge/Platform-Android%209.0%2B%20(API%2028%2B)-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Platform: Android 9.0+"></a>
-  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
+  <a href="https://en.wikipedia.org/wiki/AArch64"><img src="https://img.shields.io/badge/Architecture-ARM64--v8a%20%2F%20x86__64-E10098.svg?style=flat-square&logo=arm&logoColor=white" alt="Arch: ARM64"></a>
   <a href="https://ubuntu.com/"><img src="https://img.shields.io/badge/Runtime-Ubuntu%2024.04%20LTS-E95420.svg?style=flat-square&logo=ubuntu&logoColor=white" alt="Runtime: Ubuntu 24.04"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.14-3776AB.svg?style=flat-square&logo=python&logoColor=white" alt="Python 3.14"></a>
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/badge/Packaging-uv-DE5FE9.svg?style=flat-square" alt="Packaging: uv"></a>
@@ -58,6 +58,7 @@ This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS),
   <a href="#system-architecture">Architecture</a> •
   <a href="#specifications--compatibility">Specs</a> •
   <a href="#quick-start">Quick Start</a> •
+  <a href="#app-previews">App Previews</a> •
   <a href="#ui-showcase">UI Showcase</a> •
   <a href="#dual-track-independent-updates">Dual-Track Updates</a> •
   <a href="#development-activity">Activity</a> •
@@ -91,7 +92,7 @@ This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS),
       <td width="25%"><b>Repository Size</b><br><img src="https://img.shields.io/github/repo-size/wess09/AzurPilot-for-Android?style=flat-square&color=586069" alt="Repo Size"></td>
       <td width="25%"><b>Languages</b><br><img src="https://img.shields.io/badge/Language-Kotlin%20%7C%20Shell-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Language"></td>
       <td width="25%"><b>Privilege Backend</b><br><img src="https://img.shields.io/badge/Backend-Shizuku--m%20%7C%20Root-brightgreen?style=flat-square" alt="Backend"></td>
-      <td width="25%"><b>Target System</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
+      <td width="25%"><b>Target System</b><br><img src="https://img.shields.io/badge/Android-API%2028%2B%20(ARM64%20%2F%20x86__64)-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android Target"></td>
     </tr>
     <tr>
       <td colspan="4">
@@ -162,7 +163,7 @@ This repository is forked from [ALAS-AOS](https://github.com/Shinarin/ALAS-AOS),
 
 **AzurPilot for Android** is dedicated to bringing the mature, desktop-grade *Azur Lane* automation assistant directly to native Android devices.
 
-By embedding a full Linux runtime container (Ubuntu 24.04 ARM64) inside the APK package, coupled with lightweight PRoot container isolation, it achieves **completely Root-free** and reliable execution of CPython, precompiled OCR models, and local WebUI services. Leveraging background virtual displays and accessibility services, users can chat, play games, or work on their device's main screen without interruption while automated sortie tasks run seamlessly in the background.
+By embedding a full Linux runtime container (Ubuntu 24.04, shipped per device architecture as arm64-v8a and x86_64 Runtime variants) inside the APK package, coupled with lightweight PRoot container isolation, it achieves **completely Root-free** and reliable execution of CPython, precompiled OCR models, and local WebUI services. Leveraging background virtual displays and accessibility services, users can chat, play games, or work on their device's main screen without interruption while automated sortie tasks run seamlessly in the background.
 
 ---
 
@@ -311,7 +312,7 @@ graph TD
         Bridge["Shizuku-m / Root su Privilege Relay"]
     end
 
-    subgraph Container ["PRoot Sandbox Layer (Ubuntu 24.04 ARM64)"]
+    subgraph Container ["PRoot Sandbox Layer (Ubuntu 24.04 · arm64 / x86_64)"]
         PROOT["PRoot Virtualization Engine (Syscall Mapping)"]
         ENV["CPython 3.14 Runtime\n(OpenCV / RapidOCR / NumPy / uv)"]
         CORE["AzurPilot Automation Scheduling Engine"]
@@ -360,7 +361,7 @@ graph TD
     </tr>
     <tr>
       <td><b>Processor Architecture</b></td>
-      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a-blue?style=flat-square" alt="ARM64"></td>
+      <td><img src="https://img.shields.io/badge/CPU-ARM64--v8a%20%2F%20x86__64-blue?style=flat-square" alt="ARM64"></td>
       <td><img src="https://img.shields.io/badge/CPU-High%20Efficiency%20Multi--Core-blue?style=flat-square" alt="Multi-core"></td>
       <td>Relies on 64-bit Linux binaries; 32-bit devices are not supported</td>
     </tr>
@@ -396,7 +397,7 @@ graph TD
         <img src="https://img.shields.io/badge/Step-01-blue?style=flat-square" alt="Step 1"><br>
         <h4>Get the APK</h4>
       </div>
-      Go to <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">Releases</a> and download the <b>Full APK</b> (includes the pre-bundled Runtime rootfs image).
+      Go to <a href="https://github.com/wess09/AzurPilot-for-Android/releases/latest">Releases</a> and download the <b>Full APK matching your device architecture</b> (arm64-v8a / x86_64; each bundles its pre-built Runtime rootfs image).
     </td>
     <td width="25%" valign="top">
       <div align="center">
@@ -429,7 +430,39 @@ graph TD
 > **On MediaTek devices use the [patched Shizuku-m build](https://github.com/wess09/shizuku-m/releases/tag/v13.6.0-m2.r1093.bcb2b62a), not the official 13.6.x.** Since 13.6, Shizuku initializes the privileged user-service process with an `Application`, which hits MediaTek's resource-preload hook injected into `LoadedApk.makeApplication` (`procName` is null → NPE) and the process immediately calls `System.exit(1)`. The symptom is that Shizuku is authorized and its binder is reachable, yet the privileged service always times out, and `service_boot_debug.log` is never written under `debug/`. Acknowledged by the official project but still unfixed ([#1198](https://github.com/RikkaApps/Shizuku/issues/1198) / [#1171](https://github.com/RikkaApps/Shizuku/issues/1171)); the patched build falls back to the pre-13.6 Context-only path.
 
 > [!IMPORTANT]
-> The **Full APK** bundles Runtime and unpacks it locally on first launch, with no network needed; the **Incremental APK** carries no Runtime and downloads about 1GB from GitHub on first launch (Wi-Fi recommended). For later host-only updates, install the incremental APK over the existing app to reuse the Runtime already on disk.
+> The **Full APK** bundles Runtime and unpacks it locally on first launch, with no network needed; the **Incremental APK** carries no Runtime and downloads the ~1GB Runtime for your device architecture from GitHub on first launch (Wi-Fi recommended; multi-mirror and multi-threaded segmented download supported, configurable in Settings). For later host-only updates, install the incremental APK over the existing app to reuse the Runtime already on disk.
+
+---
+
+## App Previews
+
+#### 简体中文
+
+| | Home | AzurPilot | Settings | Virtual Display |
+|:---:|:---:|:---:|:---:|:---:|
+| **Dark** | <img src="docs/screenshots/zh-CN-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-dark-virtual-screen.jpg" width="260"/> |
+| **Light** | <img src="docs/screenshots/zh-CN-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-CN-light-virtual-screen.jpg" width="260"/> |
+
+#### 繁體中文
+
+| | Home | AzurPilot | Settings | Virtual Display |
+|:---:|:---:|:---:|:---:|:---:|
+| **Dark** | <img src="docs/screenshots/zh-TW-dark-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-dark-virtual-screen.jpg" width="260"/> |
+| **Light** | <img src="docs/screenshots/zh-TW-light-home.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-overview.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-settings.jpg" width="260"/> | <img src="docs/screenshots/zh-TW-light-virtual-screen.jpg" width="260"/> |
+
+#### English
+
+| | Home | AzurPilot | Settings | Virtual Display |
+|:---:|:---:|:---:|:---:|:---:|
+| **Dark** | <img src="docs/screenshots/en-dark-home.jpg" width="260"/> | <img src="docs/screenshots/en-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/en-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/en-dark-virtual-screen.jpg" width="260"/> |
+| **Light** | <img src="docs/screenshots/en-light-home.jpg" width="260"/> | <img src="docs/screenshots/en-light-overview.jpg" width="260"/> | <img src="docs/screenshots/en-light-settings.jpg" width="260"/> | <img src="docs/screenshots/en-light-virtual-screen.jpg" width="260"/> |
+
+#### 日本語
+
+| | Home | AzurPilot | Settings | Virtual Display |
+|:---:|:---:|:---:|:---:|:---:|
+| **Dark** | <img src="docs/screenshots/ja-dark-home.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-dark-virtual-screen.jpg" width="260"/> |
+| **Light** | <img src="docs/screenshots/ja-light-home.jpg" width="260"/> | <img src="docs/screenshots/ja-light-overview.jpg" width="260"/> | <img src="docs/screenshots/ja-light-settings.jpg" width="260"/> | <img src="docs/screenshots/ja-light-virtual-screen.jpg" width="260"/> |
 
 ---
 
@@ -464,9 +497,9 @@ graph TD
       <td><img src="https://img.shields.io/badge/Status-Scheduler-purple?style=flat-square" alt="Schedule"></td>
     </tr>
     <tr>
-      <td><b>AzurPilot WebUI</b></td>
-      <td>Full React console for stage selection, fleet configurations, commissioning, and construction.</td>
-      <td>Seamless embedded WebView</td>
+      <td><b>AzurPilot Console</b></td>
+      <td>Native in-app console: task configuration, instance management, live logs, statistics dashboards, and Runtime updates — UI generated from the upstream schema.</td>
+      <td>Native rendering, no context switch</td>
       <td><img src="https://img.shields.io/badge/Status-Engine%20Core-61DAFB?style=flat-square" alt="Engine"></td>
     </tr>
     <tr>
@@ -559,7 +592,7 @@ To maximize stability and update flexibility, the host application and Linux run
       <td width="33%">
         <b>Automated CI/CD</b><br>
         <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="CI"><br>
-        <small>ARM64 Runner verification</small>
+        <small>Native runner matrix verification</small>
       </td>
       <td width="33%">
         <b>Latest Commit</b><br>
@@ -604,7 +637,7 @@ Adaptive dark/light mode Star History chart reflecting project growth:
 ```
 
 - **Build Tooling Standards**: Android Gradle Plugin 8.x, Kotlin 2.x, Jetpack Compose Material 3.
-- **Automated Pipeline**: GitHub Actions ARM64 Runner executes Ubuntu 24.04 slimming, uv dependency pre-installation, WebUI packaging, and high-ratio xz compression.
+- **Automated Pipeline**: a matrix of native GitHub Actions runners (arm64 / x86_64) executes Ubuntu 24.04 slimming, uv dependency pre-installation, WebUI packaging, and high-ratio xz compression, publishing one artifact per architecture.
 - **Release Security**: Production signing keys are secured via GitHub Actions Secrets to prevent tampering.
 
 ---
@@ -615,7 +648,7 @@ Adaptive dark/light mode Star History chart reflecting project growth:
 
 | Component | License Badge | Role |
 | :--- | :--- | :--- |
-| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | Base ARM64 Linux container environment |
+| **Ubuntu Base 24.04** | <img src="https://img.shields.io/badge/License-Canonical-lightgrey?style=flat-square" alt="Canonical"> | Per-architecture Linux container base (arm64 / amd64) |
 | **PRoot** | <img src="https://img.shields.io/badge/License-GPL--2.0-blue?style=flat-square" alt="GPL-2.0"> | Rootless userspace syscall emulation engine |
 | **uv** | <img src="https://img.shields.io/badge/License-Apache--2.0%20%7C%20MIT-brightgreen?style=flat-square" alt="uv License"> | High-performance modern Python package manager |
 | **CPython 3.14** | <img src="https://img.shields.io/badge/License-PSF--2.0-blue?style=flat-square" alt="PSF-2.0"> | Core Python execution runtime |

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# 在 GitHub Actions ubuntu-24.04-arm 上构建 AzurPilot Android rootfs。
+# 构建 AzurPilot Android rootfs。目标架构由 AZURPILOT_ABI 决定：
+#   arm64-v8a（默认）→ Ubuntu arm64 base，需原生 ARM64 runner（ubuntu-24.04-arm）
+#   x86_64           → Ubuntu amd64 base，需原生 x86_64 runner（ubuntu-24.04）
+# proot 不做指令翻译，rootfs 与设备 ABI 必须一一对应；CI 按矩阵各出一份并分别发布。
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -8,13 +11,20 @@ ROOTFS_DIR="$WORK_DIR/rootfs"
 DIST_DIR="${DIST_DIR:-$REPO_ROOT/dist}"
 SOURCE_REPO="${AZURPILOT_REPO:-https://github.com/wess09/AzurPilot.git}"
 SOURCE_REF="${AZURPILOT_REF:-1841cb1941751a81ab70668b4d2383c369c4506e}"
-BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz}"
+TARGET_ABI="${AZURPILOT_ABI:-arm64-v8a}"
+
+case "$TARGET_ABI" in
+    arm64-v8a) UBUNTU_ARCH=arm64;  HOST_ARCH=aarch64 ;;
+    x86_64)    UBUNTU_ARCH=amd64;  HOST_ARCH=x86_64 ;;
+    *) echo "AZURPILOT_ABI 仅支持 arm64-v8a / x86_64，收到：$TARGET_ABI" >&2; exit 1 ;;
+esac
+BASE_URL="${UBUNTU_BASE:-https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-$UBUNTU_ARCH.tar.gz}"
 
 if [[ $(id -u) -ne 0 ]]; then
     # setup-node/setup-uv 在 runner 的工具目录注入 PATH；sudo 默认 secure_path 会丢掉它们。
-    exec sudo -E env "PATH=$PATH" bash "$0" "$@"
+    exec sudo -E env "PATH=$PATH" "AZURPILOT_ABI=$TARGET_ABI" bash "$0" "$@"
 fi
-[[ $(uname -m) == aarch64 ]] || { echo '需要原生 ARM64 runner' >&2; exit 1; }
+[[ $(uname -m) == "$HOST_ARCH" ]] || { echo "构建 $TARGET_ABI rootfs 需要原生 $HOST_ARCH runner，当前 $(uname -m)" >&2; exit 1; }
 command -v uv >/dev/null && command -v npm >/dev/null || {
     echo '构建环境需要 uv 和 Node.js/npm' >&2; exit 1;
 }
@@ -47,7 +57,7 @@ touch "$ROOTFS_DIR/etc/resolv.conf"
 bind_mount "$WORK_DIR/resolv.conf" "$ROOTFS_DIR/etc/resolv.conf"
 for d in dev dev/pts proc sys; do bind_mount "/$d" "$ROOTFS_DIR/$d"; done
 
-# uv 的下载缓存外移到宿主：内容寻址，CI 可跨提交复用，省掉每次重下 arm64 wheel。
+# uv 的下载缓存外移到宿主：内容寻址，CI 可跨提交复用，省掉每次重下平台 wheel。
 # 只能外移 uv-cache（打包前本来就要删）；UV_PYTHON_INSTALL_DIR 要随 rootfs 出厂，动不得。
 mkdir -p "$WORK_DIR/uv-cache"
 bind_mount "$WORK_DIR/uv-cache" "$ROOTFS_DIR/opt/uv-cache"
@@ -106,6 +116,7 @@ guest /bin/sh -c 'cd /opt/azurpilot && AZURPILOT_ANDROID=1 .venv/bin/python -c "
 mkdir -p "$ROOTFS_DIR/opt/azurpilot/log"
 
 SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_REPO="$SOURCE_REPO" REPO_ROOT="$REPO_ROOT" \
+    TARGET_ABI="$TARGET_ABI" \
     ROOTFS_DIR="$ROOTFS_DIR" python3 - <<'PY'
 import datetime, hashlib, json, os, pathlib, subprocess
 root = pathlib.Path(os.environ['ROOTFS_DIR']) / 'opt/azurpilot'
@@ -128,6 +139,7 @@ manifest = {
     'android_host_commit': host_commit,
     'azurpilot_repo': os.environ['SOURCE_REPO'],
     'azurpilot_commit': os.environ['SOURCE_COMMIT'],
+    'rootfs_arch': os.environ['TARGET_ABI'],
     'android_api_version': 1,
     'uv_lock_sha256': sha(root / 'uv.lock'),
     'frontend_sha256': sha(root / 'frontend/dist/index.html'),

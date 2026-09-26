@@ -10,8 +10,10 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.register
 
-/** ABIs that ship; a debug build can narrow to one via build.debugAbi to save build time. this app ships arm64 only — the bundled rootfs is ARM64 Ubuntu and proot does not emulate */
-private val SHIPPED_ABIS = listOf("arm64-v8a")
+/** ABIs that ship; a debug build can narrow to one via build.debugAbi to save build time.
+ *  The bundled rootfs must match: release CI narrows per arch with -Pazurpilot.releaseAbi
+ *  and bundles that arch's rootfs (proot does not emulate). */
+private val SHIPPED_ABIS = listOf("arm64-v8a", "x86_64")
 
 /** The package every build sits under; a profile only appends to it, it never replaces it */
 private const val BASE_APPLICATION_ID = "com.azurpilot.ghio"
@@ -147,6 +149,13 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             }
 
             val debugAbis = listSetting("build.debugAbi").ifEmpty { SHIPPED_ABIS }
+            // Release 默认带全部 SHIPPED_ABIS；CI 的 per-arch full APK 用 -Pazurpilot.releaseAbi
+            // 收窄到单 ABI（配套打包该架构的 rootfs），增量包/通用包不传即全量
+            val releaseAbi = providers.gradleProperty("azurpilot.releaseAbi").orNull?.trim().orEmpty()
+            require(releaseAbi.isEmpty() || releaseAbi in SHIPPED_ABIS) {
+                "azurpilot.releaseAbi must be one of $SHIPPED_ABIS, got \"$releaseAbi\""
+            }
+            val releaseAbis = if (releaseAbi.isEmpty()) SHIPPED_ABIS else listOf(releaseAbi)
             android.buildTypes {
                 getByName("debug") {
                     ndk {
@@ -155,7 +164,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 }
                 getByName("release") {
                     ndk {
-                        abiFilters += SHIPPED_ABIS
+                        abiFilters += releaseAbis
                     }
                     // Resource shrinking stays off: it is a separate lever with its own
                     // failure mode, and nothing here has measured it yet

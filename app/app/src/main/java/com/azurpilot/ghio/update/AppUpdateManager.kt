@@ -16,7 +16,6 @@ import timber.log.Timber
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 
 data class AppUpdateInfo(
     val versionCode: Int,
@@ -47,7 +46,7 @@ class AppUpdateManager(
         scope.launch(AppDispatchers.IO) {
             _state.update { it.copy(checking = true, error = null) }
             runCatching {
-                val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+                val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, mirrorPrefix())
                 val body = requestText("$indexUrl?t=${System.currentTimeMillis()}")
                 val json = JSONObject(body)
                 // Latest 可先只发布 rootfs；正式签名尚未配置时没有可安装的 APK。
@@ -86,25 +85,14 @@ class AppUpdateManager(
                 // 安装器可能在 startActivity 返回后才读取文件。按 SHA 命名并保持内容不变，
                 // 避免再次点击更新时覆盖它，导致安装阶段的 APK v2 内容摘要不匹配。
                 val target = File(dir, "${info.apkSha256}.apk")
-                if (target.length() != info.apkSize || sha256(target) != info.apkSha256) {
+                if (target.length() != info.apkSize || sha256Hex(target) != info.apkSha256) {
                     val partial = File(dir, "${info.apkSha256}.apk.part")
                     partial.delete()
                     try {
-                        val downloadUrl = ReleaseUrls.selected(info.apkUrl, settings.useGithubMirror.value)
-                        val connection = URL(downloadUrl).openConnection() as HttpURLConnection
-                        try {
-                            connection.instanceFollowRedirects = true
-                            connection.connectTimeout = 20_000
-                            connection.readTimeout = 120_000
-                            require(connection.responseCode in 200..299) { "APK 下载失败（HTTP ${connection.responseCode}）" }
-                            val responseSize = connection.contentLengthLong
-                            require(responseSize <= 0 || responseSize == info.apkSize) { "APK 响应大小与更新清单不一致" }
-                            connection.inputStream.use { input -> partial.outputStream().use(input::copyTo) }
-                        } finally {
-                            connection.disconnect()
-                        }
+                        val downloadUrl = ReleaseUrls.selected(info.apkUrl, mirrorPrefix())
+                        ReleaseDownloader.download(downloadUrl, partial)
                         require(partial.length() == info.apkSize) { "APK 大小校验失败" }
-                        require(sha256(partial) == info.apkSha256) { "APK 校验失败" }
+                        require(sha256Hex(partial) == info.apkSha256) { "APK 校验失败" }
                         require(partial.renameTo(target)) { "无法保存更新安装包" }
                     } finally {
                         partial.delete()
@@ -121,6 +109,10 @@ class AppUpdateManager(
     }
 
     fun dismiss() = _state.update { it.copy(available = null, error = null) }
+
+    /** 当前生效的镜像前缀（与 Runtime 下载共用同一个源选择） */
+    private fun mirrorPrefix() =
+        ReleaseUrls.mirrorPrefix(settings.githubMirror.value, settings.githubMirrorCustom.value)
 
     private fun requestText(url: String): String {
         val connection = URL(url).openConnection() as HttpURLConnection
@@ -143,19 +135,6 @@ class AppUpdateManager(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(intent)
-    }
-
-    private fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { input ->
-            val buffer = ByteArray(1024 * 1024)
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                digest.update(buffer, 0, count)
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
 }

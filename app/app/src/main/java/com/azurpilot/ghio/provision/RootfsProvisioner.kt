@@ -1,9 +1,13 @@
 package com.azurpilot.ghio.provision
 
 import android.app.Application
+import android.os.Build
 import android.system.Os
 import com.azurpilot.ghio.settings.AppSettingsManager
+import com.azurpilot.ghio.update.DownloadAborted
+import com.azurpilot.ghio.update.ReleaseDownloader
 import com.azurpilot.ghio.update.ReleaseUrls
+import com.azurpilot.ghio.update.sha256Hex
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +25,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
 
@@ -30,7 +33,7 @@ sealed interface ProvisionState {
     /** 刚启动，正在比对内置版本与已装版本 */
     data object Checking : ProvisionState
 
-    /** 未内置 rootfs.tar.xz，且 Release 清单也没有可部署的 Runtime */
+    /** 未内置 rootfs.tar.xz（或架构不符），且 Release 清单也没有可部署的 Runtime */
     data object NotBundled : ProvisionState
 
     /** 磁盘余量不足（roadmap 硬校验：≥2GB） */
@@ -58,10 +61,13 @@ data class RuntimeUpdateCheck(
  *
  * - **必须内部 filesDir**：/sdcard 模拟存储不支持符号链接（ubuntu-base 有 740 个），
  *   且 noexec；内部 filesDir 是 Spike A 实证 proot 可用的位置（targetSdk 35）。
+ * - **按架构选 Runtime**：rootfs 按设备 ABI（[RuntimeArch]，proot 不做指令翻译）构建发布；
+ *   内置包的 `BUILD_MANIFEST.rootfs_arch` 与设备不符时跳过内置改走 Release，
+ *   Release 按 `latest.json.runtimes[abi]` 取对应架构的包。
  * - 版本闸门：assets 侧 `rootfs/BUILD_MANIFEST` 与 marker `files/rootfs/.provisioned`
- *   对版本号；不一致（或 python3  sanity 不过）就重解。升级=换新包重解，不做增量。
- * - 安装包未内置 rootfs（轻量 APK）时不报错，改为从 Release 拉 `rootfs.tar.xz`
- *   自动部署；两者共用同一条解压流水线。
+ *   对版本号；不一致（或 python3 sanity 不过）就重解。升级=换新包重解，不做增量。
+ * - 安装包未内置 rootfs（轻量 APK）时从 Release 拉 `rootfs-<abi>.tar.xz` 自动部署；
+ *   两者共用同一条解压流水线。
  * - 落盘走 `rootfs.tmp` 解完再换名，半途失败不留半拉子正式目录。
  * - busybox tar 解 ubuntu-base 硬链接前向引用必炸（M1-d 坑②），故用纯 Java
  *   commons-compress + tukaani xz 流式解；硬链接物化成副本，符号链接走 [Os.symlink]。
@@ -82,18 +88,25 @@ class RootfsProvisioner(
         if (_updateCheck.value.checking) return
         _updateCheck.value = RuntimeUpdateCheck(checking = true)
         scope.launch(Dispatchers.IO) {
-            runCatching { parseRuntime(fetchIndex()).version }
-                .onSuccess { version ->
-                    _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = version)
-                }.onFailure { error ->
-                    _updateCheck.value = RuntimeUpdateCheck(checked = true, error = error.message ?: "检查失败")
-                }
+            runCatching {
+                val abi = RuntimeArch.deviceAbi() ?: throw IOException("设备架构不受支持")
+                parseRuntime(fetchIndex(), abi)?.version
+            }.onSuccess { version ->
+                _updateCheck.value = RuntimeUpdateCheck(checked = true, latestVersion = version)
+            }.onFailure { error ->
+                _updateCheck.value = RuntimeUpdateCheck(checked = true, error = error.message ?: "检查失败")
+            }
         }
     }
 
-    /** Latest 清单；镜像开关与缓存绕过集中在这里。 */
+    /** 当前生效的镜像前缀；「换源」判断以 (镜像, 自定义前缀) 二元组整体比较 */
+    private fun mirrorPrefix() = ReleaseUrls.mirrorPrefix(settings.githubMirror.value, settings.githubMirrorCustom.value)
+
+    private fun sourceSwitched(prefix: String) = mirrorPrefix() != prefix
+
+    /** Latest 清单；镜像前缀与缓存绕过集中在这里。 */
     private fun fetchIndex(): JSONObject {
-        val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, settings.useGithubMirror.value)
+        val indexUrl = ReleaseUrls.selected(ReleaseUrls.INDEX, mirrorPrefix())
         val connection = URL("$indexUrl?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
         return try {
             connection.connectTimeout = 12_000
@@ -108,7 +121,25 @@ class RootfsProvisioner(
 
     private data class ReleaseRuntime(val version: String, val url: String, val sha256: String, val size: Long)
 
-    private fun parseRuntime(info: JSONObject): ReleaseRuntime {
+    /**
+     * 按 ABI 解析 Release 清单。新式清单是 `runtimes: { <abi>: {version,url,sha256,size} }`；
+     * 旧式扁平字段（rootfsVersion 等）描述的一直是 arm64 包，仅对 arm64 生效。
+     * 该架构没有可用 Runtime 时返回 null。
+     */
+    private fun parseRuntime(info: JSONObject, abi: String): ReleaseRuntime? {
+        info.optJSONObject("runtimes")?.let { runtimes ->
+            val entry = runtimes.optJSONObject(abi) ?: return null
+            val version = entry.optString("version")
+            val url = entry.optString("url")
+            val sha = entry.optString("sha256")
+            val size = entry.optLong("size", 0)
+            require(version.isNotBlank()) { "运行时版本缺失" }
+            require(url.startsWith(ReleaseUrls.BASE)) { "运行时下载地址无效" }
+            require(sha.matches(SHA256)) { "运行时校验值无效" }
+            require(size > 0) { "运行时大小无效" }
+            return ReleaseRuntime(version, url, sha, size)
+        }
+        if (abi != RuntimeArch.ARM64 || !info.has("rootfsVersion")) return null
         val version = info.getString("rootfsVersion")
         require(version.isNotBlank()) { "运行时版本缺失" }
         val url = info.getString("rootfsUrl")
@@ -166,13 +197,15 @@ class RootfsProvisioner(
                 check(previous.renameTo(rootDir)) { "cannot restore previous rootfs" }
             }
             if (!isInstalled()) {
-                val bundled = bundledVersion()
+                val deviceAbi = RuntimeArch.deviceAbi()
+                val bundled = deviceAbi?.let { bundledRuntime() }?.takeIf { it.arch == deviceAbi }
                 if (bundled != null) {
                     checkDisk()
-                    extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled)
+                    extract({ app.assets.open(ASSET_ARCHIVE) }, app.assets.openFd(ASSET_ARCHIVE).use { it.length }, bundled.version)
                 } else if (!installFromRelease()) {
-                    // 轻量包没内置 Runtime，Release 也没有可用的：只能等下一次发布或换完整版 APK。
-                    Timber.w("rootfs archive not bundled and release has no runtime")
+                    // 轻量包没内置 Runtime（或内置的是别的架构），Release 也没有本架构可用的：
+                    // 只能等下一次发布或换完整版 APK。
+                    Timber.w("no usable runtime: bundled arch=%s device=%s", bundled?.arch, deviceAbi)
                     _state.value = ProvisionState.NotBundled
                     return@withContext
                 }
@@ -189,25 +222,46 @@ class RootfsProvisioner(
         }
     }
 
-    private fun isInstalled(): Boolean =
-        installedVersion() == readExtractedVersion() &&
+    private fun isInstalled(): Boolean {
+        val deviceAbi = RuntimeArch.deviceAbi() ?: return false
+        val manifest = readManifest { it } ?: return false
+        val version = parseVersion(manifest) ?: return false
+        // 旧包没写 rootfs_arch，视为 arm64
+        if ((parseArch(manifest) ?: RuntimeArch.ARM64) != deviceAbi) return false
+        return installedVersion() == version &&
                 File(rootDir, PYTHON_REL).let {
                     it.isFile || java.nio.file.Files.isSymbolicLink(it.toPath())
                 }
-
-    /** 内置包版本；资产缺任一件都视为未内置 */
-    private fun bundledVersion(): String? = runCatching {
-        parseVersion(app.assets.open(ASSET_MANIFEST).bufferedReader().use { it.readText() })
-    }.getOrNull().also { version ->
-        if (version != null) app.assets.open(ASSET_ARCHIVE).use { }
     }
 
-    private fun readExtractedVersion(): String? = runCatching {
-        parseVersion(File(rootDir, MANIFEST_REL).readText())
+    private data class BundledRuntime(val version: String, val arch: String)
+
+    /** 内置包版本与架构；资产缺任一件都视为未内置。旧包没写 rootfs_arch，视为 arm64 */
+    private fun bundledRuntime(): BundledRuntime? {
+        val manifest = readManifest(fromAssets = true) { it } ?: return null
+        val version = parseVersion(manifest) ?: return null
+        app.assets.open(ASSET_ARCHIVE).use { }
+        return BundledRuntime(version, parseArch(manifest) ?: RuntimeArch.ARM64)
+    }
+
+    /**
+     * 读 BUILD_MANIFEST 文本：[fromAssets]=true 读 assets 侧，否则读已解包目录。
+     * 任何 IO 异常都以 null 收场（版本闸门视为不过）。
+     */
+    private inline fun <T> readManifest(fromAssets: Boolean = false, block: (String) -> T): T? = runCatching {
+        val text = if (fromAssets) {
+            app.assets.open(ASSET_MANIFEST).bufferedReader().use { it.readText() }
+        } else {
+            File(rootDir, MANIFEST_REL).readText()
+        }
+        block(text)
     }.getOrNull()
 
     private fun parseVersion(manifestJson: String): String? =
         VERSION_KEY.find(manifestJson)?.groupValues?.get(1)
+
+    private fun parseArch(manifestJson: String): String? =
+        ARCH_KEY.find(manifestJson)?.groupValues?.get(1)
 
     private fun checkDisk() {
         val free = app.filesDir.let { it.mkdirs(); it.usableSpace }
@@ -217,73 +271,51 @@ class RootfsProvisioner(
     /**
      * 从 Release 下载并部署 Runtime。
      *
-     * 清单里还没有 Runtime 字段（旧版 latest.json 只发布 APK）、或版本已与已装一致时
-     * 返回 false，调用方据此区分「没有可装的 Runtime」与「装了/失败了」。
+     * 清单里还没有 Runtime 字段（旧版 latest.json 只发布 APK）时返回 false；版本已与已装
+     * 一致时也返回 false。设备架构不受支持、清单里没有该架构的包时抛异常，调用方把
+     * 消息带进 Failed/错误态。
      */
-    private fun installFromRelease(): Boolean {
+    private suspend fun installFromRelease(): Boolean {
         val info = fetchIndex()
-        if (!info.has("rootfsVersion")) return false
-        val runtime = parseRuntime(info)
+        if (!info.has("rootfsVersion") && !info.has("runtimes")) return false
+        val abi = RuntimeArch.deviceAbi()
+            ?: throw IOException("设备架构不受支持：${Build.SUPPORTED_ABIS.firstOrNull()}，需要 ${RuntimeArch.SUPPORTED.joinToString()}")
+        val runtime = parseRuntime(info, abi)
+            ?: throw IOException("发布渠道暂无 $abi 的 Runtime")
         if (runtime.version == installedVersion()) return false
         checkDisk()
         val archive = File(app.filesDir, "rootfs-update.tar.xz")
         try {
-            // 下载途中换源就从零重来：两端内容同源，按清单大小/SHA 校验，重下没有额外风险。
+            // 下载途中换源就从头再来：不同镜像的断点续传对不上号，删掉重下没有额外风险。
             while (true) {
-                val useMirror = settings.useGithubMirror.value
+                val prefix = mirrorPrefix()
                 try {
-                    downloadArchive(runtime, useMirror, archive)
+                    downloadArchive(runtime, prefix, archive)
                     break
-                } catch (changed: SourceChanged) {
+                } catch (changed: DownloadAborted) {
+                    if (!sourceSwitched(prefix)) throw IOException("下载被中止", changed)
                     Timber.i("runtime download source changed, restarting")
                     archive.delete()
                     _state.value = ProvisionState.Downloading(0, runtime.size)
                 }
             }
+            check(sha256Hex(archive) == runtime.sha256) { "rootfs 下载校验失败" }
             extract({ archive.inputStream() }, runtime.size, runtime.version)
             Timber.i("rootfs installed from release: ${runtime.version}")
         } finally { archive.delete() }
         return true
     }
 
-    /** 当前连接上的源已被切换；调用方换新源重下。 */
-    private class SourceChanged : Exception("下载源已切换")
-
-    private fun sourceSwitched(useMirror: Boolean) = settings.useGithubMirror.value != useMirror
-
-    private fun downloadArchive(runtime: ReleaseRuntime, useMirror: Boolean, target: File) {
-        val downloadUrl = ReleaseUrls.selected(runtime.url, useMirror)
-        val connection = URL(downloadUrl).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = 20_000
-            connection.readTimeout = 120_000
-            check(connection.responseCode == 200) { "rootfs 下载 HTTP ${connection.responseCode}" }
-            val digest = MessageDigest.getInstance("SHA-256")
-            var done = 0L
-            connection.inputStream.use { input ->
-                target.outputStream().buffered().use { output ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    while (true) {
-                        // 连接卡住时 read 会阻塞到超时，这里保证用户一换源就尽快放弃当前连接
-                        if (sourceSwitched(useMirror)) throw SourceChanged()
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        done += count
-                        check(done <= runtime.size) { "rootfs 下载大小超出清单" }
-                        digest.update(buffer, 0, count)
-                        output.write(buffer, 0, count)
-                        _state.value = ProvisionState.Downloading(done, runtime.size)
-                    }
-                }
-            }
-            check(done == runtime.size && digest.digest().joinToString("") { "%02x".format(it) } == runtime.sha256) {
-                "rootfs 下载校验失败"
-            }
-        } catch (error: IOException) {
-            // 读超时多半是卡在连不上的源上；这期间用户换了源就按换源处理，别报成失败
-            if (sourceSwitched(useMirror)) throw SourceChanged()
-            throw error
-        } finally { connection.disconnect() }
+    /** okdownload 多连接下载，进度直推状态机；SHA-256 由调用方在完成后统一校验 */
+    private suspend fun downloadArchive(runtime: ReleaseRuntime, prefix: String, target: File) {
+        val downloadUrl = ReleaseUrls.selected(runtime.url, prefix)
+        ReleaseDownloader.download(
+            url = downloadUrl,
+            target = target,
+            shouldAbort = { sourceSwitched(prefix) },
+        ) { done, total ->
+            if (total > 0) _state.value = ProvisionState.Downloading(done, total)
+        }
     }
 
     // ── 解压 ──
@@ -429,6 +461,7 @@ class RootfsProvisioner(
         const val MIN_FREE_BYTES = 2L * 1024 * 1024 * 1024
         const val BUFFER_SIZE = 256 * 1024
         val VERSION_KEY = Regex(""""rootfs_version"\s*:\s*"([^"]+)"""")
+        val ARCH_KEY = Regex(""""rootfs_arch"\s*:\s*"([^"]+)"""")
         val SHA256 = Regex("[0-9a-f]{64}")
     }
 }

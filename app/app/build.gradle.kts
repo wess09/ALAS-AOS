@@ -46,12 +46,21 @@ android {
 val verifyBundledAzurPilotRuntime = tasks.register("verifyBundledAzurPilotRuntime") {
     val archive = layout.projectDirectory.file("src/main/assets/rootfs/rootfs.tar.xz")
     val manifest = layout.projectDirectory.file("src/main/assets/rootfs/BUILD_MANIFEST")
+    val releaseAbi = providers.gradleProperty("azurpilot.releaseAbi").orNull?.trim().orEmpty()
     doLast {
         check(archive.asFile.isFile && archive.asFile.length() > 0) {
-            "缺少 AzurPilot ARM64 rootfs.tar.xz；先运行 rootfs workflow 并复制构建产物"
+            "缺少 AzurPilot rootfs.tar.xz；先运行 rootfs workflow 并复制对应架构的构建产物"
         }
-        check(manifest.asFile.isFile && manifest.asFile.readText().contains("\"runtime\": \"azurpilot-android\"")) {
+        val manifestText = manifest.asFile.readText()
+        check(manifestText.contains("\"runtime\": \"azurpilot-android\"")) {
             "缺少与 AzurPilot rootfs 配套的 BUILD_MANIFEST"
+        }
+        // per-arch full APK：内置的 rootfs 架构必须与收窄的 ABI 一致，装到别的架构上跑不了
+        if (releaseAbi.isNotEmpty()) {
+            val arch = Regex("\"rootfs_arch\"\\s*:\\s*\"([^\"]+)\"").find(manifestText)?.groupValues?.get(1)
+            check(arch == releaseAbi) {
+                "BUILD_MANIFEST 的 rootfs_arch=$arch 与 -Pazurpilot.releaseAbi=$releaseAbi 不一致，内置了别的架构的 rootfs"
+            }
         }
     }
 }
@@ -94,6 +103,12 @@ dependencies {
 
     // AzurPilot /api/v1/ws 网关：WebSocket 富接口（实例/总览/自启/热更新）
     implementation(libs.okhttp)
+
+    // Release/Runtime 下载引擎：多连接分段 + 断点续传；okhttp 组件复用同一 OkHttp 栈，
+    // sqlite 组件把断点信息落盘（三者都在，OkDownload.Builder 默认经反射自动接入）
+    implementation(libs.okdownload)
+    implementation(libs.okdownload.okhttp)
+    implementation(libs.okdownload.sqlite)
 
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)

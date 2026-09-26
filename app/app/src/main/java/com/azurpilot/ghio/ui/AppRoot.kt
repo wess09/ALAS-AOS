@@ -145,7 +145,7 @@ fun AppRoot(
     // 首启 rootfs 部署的门：未 Ready 时整屏接管，tab/二级页都在门内
     val provisionState by provisioner.state.collectAsStateWithLifecycle()
     val runtimeCheck by provisioner.updateCheck.collectAsStateWithLifecycle()
-    val useGithubMirror by appSettings.useGithubMirror.collectAsStateWithLifecycle()
+    val githubMirror by appSettings.githubMirror.collectAsStateWithLifecycle()
     var provisionSkipped by remember { mutableStateOf(false) }
     var runtimePromptDismissed by rememberSaveable { mutableStateOf(false) }
     var applyingRuntimeUpdate by remember { mutableStateOf(false) }
@@ -317,8 +317,8 @@ fun AppRoot(
                     null
                 },
                 // 首启就得选源：直连不通的用户不该先撞一次超时
-                useMirror = useGithubMirror,
-                onUseMirrorChange = { enabled -> scope.launch { appSettings.setUseGithubMirror(enabled) } },
+                mirrorId = githubMirror,
+                onMirrorChange = { mirror -> scope.launch { appSettings.setGithubMirror(mirror) } },
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
