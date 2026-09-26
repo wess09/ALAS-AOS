@@ -27,7 +27,8 @@ adb install -r -d AzurPilot-Android-<ver>-update.apk
 
 1. 启动应用：`adb shell monkey -p com.azurpilot.ghio -c android.intent.category.LAUNCHER 1`。
 2. 已装 Runtime 落后于发布时，启动即弹「发现 Runtime 更新」。
-3. 用 `uiautomator dump` 定位「立即更新」按钮并 `input tap`：
+3. 用 `uiautomator dump` 定位「立即更新」按钮并 `input tap`
+   （`立即更新` 为 zh-CN 设备上的按钮文案，其他语言以对应译名为准）：
    ```bash
    adb shell uiautomator dump /sdcard/ui.xml
    adb shell grep -o 'text="立即更新"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' /sdcard/ui.xml
@@ -98,7 +99,9 @@ adb install -r -d AzurPilot-Android-<ver>-update.apk
    `adb shell monkey -p com.azurpilot.ghio -c android.intent.category.LAUNCHER 1`.
 2. When the installed Runtime trails the release, the app shows the
    "Runtime update available" dialog on startup.
-3. Locate the update button with `uiautomator dump` and tap it:
+3. Locate the update button with `uiautomator dump` and tap it (the grep
+   matches `立即更新`, the zh-CN button label; substitute your locale's
+   label on other device languages):
    ```bash
    adb shell uiautomator dump /sdcard/ui.xml
    adb shell grep -o 'text="立即更新"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' /sdcard/ui.xml

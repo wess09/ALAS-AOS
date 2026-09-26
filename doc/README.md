@@ -19,7 +19,9 @@
 
 ## 阅读约定 / Conventions
 
-- 中文 / Chinese：面向中文维护者，术语与代码注释保持一致。
-- English / 英文：Follows Google style — sentence-case headings, present tense, active voice, and numbered steps for procedures.
+- 中文部分面向中文维护者，术语与代码注释保持一致；英文部分遵循 Google 开发者文档风格指南（句首大写标题、现在时、主动语态、步骤用编号列表）。
+- Chinese sections target Chinese maintainers and keep terminology aligned with the code comments; English sections follow the Google Developer Documentation Style Guide (sentence-case headings, present tense, active voice, and numbered procedures).
 - 代码引用 / Code references use `path:line` form against the repository root.
 - 示例命令 / Example commands run on a host with `adb` unless stated otherwise.
+- UI 文案引用（按钮、菜单）保留设备上的实际显示语言，中英文档一致；若你的设备语言不同，以对应译名为准。
+- UI labels (buttons, menus) quote the on-device text as displayed, identically in both language halves; substitute your locale's label if the device language differs.
