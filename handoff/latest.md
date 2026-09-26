@@ -2,6 +2,12 @@
 
 ## 最新进度
 
+- 2026-09-26 傍晚：**回退 okdownload 多线程下载（用户指令），rootfs 补 ssh；真机 E2E 全通**（c505225，已推送，CI run 36228430826 全绿）。
+  - 并行子代理排障结论：报障设备跑的是 c357a87（okdownload 之前的代码），"下载卡住"=直连 github.com 被墙 + 镜像开关关闭（设备日志抓到 SocketTimeoutException: failed to connect to github.com），"不解压"=下载从未发生；UI 还把 applyUpdate 失败静默吞掉（error 只进 updateCheck，AppRoot 无渲染）。okdownload 本身未在任何用户设备上运行过。镜像实测：gh.ddlc.top 最快且并发稳；gh-proxy.net 对无 JS 下载器回挑战页（应剔除）；gh-proxy.com 约 1/6 概率无视 Range 回 200 全文件。
+  - 回退内容：ReleaseDownloader 恢复单连接 HttpURLConnection（connect 20s/read 120s，大小与 SHA-256 仍由调用方完成后校验），删 okdownload 三件套依赖/Application 装配/R8 规则；多架构、镜像选择器、per-arch 发布全部保留。同时 rootfs 构建补 `openssh-client`（上游 module/base/ssh.py 直接 Popen 系统 ssh，此前 rootfs 无 ssh 导致远程访问不可用——arm64 时代就缺，本轮才被暴露）。
+  - CI 产物自洽：1.0.122 / c505225 / runtimes 双条目（rootfs 版本 3315b5d94779-26a9df495f，内容哈希已含 ssh 修复）/ fullApks。注意 CI 的 1.0.122 versionCode(1790356994) 低于本地构建同名版本(1790395637)，adb 装包需 `install -r -d`。
+  - 真机 E2E（本地测试机）：装 CI update 包 → 启动即弹「发现 Runtime 更新」→ 立即更新 → 877MB 单连接下载完成（用户装了 clash 代理，直连经代理可用）→ 内联校验 → 解压完成 → 日志 `rootfs installed from release: 3315b5d94779-26a9df495f` → 新会话拉起。报障两症状（卡下载、不解压）在真机复现路径上均消失。
+  - 遗留：①根治方案（换源自动回退、镜像列表修整、下载中取消、applyUpdate 失败 snackbar、错误文案人话化）已写好但随排查现场一起 `git stash`（stash@{0} abandon-mt-download-investigation），报障用户当前缓解=代理或手动选镜像，是否恢复待定；②新会话 WebUI 就绪确认受日志干扰未拿到干净证据，建议开 App 亲验一眼。
 - 2026-09-26 追加变更：**README 增加应用截图预览**。用户提供的 32 张真机截图（四语言 zh-CN/zh-TW/en/ja × 暗色/亮色 × 主页/AzurPilot 总览/设置/虚拟屏四页）经内容识别后重命名为语义化文件名入库 `docs/screenshots/<lang>-<theme>-<page>.jpg`；四语 README 在「功能界面一览」前新增「应用预览」章节（每语言 2×4 表格，暗/亮两行），顶部导航加锚点，引用已全部校验存在；顺带把「功能界面一览」里过时的「AzurPilot WebUI / React 前端 / WebView 直连」行改为应用内原生控制台（四语同步）。README 其余 WebUI 字样（徽章、特性卡、简介段）未动——它们描述的是 Runtime 内置控制台，仍属实，后续如需全面去 WebUI 化再单独处理。
 - 2026-09-26 多架构 + 下载链路改造（本条为本轮全部内容，未推送，待 CI 验证）：
   - **Runtime 支持 x86_64**：`build-azurpilot.sh` 以 `AZURPILOT_ABI` 参数化（arm64-v8a 默认走 ubuntu-24.04-arm，x86_64 走 ubuntu-24.04，均要求原生 runner，host 架构硬校验），BUILD_MANIFEST 新增 `rootfs_arch`。armv7/x86(32位) 经查证不可行并已向用户说明：onnxruntime/numpy/scipy/opencv/numba 等无 armv7 与 i686 wheel（onnxruntime 连 sdist 都没有），python-build-standalone 无 Linux i686 的 3.14，ubuntu-base 24.04 无 i386 包——卡在上游依赖，GitHub Actions 机制本身可解决（qemu-user 跑 armhf 等）。
