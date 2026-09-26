@@ -263,7 +263,8 @@ jobs:
           set -euo pipefail
           cd app
           chmod +x gradlew
-          mkdir -p ../dist src/main/assets/rootfs
+          # 此处已 cd 到 Gradle 工程根（仓库的 app/），:app 模块在 app/ 子目录
+          mkdir -p ../dist app/src/main/assets/rootfs
           # 编译期 Kotlin/KSP/Compose 吃内存：给足堆，Kotlin 守护进程单独定额
           gradle_args=(--console=plain --stacktrace)
           if [ "$RUNNER_OS" = "macOS" ]; then
@@ -282,11 +283,11 @@ jobs:
 
           # ① per-arch full APK：收窄 ABI 并内置同架构 rootfs（verify 任务会核对 rootfs_arch）
           for abi in arm64-v8a x86_64; do
-            cp "../.tmp/azurpilot-artifact/$abi/rootfs.tar.xz" src/main/assets/rootfs/rootfs.tar.xz
-            cp "../.tmp/azurpilot-artifact/$abi/BUILD_MANIFEST" src/main/assets/rootfs/BUILD_MANIFEST
+            cp "../.tmp/azurpilot-artifact/$abi/rootfs.tar.xz" app/src/main/assets/rootfs/rootfs.tar.xz
+            cp "../.tmp/azurpilot-artifact/$abi/BUILD_MANIFEST" app/src/main/assets/rootfs/BUILD_MANIFEST
             ./gradlew "$build_variant" -Pazurpilot.releaseAbi="$abi" "${gradle_args[@]}"
             cp "app/build/outputs/apk/$variant/"*.apk "../dist/azurpilot-full-$abi.apk"
-            rm src/main/assets/rootfs/rootfs.tar.xz src/main/assets/rootfs/BUILD_MANIFEST
+            rm app/src/main/assets/rootfs/rootfs.tar.xz app/src/main/assets/rootfs/BUILD_MANIFEST
           done
 
           # ② 通用轻量包（更新通道）：双 ABI 的 proot 库、不内置 rootfs。
