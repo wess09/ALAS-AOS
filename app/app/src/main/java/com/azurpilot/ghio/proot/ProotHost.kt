@@ -40,6 +40,22 @@ import java.util.concurrent.TimeUnit
  *   wrapper 杀 runner/gui 进程组后自尽（防孤儿主链路；stop() 也是先关 stdin）
  * - 重拉走 supervisor 协程，退避 3s 翻倍至 60s
  * - FGS 保活：会话活跃期间 RunForegroundService 钉住 app 进程（其退出判据已并入本会话状态）
+ *
+ * proot session host: spawns the rootfs's wrapper.py with the app process as
+ * parent (the wrapper supervises the WebUI).
+ *
+ * Chain (roadmap phase 3, item 3): self-heal stale locks → seed instance
+ * config → bring up the WebUI → ProcessBuilder starts the long-running proot
+ * session → respawn with backoff on crash or exit.
+ *
+ * Lifecycle contract:
+ * - **The stdin pipe must stay open**: the wrapper runs a stdin watcher; when
+ *   the app process dies the pipe hits EOF, the wrapper kills the runner/gui
+ *   process groups and exits (no orphaned chain; stop() also closes stdin
+ *   first).
+ * - Restarts run on a supervisor coroutine with 3 s backoff doubling to 60 s.
+ * - FGS keep-alive: while a session is active, RunForegroundService pins the
+ *   app process (its exit criteria fold into this session's state).
  */
 class ProotHost(
     private val app: Application,

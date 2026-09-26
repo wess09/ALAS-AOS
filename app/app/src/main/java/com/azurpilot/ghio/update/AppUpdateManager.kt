@@ -32,7 +32,19 @@ data class AppUpdateState(
     val error: String? = null,
 )
 
-/** 固定开发通道的 APK 更新器；系统安装确认仍由 Android Package Installer 展示。 */
+/**
+ * 固定开发通道的 APK 更新器；系统安装确认仍由 Android Package Installer 展示。
+ *
+ * 检查与下载都走 Release 清单（[ReleaseUrls]）；下载源支持镜像，大小与 SHA-256
+ * 在落盘后校验，安装交给系统安装器。
+ *
+ * Updater for the fixed dev channel's APK; the system Package Installer still
+ * owns the install confirmation.
+ *
+ * Both check and download go through the release manifest ([ReleaseUrls]).
+ * Downloads support mirrors; size and SHA-256 are verified after the file
+ * lands, and installation is handed to the system installer.
+ */
 class AppUpdateManager(
     private val context: Context,
     private val scope: CoroutineScope,

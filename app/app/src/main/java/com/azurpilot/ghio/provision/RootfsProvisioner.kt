@@ -71,6 +71,29 @@ data class RuntimeUpdateCheck(
  * - 落盘走 `rootfs.tmp` 解完再换名，半途失败不留半拉子正式目录。
  * - busybox tar 解 ubuntu-base 硬链接前向引用必炸（M1-d 坑②），故用纯 Java
  *   commons-compress + tukaani xz 流式解；硬链接物化成副本，符号链接走 [Os.symlink]。
+ *
+ * First-extraction pipeline: the assets rootfs.tar.xz → internal files/rootfs.
+ *
+ * - **Internal filesDir is mandatory**: emulated /sdcard storage supports no
+ *   symlinks (ubuntu-base ships 740) and is noexec; the internal filesDir is
+ *   the Spike-A-proven location where proot works (targetSdk 35).
+ * - **Per-ABI Runtime**: the rootfs is built and published per device ABI
+ *   ([RuntimeArch]; proot does no instruction translation). When the bundled
+ *   package's `BUILD_MANIFEST.rootfs_arch` does not match the device, the
+ *   bundled path is skipped in favor of Release, which picks the matching
+ *   package from `latest.json.runtimes[abi]`.
+ * - Version gate: the assets-side `rootfs/BUILD_MANIFEST` is compared with the
+ *   marker `files/rootfs/.provisioned`; on mismatch (or a failed python3
+ *   sanity check) the tree is re-extracted. Upgrades replace the whole package
+ *   and re-extract — no incremental deltas.
+ * - When the APK ships without a bundled rootfs (slim builds), the release's
+ *   `rootfs-<abi>.tar.xz` is fetched and deployed automatically; both paths
+ *   share the same extraction pipeline.
+ * - Extraction lands in `rootfs.tmp` and renames only after success, so a
+ *   failed run never leaves a half-deployed directory.
+ * - busybox tar explodes on ubuntu-base hard links with forward references
+ *   (pitfall M1-d ②), hence pure-Java commons-compress + tukaani xz streaming;
+ *   hard links materialize as copies, and symlinks go through [Os.symlink].
  */
 class RootfsProvisioner(
     private val app: Application,
